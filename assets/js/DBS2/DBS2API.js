@@ -100,20 +100,49 @@ const DBS2API = {
     
     // ============ SCORES ============
     async getScores() {
-        const res = await fetch(`${this.baseUrl}/scores`, fetchOptions);
-        const data = await res.json();
-        return { scores: data.scores || {} };
+        try {
+            const res = await fetch(`${this.baseUrl}/scores`, fetchOptions);
+            if (!res.ok) {
+                console.log('[DBS2API] getScores failed:', res.status);
+                return {};
+            }
+            const data = await res.json();
+            // Backend returns: { scores: { game: score, ... } }
+            const scores = data && typeof data === 'object' ? (data.scores || {}) : {};
+            return scores;
+        } catch (e) {
+            console.log('[DBS2API] getScores error:', e);
+            return {};
+        }
     },
     
     async updateScore(game, score) {
-        const res = await fetch(`${this.baseUrl}/scores`, {
-            ...fetchOptions,
-            method: 'PUT',
-            body: JSON.stringify({ game: game, score: score })
-        });
-        const data = await res.json();
-        this.refreshLeaderboard();
-        return { scores: data.scores || {} };
+        // Backwards-compatible helper that mirrors submitScore
+        return this.submitScore(game, score);
+    },
+
+    /**
+     * Submit a score for a given game.
+     * Expected by StatsManager.updateScore(game, score) to return {scores: {...}}.
+     */
+    async submitScore(game, score) {
+        try {
+            const res = await fetch(`${this.baseUrl}/scores`, {
+                ...fetchOptions,
+                method: 'PUT',
+                body: JSON.stringify({ game: game, score: score })
+            });
+            if (!res.ok) {
+                console.log('[DBS2API] submitScore failed:', res.status);
+                return { scores: {} };
+            }
+            const data = await res.json();
+            this.refreshLeaderboard();
+            return { scores: data.scores || {} };
+        } catch (e) {
+            console.log('[DBS2API] submitScore error:', e);
+            return { scores: {} };
+        }
     },
     
     // ============ MINIGAMES ============

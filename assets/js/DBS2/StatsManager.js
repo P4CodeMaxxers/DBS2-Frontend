@@ -203,7 +203,7 @@ export async function hasItem(item) {
 export async function getScores() {
     try {
         if (DBS2API && DBS2API.getScores) {
-            // DBS2API.getScores() returns the raw scores dict (not wrapped)
+            // DBS2API.getScores() returns the raw scores dict
             const scores = await DBS2API.getScores();
             return scores || {};
         }
