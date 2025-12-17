@@ -50,12 +50,16 @@ class Npc extends Character {
     handleKeyDown({ key }) {
         switch (key) {
             case 'e': // Player 1 interaction
+            case 'u': // Player 2 interaction
                 try {
+                    // Debug: Log all NPCs and their collision states
+                    console.log('E key pressed. Checking collisions...');
                     
                     const players = GameEnv.gameObjects.filter(
                         obj => obj.state?.collisionEvents?.includes(this.spriteData.id)
                     );
                     
+                    console.log(`NPC ID: ${this.spriteData.id}, Players colliding: ${players.length}`);
                     
                     if (players.length === 0) {
                         // Check if player is at least close to this NPC (fallback for SodaCan)
@@ -66,9 +70,11 @@ class Npc extends Character {
                                 Math.pow(player.position.x - this.position.x, 2) + 
                                 Math.pow(player.position.y - this.position.y, 2)
                             );
+                            console.log(`Distance to SodaCan: ${dist}`);
                             
                             // If within 200 pixels, launch anyway
                             if (dist < 200) {
+                                console.log('Player close enough to SodaCan, launching game...');
                                 this.launchWhackARat();
                                 return;
                             }
@@ -79,6 +85,7 @@ class Npc extends Character {
                     this.closeAllDialogues();
 
                     const npcId = this.spriteData.id;
+                    console.log(`Interacting with: ${npcId}`);
 
                     switch (npcId) {
                         case 'Bookshelf':
@@ -98,6 +105,7 @@ class Npc extends Character {
                             return;
 
                         case 'SodaCan':
+                            console.log('✅ SodaCan interaction detected!');
                             this.launchWhackARat();
                             return;
 
@@ -125,6 +133,7 @@ class Npc extends Character {
 
     async launchWhackARat() {
         try {
+            console.log('🎮 Starting Rat Clicker minigame...');
 
             // Create fullscreen overlay
             const overlay = document.createElement('div');
@@ -162,6 +171,7 @@ class Npc extends Character {
                 // Award crypto
                 if (player?.spriteData?.crypto !== undefined && cryptoEarned > 0) {
                     player.spriteData.crypto += cryptoEarned;
+                    console.log(`💰 Total crypto: ${player.spriteData.crypto}`);
 
                     setTimeout(() => {
                         alert(`🎉 You Win!\n\n💰 +${cryptoEarned} Crypto Earned!\n💎 Total Crypto: ${player.spriteData.crypto}`);
