@@ -118,11 +118,11 @@ permalink: /DBS2/flowchart
         <h3>2. Minigame Concepts (each person)</h3>
         <p class="dbs2-flow-arrow">Overview of all games in the building.</p>
         <ul class="dbs2-flow-list">
-          <li>Ashtrail – book-chasing / movement game.</li>
-          <li>Laundry Game – task and timing game.</li>
-          <li>Whack-a-Rat – reaction game.</li>
-          <li>Infinite Users – scaling and logic challenge.</li>
-          <li>Crypto Mining – earn in-game crypto.</li>
+          <li>Ashtrail – tracing path game.</li>
+          <li>Laundry Game – task and drag/drop game.</li>
+          <li>Whack-a-Rat – reaction/timing game.</li>
+          <li>Infinite Users – Using logic to decode encrypted messages challenge.</li>
+          <li>Crypto Mining – earn in-game crypto through typing practice.</li>
         </ul>
       </div>
     </div>
