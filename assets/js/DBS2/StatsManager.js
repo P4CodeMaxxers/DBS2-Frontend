@@ -238,6 +238,33 @@ export async function updateScore(game, score) {
 }
 
 /**
+ * Submit an Ash Trail run trace to backend for ghost replay.
+ * @param {string} bookId - 'defi_grimoire' | 'lost_ledger' | 'proof_of_burn'
+ * @param {number} score - 0..100
+ * @param {Array<{x:number,y:number}>} trace - player path points in grid space
+ */
+export async function submitAshTrailRun(bookId, score, trace) {
+    try {
+        if (DBS2API && DBS2API.submitAshTrailRun) {
+            return await DBS2API.submitAshTrailRun(bookId, score, trace);
+        }
+    } catch (e) {
+        console.log('API submitAshTrailRun failed:', e);
+    }
+    return null;
+}
+
+export async function getAshTrailRuns(bookId, limit = 10) {
+    if (DBS2API && DBS2API.getAshTrailRuns) return await DBS2API.getAshTrailRuns(bookId, limit);
+    return { book_id: bookId, runs: [] };
+}
+
+export async function getAshTrailRun(runId) {
+    if (DBS2API && DBS2API.getAshTrailRun) return await DBS2API.getAshTrailRun(runId);
+    return { run: null };
+}
+
+/**
  * Get minigame completion status
  * @returns {Promise<Object>} Minigame completion status
  */

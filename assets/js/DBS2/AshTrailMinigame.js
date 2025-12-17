@@ -1,4 +1,4 @@
-import { addInventoryItem, updateCrypto, isMinigameCompleted, completeMinigame } from './StatsManager.js';
+import { addInventoryItem, updateCrypto, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun } from './StatsManager.js';
 // Logical grid that everything lives on (player + path).
 // Higher numbers = smoother curves and more room for complex shapes.
 const GRID_COLS = 24;
@@ -106,7 +106,7 @@ const BOOKS = [
     title: "DeFi Grimoire",
     difficulty: 1,
     rating: "3/10",
-    requiredScore: 80,
+    requiredScore: 60,
     description:
       "A gentle warm‑up. The trail wiggles a bit, but you can mostly cruise and get used to how the game feels.",
     // Smooth wave across the whole arena
@@ -117,7 +117,7 @@ const BOOKS = [
     title: "Lost Ledger",
     difficulty: 2,
     rating: "6/10",
-    requiredScore: 80,
+    requiredScore: 60,
     description:
       "Now it starts to fight back. The path crosses over itself and turns more often, so you actually have to focus.",
     // Cross‑corridor, four‑arm shape
@@ -128,7 +128,7 @@ const BOOKS = [
     title: "Proof‑of‑Burn Almanac",
     difficulty: 3,
     rating: "9.5/10",
-    requiredScore: 80,
+    requiredScore: 60,
     description:
       "Full try‑hard mode. Long, curvy, and easy to lose track of. If you zone out for half a second, your score will show it.",
     // Heart / petal loop wrapped around the center
@@ -527,6 +527,33 @@ function renderBookSelectScene() {
 
   let firstBook = null;
 
+  // Track per-book completion based on saved best % in backend/local scores.
+  // A book is considered completed if best >= requiredScore (default 60).
+  let cachedScores = null;
+  const getCachedScores = async () => {
+    if (cachedScores) return cachedScores;
+    try {
+      cachedScores = await getScores();
+    } catch (_) {
+      cachedScores = {};
+    }
+    return cachedScores || {};
+  };
+
+  const statusTextFor = async (book) => {
+    const scores = await getCachedScores();
+    const key = `ash_trail_${book.id}`;
+    const bestRaw = scores?.[key];
+    const best = bestRaw === undefined || bestRaw === null ? null : Math.round(Number(bestRaw) || 0);
+    const req = book.requiredScore ?? 60;
+    const done = best !== null && best >= req;
+    if (best === null) return { text: "⬜ Not completed", color: "#9ca3af" };
+    return {
+      text: `${done ? "✅" : "⬜"} Best: ${Math.max(0, Math.min(100, best))}% (need ${req}%)`,
+      color: done ? "#86efac" : "#fca5a5",
+    };
+  };
+
   BOOKS.forEach((book, index) => {
     const ratingLabel = book.rating || "—/10";
     const card = createEl("button", {
@@ -563,8 +590,13 @@ function renderBookSelectScene() {
     titleRow.appendChild(d);
 
     const status = createEl("span", {
-      textContent: "Status: Not started (frontend demo)",
+      textContent: "Status: loading…",
       style: { fontSize: "11px", color: "#9ca3af" },
+    });
+    // Fill status asynchronously (backend/local scores)
+    statusTextFor(book).then((s) => {
+      status.textContent = s.text;
+      status.style.color = s.color;
     });
 
     card.appendChild(titleRow);
@@ -862,9 +894,9 @@ function playPathPreview(path, onComplete) {
   const cellH = canvas.height / GRID_ROWS;
   let i = 0;
 
-  // Dynamic speed: longer paths draw faster per‑point so total time stays reasonable
-  const baseDelay = 160;
-  const minDelay = 60;
+  // Faster preview: keep it readable but much snappier
+  const baseDelay = 70;
+  const minDelay = 20;
   const delay =
     Math.max(minDelay, baseDelay - Math.min(80, (path.length - 80) * 0.3));
 
@@ -921,11 +953,11 @@ function playPathPreview(path, onComplete) {
     if (i < path.length) {
       setTimeout(step, delay);
     } else {
-      // brief linger then clear
+      // brief linger then clear (faster)
       setTimeout(() => {
         drawBackground();
         if (onComplete) onComplete();
-      }, 700);
+      }, 200);
     }
   };
 
@@ -1193,16 +1225,46 @@ function drawRunState() {
 
 // Scene 4: Results ----------------------------------------------------------
 
-function finishRun() {
+async function finishRun() {
   if (!isRunPhase) return;
   isRunPhase = false;
 
   cleanupRunInput();
 
   const score = computeScore(truePath, playerPath);
+
+  // Persist best % to backend (per-book only) so the per-book leaderboard updates.
+  try {
+    if (currentBook?.id) {
+      await updateScore(`ash_trail_${currentBook.id}`, score);
+    }
+  } catch (e) {
+    console.log('[AshTrail] Could not save score:', e);
+  }
+
+  // Submit ghost run trace for replay (best-effort; does not block UX)
+  try {
+    if (currentBook?.id && Array.isArray(playerPath) && playerPath.length) {
+      // Downsample to keep payload small
+      const stride = Math.max(1, Math.floor(playerPath.length / 350));
+      const trace = playerPath.filter((_, i) => i % stride === 0).map(p => ({ x: p.x, y: p.y }));
+      const res = await submitAshTrailRun(currentBook.id, score, trace);
+      if (res?.run?.id) {
+        console.log('[AshTrail] Ghost run saved:', res.run.id, 'points:', trace.length);
+      } else {
+        console.log('[AshTrail] Ghost run submit response:', res);
+      }
+    }
+  } catch (e) {
+    console.log('[AshTrail] Could not submit ghost run (check auth/cookie + backend logs):', e);
+  }
   
   // Award crypto based on score
-  awardCryptoForScore(score);
+  try {
+    await awardCryptoForScore(score);
+  } catch (e) {
+    console.log('[AshTrail] Could not award crypto:', e);
+  }
   
   renderResultsScene(score);
 }
@@ -1210,7 +1272,8 @@ function finishRun() {
 async function awardCryptoForScore(score) {
   let cryptoReward = 0;
   
-  if (score >= 80) {
+  const required = currentBook?.requiredScore ?? 60;
+  if (score >= required) {
     // Passed: base reward + difficulty bonus + score bonus
     const difficultyBonus = currentBook ? (currentBook.difficulty * 5) : 0;
     cryptoReward = 15 + Math.floor(score / 10) + difficultyBonus;
@@ -1291,27 +1354,35 @@ function computeScore(trueP, playerP) {
     excessPenalty = Math.max(0.5, 1.0 - (pathLengthRatio - 2.0) * 0.6);
   }
 
-  // 1) How accurately did the player stay near the trail?
-  let goodSamples = 0;
-  const totalSamples = playerP.length;
-  const MAX_DIST = 1.2; // in grid units – how far from the trail still counts
+  // Harder scoring: require closer alignment to earn higher %.
+  // Distance-weighted scoring (closer = more points; farther = drops off fast).
+  const difficulty = currentBook?.difficulty ?? 2;
+  // Stricter than original 1.2:
+  // diff1=0.92, diff2=0.84, diff3=0.76
+  const MAX_DIST = Math.max(0.65, 1.00 - 0.08 * difficulty);
 
+  const weightFromDist = (d) => {
+    // 1.0 at d=0, smoothly drops to 0 at d>=MAX_DIST, with a steeper falloff
+    const t = Math.max(0, 1 - d / MAX_DIST);
+    return Math.pow(t, 1.55);
+  };
+
+  // 1) Proximity accuracy: average weight of player samples to the true trail
+  let proximitySum = 0;
   for (const p of playerP) {
-    const d = distanceToPath(p, trueP);
-    if (d <= MAX_DIST) goodSamples++;
+    proximitySum += weightFromDist(distanceToPath(p, trueP));
   }
-  const proximityFrac = goodSamples / totalSamples;
+  const proximityFrac = proximitySum / playerP.length;
 
-  // 2) How much of the trail did they actually cover?
-  let coveredPoints = 0;
+  // 2) Coverage: how much of the trail was "touched", also distance-weighted
+  let coverageSum = 0;
   for (const tp of trueP) {
-    const d = distanceToPath(tp, playerP);
-    if (d <= MAX_DIST) coveredPoints++;
+    coverageSum += weightFromDist(distanceToPath(tp, playerP));
   }
-  const coverageFrac = coveredPoints / trueP.length;
+  const coverageFrac = coverageSum / trueP.length;
 
-  // Combine both: you only get 100% if you stay close AND cover most of the path.
-  const rawScore = 0.4 * proximityFrac + 0.6 * coverageFrac;
+  // Combine both: you only get 100% if you stay very close AND cover most of the path.
+  const rawScore = 0.55 * proximityFrac + 0.45 * coverageFrac;
 
   // Apply excess penalty to prevent coloring entire screen from getting 100%
   const penalizedScore = rawScore * excessPenalty;

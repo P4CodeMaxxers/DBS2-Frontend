@@ -85,10 +85,59 @@ const DBS2API = {
     async submitScore(game, score) {
         const res = await fetch(`${this.baseUrl}/scores`, {
             ...fetchOptions,
+            // Allow request to complete even if the user exits/navigates immediately
+            keepalive: true,
             method: 'PUT',
             body: JSON.stringify({ game: game, score: score })
         });
-        return res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data?.error || `HTTP ${res.status}`;
+            throw new Error(`submitScore failed: ${msg}`);
+        }
+        return data;
+    },
+
+    // ============ ASH TRAIL GHOST RUNS ============
+    async submitAshTrailRun(bookId, score, trace) {
+        const res = await fetch(`${this.baseUrl}/ash-trail/runs`, {
+            ...fetchOptions,
+            keepalive: true,
+            method: 'POST',
+            body: JSON.stringify({ book_id: bookId, score: score, trace: trace })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data?.error || `HTTP ${res.status}`;
+            throw new Error(`submitAshTrailRun failed: ${msg}`);
+        }
+        return data;
+    },
+
+    async getAshTrailRuns(bookId, limit = 10) {
+        const res = await fetch(`${this.baseUrl}/ash-trail/runs?book_id=${encodeURIComponent(bookId)}&limit=${limit}`, {
+            ...fetchOptions,
+            method: 'GET'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data?.error || `HTTP ${res.status}`;
+            throw new Error(`getAshTrailRuns failed: ${msg}`);
+        }
+        return data;
+    },
+
+    async getAshTrailRun(runId) {
+        const res = await fetch(`${this.baseUrl}/ash-trail/runs/${runId}`, {
+            ...fetchOptions,
+            method: 'GET'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data?.error || `HTTP ${res.status}`;
+            throw new Error(`getAshTrailRun failed: ${msg}`);
+        }
+        return data;
     },
     
     // ============ MINIGAMES ============
