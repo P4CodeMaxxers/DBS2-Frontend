@@ -113,7 +113,7 @@ class GameLevelBasement {
     ------------------------*/
     const sprite_data_sodacan = {
       id: 'SodaCan',
-      greeting: 'Whack some rats!',
+      greeting: 'Whack some rats! DONT EVEN THINK OF TOUCHING MY CANS!!!',
       src: `${this.path}/images/DBS2/sodacan.png`,
       SCALE_FACTOR: 6,
       ANIMATION_RATE: 0,

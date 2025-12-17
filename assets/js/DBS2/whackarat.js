@@ -38,7 +38,7 @@ async function loadAssets(basePath) {
   console.log('Loading assets from:', basePath);
   
   const manifest = [
-    ['basement', `${basePath}/basement.png`],
+    ['basement', `${basePath}/closet.jpg`],
     ['pipes', `${basePath}/pipes.png`],
     ['hammer', `${basePath}/hammer.png`],
     ['rat', `${basePath}/movingrat.gif`],
