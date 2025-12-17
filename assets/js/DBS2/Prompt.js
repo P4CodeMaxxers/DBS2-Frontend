@@ -734,7 +734,9 @@ const Prompt = {
         
         try {
             playerCrypto = await getCrypto();
+            console.log('[IShowGreen] Player crypto:', playerCrypto);
         } catch(e) {
+            console.log('[IShowGreen] Could not get crypto:', e);
             playerCrypto = 0;
         }
         
@@ -742,9 +744,10 @@ const Prompt = {
             if (window.Inventory) {
                 scrapCount = window.Inventory.getCodeScrapCount();
                 hasAllScraps = window.Inventory.hasAllCodeScraps();
+                console.log('[IShowGreen] Scraps:', scrapCount, 'Has all:', hasAllScraps);
             }
         } catch(e) {
-            console.log('Could not check inventory:', e);
+            console.log('[IShowGreen] Could not check inventory:', e);
         }
         
         // Build the choice dialog
@@ -770,16 +773,25 @@ const Prompt = {
             font-family: 'Courier New', monospace;
         `;
         
+        // Status line showing current progress
+        let statusHtml = `
+            <div style="background: rgba(0,170,85,0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #052;">
+                <span style="color: #0a5;">CRYPTO: ${playerCrypto}/500</span>
+                <span style="margin: 0 15px; color: #333;">|</span>
+                <span style="color: #0a5;">PAGES: ${scrapCount}/5</span>
+            </div>
+        `;
+        
         // Different dialogue based on what player has
         let dialogueText = '';
         if (hasAllScraps && playerCrypto >= 500) {
-            dialogueText = 'You have my pages AND enough crypto. What do you want to give me?';
+            dialogueText = 'You have my pages AND enough crypto. What will you give me?';
         } else if (hasAllScraps) {
             dialogueText = 'You found all five pages. Give them to me and you can leave.';
         } else if (playerCrypto >= 500) {
-            dialogueText = `You have ${playerCrypto} crypto. Pay me 500 and the door opens.`;
+            dialogueText = 'You have enough crypto. Pay me 500 and the door opens.';
         } else {
-            dialogueText = `You have ${playerCrypto} crypto and ${scrapCount} of 5 pages. Come back when you have 500 crypto or all 5 pages.`;
+            dialogueText = 'Come back when you have 500 crypto or all 5 pages.';
         }
         
         let buttonsHtml = '';
@@ -834,6 +846,7 @@ const Prompt = {
         
         popup.innerHTML = `
             <div style="font-weight: 700; margin-bottom: 10px; color: #0a5; font-size: 16px;">ISHOWGREEN</div>
+            ${statusHtml}
             <div style="margin-bottom: 20px; line-height: 1.6; font-size: 13px;">${dialogueText}</div>
             <div style="display: flex; flex-direction: column; gap: 0;">${buttonsHtml}</div>
         `;
