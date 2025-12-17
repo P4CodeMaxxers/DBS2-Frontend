@@ -722,7 +722,167 @@ const Prompt = {
         this.updatePromptDisplay()
     },
 
+    async handleIShowGreenInteraction() {
+        // Close any existing popups
+        let existingPopup = document.getElementById('dialoguePopup');
+        if (existingPopup) existingPopup.remove();
+        
+        // Get player's crypto and scrap count
+        let playerCrypto = 0;
+        let scrapCount = 0;
+        let hasAllScraps = false;
+        
+        try {
+            playerCrypto = await getCrypto();
+        } catch(e) {
+            playerCrypto = 0;
+        }
+        
+        try {
+            if (window.Inventory) {
+                scrapCount = window.Inventory.getCodeScrapCount();
+                hasAllScraps = window.Inventory.hasAllCodeScraps();
+            }
+        } catch(e) {
+            console.log('Could not check inventory:', e);
+        }
+        
+        // Build the choice dialog
+        window.dialogueActive = true;
+        
+        let popup = document.createElement('div');
+        popup.id = 'dialoguePopup';
+        popup.style.cssText = `
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            color: #ccc;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #0a5;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 10001;
+            min-width: 380px;
+            max-width: 90vw;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        `;
+        
+        // Different dialogue based on what player has
+        let dialogueText = '';
+        if (hasAllScraps && playerCrypto >= 500) {
+            dialogueText = 'You have my pages AND enough crypto. What do you want to give me?';
+        } else if (hasAllScraps) {
+            dialogueText = 'You found all five pages. Give them to me and you can leave.';
+        } else if (playerCrypto >= 500) {
+            dialogueText = `You have ${playerCrypto} crypto. Pay me 500 and the door opens.`;
+        } else {
+            dialogueText = `You have ${playerCrypto} crypto and ${scrapCount} of 5 pages. Come back when you have 500 crypto or all 5 pages.`;
+        }
+        
+        let buttonsHtml = '';
+        
+        // Add crypto button if player has enough
+        if (playerCrypto >= 500) {
+            buttonsHtml += `
+                <button id="isg-pay-crypto" style="
+                    background: #052;
+                    color: #0a5;
+                    border: 1px solid #0a5;
+                    padding: 12px 20px;
+                    cursor: pointer;
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    width: 100%;
+                ">PAY 500 CRYPTO</button>
+            `;
+        }
+        
+        // Add scraps button if player has all
+        if (hasAllScraps) {
+            buttonsHtml += `
+                <button id="isg-give-pages" style="
+                    background: #052;
+                    color: #0a5;
+                    border: 1px solid #0a5;
+                    padding: 12px 20px;
+                    cursor: pointer;
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    width: 100%;
+                    margin-top: 10px;
+                ">GIVE HIM THE PAGES</button>
+            `;
+        }
+        
+        // Always add leave button
+        buttonsHtml += `
+            <button id="isg-leave" style="
+                background: transparent;
+                color: #666;
+                border: 1px solid #333;
+                padding: 8px 20px;
+                cursor: pointer;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                width: 100%;
+                margin-top: 10px;
+            ">LEAVE</button>
+        `;
+        
+        popup.innerHTML = `
+            <div style="font-weight: 700; margin-bottom: 10px; color: #0a5; font-size: 16px;">ISHOWGREEN</div>
+            <div style="margin-bottom: 20px; line-height: 1.6; font-size: 13px;">${dialogueText}</div>
+            <div style="display: flex; flex-direction: column; gap: 0;">${buttonsHtml}</div>
+        `;
+        
+        document.body.appendChild(popup);
+        
+        // Handle pay crypto
+        const payBtn = document.getElementById('isg-pay-crypto');
+        if (payBtn) {
+            payBtn.onclick = () => {
+                popup.remove();
+                window.dialogueActive = false;
+                Prompt.showDialoguePopup('IShowGreen', 'Done. The door is unlocked. Get out of my basement.', () => {
+                    if (window.GameControl) {
+                        window.GameControl.showWinScreen('crypto');
+                    }
+                });
+            };
+        }
+        
+        // Handle give pages
+        const pagesBtn = document.getElementById('isg-give-pages');
+        if (pagesBtn) {
+            pagesBtn.onclick = () => {
+                popup.remove();
+                window.dialogueActive = false;
+                Prompt.showDialoguePopup('IShowGreen', 'Finally. I can rebuild The Green Machine. The door is open. Leave before I change my mind.', () => {
+                    if (window.GameControl) {
+                        window.GameControl.showWinScreen('scraps');
+                    }
+                });
+            };
+        }
+        
+        // Handle leave
+        document.getElementById('isg-leave').onclick = () => {
+            popup.remove();
+            window.dialogueActive = false;
+        };
+    },
+
     openPromptPanel(npc) {
+        // Check if this is IShowGreen - handle specially
+        const npcId = npc?.spriteData?.id;
+        if (npcId === 'IShowGreen') {
+            this.handleIShowGreenInteraction();
+            return;
+        }
+        
         // Ensure DOM elements exist
         const { promptDropDown, promptTitle } = this.ensureElements();
         
