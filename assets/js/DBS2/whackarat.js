@@ -1,6 +1,7 @@
 /// whackarat.js
 // Ash-Trail style rewrite of Whack-a-rat game
 // Exports: startWhackGame(overlayElement, basePath, onComplete)
+import { updateCrypto, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
 
 const Whack = {
   canvas: null,
@@ -223,8 +224,10 @@ function endGame() {
   
   // Call completion callback with crypto earned
   if (Whack.onComplete) {
-    const cryptoEarned = Math.floor(Whack.score / 100);
-    Whack.onComplete(cryptoEarned);
+    const cryptoEarned = Math.floor(Whack.score / 20);
+    updateCrypto(cryptoEarned);
+    
+    // Whack.onComplete(cryptoEarned);
   }
 }
 
