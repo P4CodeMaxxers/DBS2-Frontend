@@ -43,9 +43,9 @@ Sequencing can be found in the Laundry minigame as the code runs from top to bot
 
 ## Selection
 
-If player is completing minigame for the first time, they get 520 crypto
+If player is completing minigame for the first time, they get 35 crypto
 
-Else if player is completing NOT for the first time, they only get 20 crypto.
+Else if player is completing NOT for the first time, they only get 15 crypto.
 
 ```let isFirstCompletion = false;
     try {
@@ -124,7 +124,7 @@ Checks if game has been previously completed to determine how much crypto the pl
 
 ```
  // Award crypto
-            const cryptoAmount = isFirstCompletion ? 520 : 20;
+            const cryptoAmount = isFirstCompletion ? 35 : 20;
             await updateCrypto(cryptoAmount);
             console.log('✅ Crypto added:', cryptoAmount);
             
@@ -152,6 +152,6 @@ GET:
 
 ```addInventoryItem``` uses POST to add items to player inventory
 
-```updateCrypto(520)``` OR ```updateCrypto(20)``` uses PUT to add crypto to player's ingame currency count
+```updateCrypto(35)``` OR ```updateCrypto(15)``` uses PUT to add crypto to player's ingame currency count
 
 
