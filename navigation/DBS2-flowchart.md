@@ -17,21 +17,63 @@ permalink: /DBS2/flowchart
 }
 
 .dbs2-flow-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  position: relative;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+.dbs2-flow-step {
+  position: relative;
+  padding-left: 3rem;
+}
+
+.dbs2-flow-step::before {
+  content: attr(data-step);
+  position: absolute;
+  left: 0.9rem;
+  top: 0.9rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25), 0 8px 18px rgba(34, 197, 94, 0.55);
+}
+
+.dbs2-flow-step::after {
+  content: "";
+  position: absolute;
+  left: 1.7rem;
+  top: 2.5rem;
+  bottom: -1.3rem;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(148, 163, 184, 0.9), rgba(148, 163, 184, 0));
+}
+
+.dbs2-flow-step:last-child::after {
+  display: none;
 }
 
 @media (max-width: 960px) {
-  .dbs2-flow-grid {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+  .dbs2-flow-step {
+    padding-left: 2.6rem;
   }
-}
 
-.dbs2-flow-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  .dbs2-flow-step::before {
+    left: 0.7rem;
+  }
+
+  .dbs2-flow-step::after {
+    left: 1.5rem;
+  }
 }
 
 .dbs2-flow-card {
@@ -99,35 +141,38 @@ permalink: /DBS2/flowchart
       DBS2 Presentation Map
     </span>
     <p style="margin-top:0.75rem;">
-      This is an overview of our Discord Basement Simulator 2 presentation
+      Use this page during your presentation to walk through everything you built in DBS2:
+      the main building, each minigame, and how the backend, Postman, and crypto system all connect.
     </p>
   </div>
 
   <div class="dbs2-flow-grid">
-    <div class="dbs2-flow-column">
+    <div class="dbs2-flow-step" data-step="1">
       <div class="dbs2-flow-card">
         <h3>1. DBS2 Overview → Built Building</h3>
-        <p class="dbs2-flow-arrow">.</p>
+        <p class="dbs2-flow-arrow">You start here.</p>
         <ul class="dbs2-flow-list">
           <li>What DBS2 is and why we made it.</li>
           <li>Show the main building / hub that connects everything.</li>
         </ul>
       </div>
+    </div>
 
+    <div class="dbs2-flow-step" data-step="2">
       <div class="dbs2-flow-card">
         <h3>2. Minigame Concepts (each person)</h3>
         <p class="dbs2-flow-arrow">Overview of all games in the building.</p>
         <ul class="dbs2-flow-list">
-          <li>Ashtrail – tracing path game.</li>
-          <li>Laundry Game – task and drag/drop game.</li>
-          <li>Whack-a-Rat – reaction/timing game.</li>
-          <li>Infinite Users – Using logic to decode encrypted messages challenge.</li>
-          <li>Crypto Mining – earn in-game crypto through typing practice.</li>
+          <li>Ashtrail – book-chasing / movement game.</li>
+          <li>Laundry Game – task and timing game.</li>
+          <li>Whack-a-Rat – reaction game.</li>
+          <li>Infinite Users – scaling and logic challenge.</li>
+          <li>Crypto Mining – earn in-game crypto.</li>
         </ul>
       </div>
     </div>
 
-    <div class="dbs2-flow-column">
+    <div class="dbs2-flow-step" data-step="3">
       <div class="dbs2-flow-card">
         <h3>3. For each minigame</h3>
         <p class="dbs2-flow-arrow">Repeat this pattern for all five games.</p>
@@ -136,7 +181,9 @@ permalink: /DBS2/flowchart
           <li><strong>Process of development</strong> – design → prototype → testing → polish.</li>
         </ul>
       </div>
+    </div>
 
+    <div class="dbs2-flow-step" data-step="4">
       <div class="dbs2-flow-card">
         <h3>4. Postman and APIs</h3>
         <p class="dbs2-flow-arrow">Connect minigames to real data.</p>
@@ -148,7 +195,7 @@ permalink: /DBS2/flowchart
       </div>
     </div>
 
-    <div class="dbs2-flow-column">
+    <div class="dbs2-flow-step" data-step="5">
       <div class="dbs2-flow-card">
         <h3>5. Backend Integration</h3>
         <p class="dbs2-flow-arrow">How the game talks to the server.</p>
@@ -158,7 +205,9 @@ permalink: /DBS2/flowchart
           <li>Crypto counter to track total crypto per player.</li>
         </ul>
       </div>
+    </div>
 
+    <div class="dbs2-flow-step" data-step="6">
       <div class="dbs2-flow-card">
         <h3>6. Crypto Rules and Data Flow</h3>
         <p class="dbs2-flow-arrow">Tie it all together and wrap up.</p>
