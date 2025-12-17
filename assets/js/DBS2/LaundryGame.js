@@ -623,7 +623,7 @@ export async function showLaundryMinigame(onComplete) {
             console.log('🧺 Syncing laundry minigame completion...');
             
             // Award crypto
-            const cryptoAmount = isFirstCompletion ? 520 : 20;
+            const cryptoAmount = isFirstCompletion ? 35 : 20;
             await updateCrypto(cryptoAmount);
             console.log('✅ Crypto added:', cryptoAmount);
             

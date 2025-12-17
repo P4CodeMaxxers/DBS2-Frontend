@@ -10,20 +10,6 @@ console.log("GameControl.js loaded!");
 
 /**
  * The GameControl object manages the game.
- * 
- * This code uses the JavaScript "object literal pattern" which is nice for centralizing control logic.
- * 
- * The object literal pattern is a simple way to create singleton objects in JavaScript.
- * It allows for easy grouping of related functions and properties, making the code more organized and readable.
- * In the context of GameControl, this pattern helps centralize the game's control logic, 
- * making it easier to manage game states, handle events, and maintain the overall flow of the game.
- * 
- * @type {Object}
- * @property {Player} turtle - The player object.
- * @property {Player} fish 
- * @property {function} start - Initialize game assets and start the game loop.
- * @property {function} gameLoop - The game loop.
- * @property {function} resize - Resize the canvas and player object when the window is resized.
  */
 const GameControl = {
     intervalId: null,
@@ -37,6 +23,8 @@ const GameControl = {
     cryptoWinTriggered: false,
     scrapWinTriggered: false,
     introStarted: false,
+    introCheckDone: false,
+    playerHasProgress: false,
 
     start: function(path) {
         console.log("GameControl.start() called with path:", path);
@@ -55,6 +43,9 @@ const GameControl = {
         // Initialize win condition listeners
         this.initWinConditionListeners();
         
+        // Check if player has progress (for intro skip)
+        this.checkPlayerProgress();
+        
         this.levelClasses = [GameLevelBasement];
         this.currentLevelIndex = 0;
         this.path = path;
@@ -62,6 +53,28 @@ const GameControl = {
         console.log("GameControl: Loading level...");
         this.loadLevel();
         console.log("GameControl: Level loaded");
+    },
+    
+    // Check backend for player progress to determine if intro should show
+    async checkPlayerProgress() {
+        try {
+            if (window.DBS2API && window.DBS2API.getPlayer) {
+                const player = await window.DBS2API.getPlayer();
+                // Player has progress if they have crypto, inventory items, or completed minigames
+                const hasCrypto = player.crypto && player.crypto > 0;
+                const hasInventory = player.inventory && player.inventory.length > 0;
+                const hasCompletedMinigames = player.minigames_completed && 
+                    Object.values(player.minigames_completed).some(v => v === true);
+                
+                this.playerHasProgress = hasCrypto || hasInventory || hasCompletedMinigames;
+                console.log('[GameControl] Player progress check:', { hasCrypto, hasInventory, hasCompletedMinigames, hasProgress: this.playerHasProgress });
+            }
+        } catch (e) {
+            console.log('[GameControl] Could not check player progress:', e);
+            // Fallback - assume no progress (show intro)
+            this.playerHasProgress = false;
+        }
+        this.introCheckDone = true;
     },
     
     loadLevel: function() {
@@ -124,18 +137,21 @@ const GameControl = {
     },
 
     handleLevelStart: function() {
-        // Check if intro has been shown before
-        const introShown = localStorage.getItem('dbs2_intro_shown') === 'true';
+        // Wait for intro check to complete
+        if (!this.introCheckDone && this.currentPass < 50) {
+            this.currentPass++;
+            return;
+        }
         
         if (this.currentLevelIndex === 0) {
-            // Story intro sequence - only shows once ever
-            if (!introShown && !this.introStarted) {
+            // Story intro sequence - only shows for new players (no backend progress)
+            if (!this.playerHasProgress && !this.introStarted && this.currentPass >= 10) {
                 this.introStarted = true;
                 this.playIntroSequence();
             }
             
-            // Controls message - shows every time at start
-            if (this.currentPass === 10 && introShown) {
+            // Controls message - shows for returning players
+            if (this.playerHasProgress && this.currentPass === 10) {
                 try { 
                     Prompt.showDialoguePopup('Controls', 'WASD to move. E to interact with objects and NPCs. Find the 5 code pages or earn 500 crypto to escape.'); 
                 } catch(e){ console.warn('Prompt not available', e); }
@@ -169,8 +185,6 @@ const GameControl = {
                     showNext();
                 }
             } else {
-                // Mark intro as shown
-                localStorage.setItem('dbs2_intro_shown', 'true');
                 // Show final controls message with close button
                 try {
                     Prompt.showDialoguePopup('IShowGreen', 'Find all five pages and bring them to me. Or earn 500 crypto and buy your way out. WASD to move. E to interact.');
@@ -183,8 +197,6 @@ const GameControl = {
         // Start after a brief delay
         setTimeout(showNext, 500);
     },
-
-    // Win conditions are checked when talking to IShowGreen (see Prompt.js)
 
     showWinScreen: function(winType) {
         const overlay = document.createElement('div');
@@ -291,11 +303,6 @@ const GameControl = {
         });
     },
 
-    /**
-     * Updates and displays the game timer.
-     * @function updateTimer
-     * @memberof GameControl
-     */
     getAllTimes() {
         let timeTable = null;
 
@@ -316,6 +323,7 @@ const GameControl = {
             return null;
         }
     },
+    
     updateTimer() {
         const time = GameEnv.time
 
@@ -331,11 +339,7 @@ const GameControl = {
             document.getElementById('timeScore').textContent = (time/1000).toFixed(2) 
         }
     },   
-    /**
-     * Starts the game timer.
-     * @function startTimer
-     * @memberof GameControl
-     */
+
     startTimer() {
         if (GameEnv.timerActive) {
             console.warn("TIMER ACTIVE: TRUE, TIMER NOT STARTED")
@@ -346,11 +350,6 @@ const GameControl = {
         GameEnv.timerActive = true;
     },
 
-    /**
-     * Stops the game timer.
-     * @function stopTimer
-     * @memberof GameControl
-     */
     stopTimer() {   
         if (!GameEnv.timerActive) return;
         
@@ -416,6 +415,8 @@ const GameControl = {
             this.leaderboard = new Leaderboard();
         }
         this.leaderboard.init();
+        // Make leaderboard globally accessible for refresh
+        window.Leaderboard = this.leaderboard;
     },
 
     // Small Ash Trail leaderboard near the bookshelf (main game overlay)
@@ -431,6 +432,9 @@ const GameControl = {
     },
 
 };
+
+// Make GameControl globally accessible
+window.GameControl = GameControl;
 
 // Detect window resize events and call the resize function.
 window.addEventListener('resize', GameControl.resize.bind(GameControl));

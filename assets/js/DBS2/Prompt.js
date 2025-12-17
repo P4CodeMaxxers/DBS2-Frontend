@@ -339,29 +339,42 @@ const Prompt = {
         
         let popup = document.createElement('div');
         popup.id = 'dialoguePopup';
-        popup.style.position = 'fixed';
-        popup.style.left = '50%';
-        popup.style.top = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
-        popup.style.background = 'rgba(24,24,24,0.98)';
-        popup.style.color = '#fff';
-        popup.style.padding = '32px 24px 18px 24px';
-        popup.style.borderRadius = '12px';
-        popup.style.boxShadow = '0 8px 32px rgba(0,0,0,0.25)';
-        popup.style.zIndex = '10001';
-        popup.style.minWidth = '260px';
-        popup.style.maxWidth = '90vw';
-        popup.style.textAlign = 'center';
-        popup.innerHTML = `<div style="font-weight:700;font-size:1.2em;margin-bottom:0.5em;">${speaker}</div><div style="margin-bottom:1.2em;">${text}</div>`;
+        popup.style.cssText = `
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            color: #ccc;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #0a5;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 10001;
+            min-width: 300px;
+            max-width: 500px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        `;
+        popup.innerHTML = `
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #0a5; letter-spacing: 1px;">${speaker.toUpperCase()}</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #aaa; margin-bottom: 20px;">${text}</div>
+        `;
         const closeBtn = document.createElement('button');
-        closeBtn.innerText = 'Close';
-        closeBtn.style.padding = '8px 18px';
-        closeBtn.style.borderRadius = '6px';
-        closeBtn.style.background = '#222';
-        closeBtn.style.color = '#fff';
-        closeBtn.style.border = 'none';
-        closeBtn.style.fontWeight = 'bold';
-        closeBtn.style.cursor = 'pointer';
+        closeBtn.innerText = 'CONTINUE';
+        closeBtn.style.cssText = `
+            background: #052;
+            color: #0a5;
+            border: 1px solid #0a5;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        `;
+        closeBtn.onmouseover = () => { closeBtn.style.background = '#0a5'; closeBtn.style.color = '#000'; };
+        closeBtn.onmouseout = () => { closeBtn.style.background = '#052'; closeBtn.style.color = '#0a5'; };
         closeBtn.onclick = () => {
             popup.remove();
             window.dialogueActive = false;
@@ -423,6 +436,119 @@ const Prompt = {
         }, duration);
     },
 
+    // IShowGreen intro monologue for first-time players
+    showIShowGreenIntro(onComplete) {
+        const introMessages = [
+            "You're awake. Good.",
+            "You're in my basement now. You don't leave until I say so.",
+            "I had something... something important. The Green Machine. My life's work.",
+            "Five pages of code. Written by hand. And someone scattered them across this basement.",
+            "Find all five pages and bring them to me... or pay me 500 crypto. Then you can leave.",
+            "The computers here still work. Use them. Earn crypto. Find my pages.",
+            "Don't waste my time."
+        ];
+        
+        let currentIndex = 0;
+        window.dialogueActive = true;
+        
+        const showNextMessage = () => {
+            if (currentIndex >= introMessages.length) {
+                window.dialogueActive = false;
+                // Mark intro as seen
+                try {
+                    localStorage.setItem('dbs2_intro_seen', 'true');
+                } catch(e) {}
+                if (typeof onComplete === 'function') onComplete();
+                return;
+            }
+            
+            // Remove existing popup
+            let existingPopup = document.getElementById('dialoguePopup');
+            if (existingPopup) existingPopup.remove();
+            
+            const message = introMessages[currentIndex];
+            const isLast = currentIndex === introMessages.length - 1;
+            
+            let popup = document.createElement('div');
+            popup.id = 'dialoguePopup';
+            popup.style.cssText = `
+                position: fixed;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+                color: #ccc;
+                padding: 30px 35px;
+                border-radius: 10px;
+                border: 2px solid #0a5;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                z-index: 10001;
+                min-width: 350px;
+                max-width: 550px;
+                text-align: center;
+                font-family: 'Courier New', monospace;
+            `;
+            
+            popup.innerHTML = `
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 15px; color: #0a5; letter-spacing: 2px;">ISHOWGREEN</div>
+                <div style="font-size: 14px; line-height: 1.7; color: #aaa; margin-bottom: 20px;">${message}</div>
+            `;
+            
+            const continueBtn = document.createElement('button');
+            continueBtn.innerText = isLast ? 'BEGIN' : 'CONTINUE';
+            continueBtn.style.cssText = `
+                background: #052;
+                color: #0a5;
+                border: 1px solid #0a5;
+                padding: 10px 30px;
+                cursor: pointer;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                font-weight: bold;
+                letter-spacing: 1px;
+            `;
+            continueBtn.onmouseover = () => { continueBtn.style.background = '#0a5'; continueBtn.style.color = '#000'; };
+            continueBtn.onmouseout = () => { continueBtn.style.background = '#052'; continueBtn.style.color = '#0a5'; };
+            continueBtn.onclick = () => {
+                currentIndex++;
+                showNextMessage();
+            };
+            
+            // Message counter
+            const counter = document.createElement('div');
+            counter.style.cssText = `
+                position: absolute;
+                bottom: 10px;
+                right: 15px;
+                font-size: 10px;
+                color: #333;
+            `;
+            counter.textContent = `${currentIndex + 1}/${introMessages.length}`;
+            
+            popup.appendChild(continueBtn);
+            popup.appendChild(counter);
+            popup.style.position = 'fixed'; // Ensure relative positioning for counter
+            document.body.appendChild(popup);
+        };
+        
+        showNextMessage();
+    },
+
+    // Check if intro has been seen and show if not
+    checkAndShowIntro(onComplete) {
+        try {
+            const introSeen = localStorage.getItem('dbs2_intro_seen');
+            if (!introSeen) {
+                this.showIShowGreenIntro(onComplete);
+                return true;
+            }
+        } catch(e) {
+            console.log('Could not check intro status');
+        }
+        if (typeof onComplete === 'function') onComplete();
+        return false;
+    },
+
     showConfirm(speaker, text, onConfirm, onCancel) {
         // Auto-close any existing popup/dialogue
         let existingPopup = document.getElementById('dialoguePopup');
@@ -438,39 +564,62 @@ const Prompt = {
         
         let popup = document.createElement('div');
         popup.id = 'dialoguePopup';
-        popup.style.position = 'fixed';
-        popup.style.left = '50%';
-        popup.style.top = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
-        popup.style.background = 'rgba(24,24,24,0.98)';
-        popup.style.color = '#fff';
-        popup.style.padding = '24px';
-        popup.style.borderRadius = '10px';
-        popup.style.boxShadow = '0 8px 32px rgba(0,0,0,0.25)';
-        popup.style.zIndex = '10001';
-        popup.style.minWidth = '260px';
-        popup.style.maxWidth = '90vw';
-        popup.style.textAlign = 'center';
-        popup.innerHTML = `<div style="font-weight:700;margin-bottom:0.5em;">${speaker}</div><div style="margin-bottom:1em;">${text}</div>`;
+        popup.style.cssText = `
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+            color: #ccc;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #0a5;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 10001;
+            min-width: 300px;
+            max-width: 500px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        `;
+        popup.innerHTML = `
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #0a5; letter-spacing: 1px;">${speaker.toUpperCase()}</div>
+            <div style="font-size: 13px; line-height: 1.6; color: #aaa; margin-bottom: 20px;">${text}</div>
+        `;
         const btnRow = document.createElement('div');
         btnRow.style.display = 'flex';
         btnRow.style.justifyContent = 'center';
         btnRow.style.gap = '12px';
 
         const ok = document.createElement('button');
-        ok.innerText = 'OK';
-        ok.style.padding = '8px 16px';
-        ok.style.borderRadius = '6px';
-        ok.style.border = 'none';
-        ok.style.cursor = 'pointer';
+        ok.innerText = 'YES';
+        ok.style.cssText = `
+            background: #052;
+            color: #0a5;
+            border: 1px solid #0a5;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+        `;
+        ok.onmouseover = () => { ok.style.background = '#0a5'; ok.style.color = '#000'; };
+        ok.onmouseout = () => { ok.style.background = '#052'; ok.style.color = '#0a5'; };
         ok.onclick = () => { popup.remove(); window.dialogueActive = false; if (typeof onConfirm === 'function') onConfirm(); };
 
         const cancel = document.createElement('button');
-        cancel.innerText = 'Cancel';
-        cancel.style.padding = '8px 16px';
-        cancel.style.borderRadius = '6px';
-        cancel.style.border = 'none';
-        cancel.style.cursor = 'pointer';
+        cancel.innerText = 'NO';
+        cancel.style.cssText = `
+            background: transparent;
+            color: #666;
+            border: 1px solid #333;
+            padding: 10px 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+        `;
+        cancel.onmouseover = () => { cancel.style.borderColor = '#666'; cancel.style.color = '#888'; };
+        cancel.onmouseout = () => { cancel.style.borderColor = '#333'; cancel.style.color = '#666'; };
         cancel.onclick = () => { popup.remove(); window.dialogueActive = false; if (typeof onCancel === 'function') onCancel(); };
 
         btnRow.appendChild(ok);
@@ -732,13 +881,35 @@ const Prompt = {
         let scrapCount = 0;
         let hasAllScraps = false;
         
+        // Try multiple methods to get crypto
         try {
+            // Method 1: Use StatsManager getCrypto
             playerCrypto = await getCrypto();
-            console.log('[IShowGreen] Player crypto:', playerCrypto);
+            console.log('[IShowGreen] getCrypto returned:', playerCrypto);
         } catch(e) {
-            console.log('[IShowGreen] Could not get crypto:', e);
-            playerCrypto = 0;
+            console.log('[IShowGreen] getCrypto failed:', e);
         }
+        
+        // Method 2: Fallback to DBS2API directly
+        if (!playerCrypto && window.DBS2API) {
+            try {
+                const result = await window.DBS2API.getCrypto();
+                playerCrypto = result.crypto || result || 0;
+                console.log('[IShowGreen] DBS2API.getCrypto returned:', playerCrypto);
+            } catch(e) {
+                console.log('[IShowGreen] DBS2API.getCrypto failed:', e);
+            }
+        }
+        
+        // Method 3: Fallback to window variable
+        if (!playerCrypto && window.playerCrypto) {
+            playerCrypto = window.playerCrypto;
+            console.log('[IShowGreen] Using window.playerCrypto:', playerCrypto);
+        }
+        
+        // Ensure it's a number
+        playerCrypto = parseInt(playerCrypto) || 0;
+        console.log('[IShowGreen] Final crypto value:', playerCrypto);
         
         try {
             if (window.Inventory) {

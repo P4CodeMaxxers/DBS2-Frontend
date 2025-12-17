@@ -6,6 +6,7 @@ const DBS2API = {
     // ============ PLAYER DATA ============
     async getPlayer() {
         const res = await fetch(`${this.baseUrl}/player`, fetchOptions);
+        if (!res.ok) throw new Error('Failed to get player');
         return res.json();
     },
     
@@ -20,9 +21,21 @@ const DBS2API = {
     
     // ============ CRYPTO ============
     async getCrypto() {
-        const res = await fetch(`${this.baseUrl}/crypto`, fetchOptions);
-        const data = await res.json();
-        return data.crypto;
+        try {
+            const res = await fetch(`${this.baseUrl}/crypto`, fetchOptions);
+            if (!res.ok) {
+                console.log('[DBS2API] getCrypto failed:', res.status);
+                return { crypto: 0 };
+            }
+            const data = await res.json();
+            const cryptoValue = typeof data === 'number' ? data : (data.crypto || 0);
+            console.log('[DBS2API] getCrypto:', cryptoValue);
+            // Return object with crypto property for StatsManager compatibility
+            return { crypto: cryptoValue };
+        } catch (e) {
+            console.log('[DBS2API] getCrypto error:', e);
+            return { crypto: 0 };
+        }
     },
     
     async setCrypto(amount) {
@@ -31,7 +44,10 @@ const DBS2API = {
             method: 'PUT',
             body: JSON.stringify({ crypto: amount })
         });
-        return res.json();
+        const data = await res.json();
+        this.updateCryptoUI(data.crypto);
+        this.refreshLeaderboard();
+        return { crypto: data.crypto || 0 };
     },
     
     async addCrypto(amount) {
@@ -46,24 +62,30 @@ const DBS2API = {
         window.playerCrypto = data.crypto;
         window.playerBalance = data.crypto;
         this.updateCryptoUI(data.crypto);
+        this.refreshLeaderboard();
         
-        return data.crypto;
+        return { crypto: data.crypto || 0 };
     },
     
     // ============ INVENTORY ============
     async getInventory() {
         const res = await fetch(`${this.baseUrl}/inventory`, fetchOptions);
         const data = await res.json();
-        return data.inventory;
+        return { inventory: data.inventory || [] };
     },
     
-    async addInventoryItem(name, foundAt) {
+    async addInventoryItem(item) {
+        // Handle both object and string input
+        const name = typeof item === 'string' ? item : item.name;
+        const foundAt = typeof item === 'string' ? 'unknown' : (item.found_at || 'unknown');
+        
         const res = await fetch(`${this.baseUrl}/inventory`, {
             ...fetchOptions,
             method: 'POST',
-            body: JSON.stringify({ name: name, found_at: foundAt || 'unknown' })
+            body: JSON.stringify({ name: name, found_at: foundAt })
         });
-        return res.json();
+        const data = await res.json();
+        return { inventory: data.inventory || [] };
     },
     
     async removeInventoryItem(index) {
@@ -72,90 +94,47 @@ const DBS2API = {
             method: 'DELETE',
             body: JSON.stringify({ index: index })
         });
-        return res.json();
+        const data = await res.json();
+        return { inventory: data.inventory || [] };
     },
     
     // ============ SCORES ============
     async getScores() {
         const res = await fetch(`${this.baseUrl}/scores`, fetchOptions);
         const data = await res.json();
-        return data.scores;
+        return { scores: data.scores || {} };
     },
     
-    async submitScore(game, score) {
+    async updateScore(game, score) {
         const res = await fetch(`${this.baseUrl}/scores`, {
             ...fetchOptions,
-            // Allow request to complete even if the user exits/navigates immediately
-            keepalive: true,
             method: 'PUT',
             body: JSON.stringify({ game: game, score: score })
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            const msg = data?.error || `HTTP ${res.status}`;
-            throw new Error(`submitScore failed: ${msg}`);
-        }
-        return data;
-    },
-
-    // ============ ASH TRAIL GHOST RUNS ============
-    async submitAshTrailRun(bookId, score, trace) {
-        const res = await fetch(`${this.baseUrl}/ash-trail/runs`, {
-            ...fetchOptions,
-            keepalive: true,
-            method: 'POST',
-            body: JSON.stringify({ book_id: bookId, score: score, trace: trace })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            const msg = data?.error || `HTTP ${res.status}`;
-            throw new Error(`submitAshTrailRun failed: ${msg}`);
-        }
-        return data;
-    },
-
-    async getAshTrailRuns(bookId, limit = 10) {
-        const res = await fetch(`${this.baseUrl}/ash-trail/runs?book_id=${encodeURIComponent(bookId)}&limit=${limit}`, {
-            ...fetchOptions,
-            method: 'GET'
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            const msg = data?.error || `HTTP ${res.status}`;
-            throw new Error(`getAshTrailRuns failed: ${msg}`);
-        }
-        return data;
-    },
-
-    async getAshTrailRun(runId) {
-        const res = await fetch(`${this.baseUrl}/ash-trail/runs/${runId}`, {
-            ...fetchOptions,
-            method: 'GET'
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            const msg = data?.error || `HTTP ${res.status}`;
-            throw new Error(`getAshTrailRun failed: ${msg}`);
-        }
-        return data;
+        const data = await res.json();
+        this.refreshLeaderboard();
+        return { scores: data.scores || {} };
     },
     
     // ============ MINIGAMES ============
     async getMinigameStatus() {
         const res = await fetch(`${this.baseUrl}/minigames`, fetchOptions);
-        return res.json();
+        const data = await res.json();
+        return { minigames_completed: data.minigames_completed || data || {} };
     },
     
     async completeMinigame(gameName) {
-        const data = {};
-        data[gameName] = true;
+        const payload = {};
+        payload[gameName] = true;
         
         const res = await fetch(`${this.baseUrl}/minigames`, {
             ...fetchOptions,
             method: 'PUT',
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
-        return res.json();
+        const data = await res.json();
+        this.refreshLeaderboard();
+        return { minigames_completed: data.minigames_completed || data || {} };
     },
     
     // ============ LEADERBOARD ============
@@ -163,7 +142,22 @@ const DBS2API = {
         // Leaderboard is public, no auth needed
         const res = await fetch(`${this.baseUrl}/leaderboard?limit=${limit}`);
         const data = await res.json();
-        return data.leaderboard;
+        return data.leaderboard || [];
+    },
+    
+    // Refresh leaderboard widget
+    refreshLeaderboard() {
+        try {
+            if (window.Leaderboard && typeof window.Leaderboard.refresh === 'function') {
+                window.Leaderboard.refresh();
+            }
+            // Also try the instance on GameControl
+            if (window.GameControl && window.GameControl.leaderboard) {
+                window.GameControl.leaderboard.refresh();
+            }
+        } catch (e) {
+            console.log('[DBS2API] Could not refresh leaderboard:', e);
+        }
     },
     
     // ============ BITCOIN BOOST (for Crypto Miner) ============
@@ -186,10 +180,10 @@ const DBS2API = {
         const boostedAmount = Math.round(baseAmount * multiplier);
         
         // Add the boosted crypto
-        const newTotal = await this.addCrypto(boostedAmount);
+        const result = await this.addCrypto(boostedAmount);
         
         return {
-            crypto: newTotal,
+            crypto: result.crypto,
             base_amount: baseAmount,
             boosted_amount: boostedAmount,
             boost_multiplier: multiplier,
@@ -197,6 +191,27 @@ const DBS2API = {
             btc_price_usd: boostData.btc_price_usd || 0,
             message: boostData.message || ''
         };
+    },
+    
+    // ============ INTRO TRACKING ============
+    async hasSeenIntro() {
+        try {
+            const player = await this.getPlayer();
+            // Check if player has any progress (crypto > 0, any minigames completed, or inventory items)
+            const hasProgress = (player.crypto > 0) || 
+                               (player.inventory && player.inventory.length > 0) ||
+                               (player.minigames_completed && Object.values(player.minigames_completed).some(v => v));
+            return hasProgress;
+        } catch (e) {
+            // Not logged in - check localStorage as fallback
+            return localStorage.getItem('dbs2_intro_seen') === 'true';
+        }
+    },
+    
+    async markIntroSeen() {
+        // Store in localStorage as fallback
+        localStorage.setItem('dbs2_intro_seen', 'true');
+        // The backend tracks this implicitly via player progress
     },
     
     // ============ UI HELPERS ============
@@ -216,10 +231,10 @@ const DBS2API = {
             window.playerBalance = player.crypto;
             window.playerInventory = player.inventory;
             this.updateCryptoUI(player.crypto);
-            console.log('DBS2API initialized:', player);
+            console.log('[DBS2API] Initialized:', player);
             return player;
         } catch (e) {
-            console.log('DBS2API: Not logged in or error:', e);
+            console.log('[DBS2API] Not logged in or error:', e);
             return null;
         }
     }
@@ -229,8 +244,12 @@ const DBS2API = {
 window.DBS2API = DBS2API;
 
 // Auto-initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        DBS2API.init();
+    });
+} else {
     DBS2API.init();
-});
+}
 
 export default DBS2API;
