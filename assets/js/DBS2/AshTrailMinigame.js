@@ -1441,6 +1441,28 @@ function reactionForScore(score) {
   };
 }
 
+async function fetchAshTrailAI(book, score) {
+  try {
+    if (!book?.id) return null;
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const apiBase = isLocalhost ? "http://localhost:8587/api/dbs2" : "/api/dbs2";
+    const res = await fetch(`${apiBase}/ash-trail/ai`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        book_id: book.id,
+        score: score,
+        trail_stats: { required: book.requiredScore ?? 60 }
+      }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
 function renderResultsScene(score) {
   const reaction = reactionForScore(score);
 
@@ -1514,6 +1536,34 @@ function renderResultsScene(score) {
     },
   });
 
+  // Backend-generated "AI-like" recovered page text (simple templates on backend).
+  const pageWrap = createEl("div", {
+    style: {
+      marginTop: "10px",
+      padding: "10px",
+      borderRadius: "12px",
+      background: "rgba(2,6,23,0.65)",
+      border: "1px solid rgba(75,85,99,0.45)",
+    },
+  });
+  const pageTitle = createEl("div", {
+    textContent: "Recovered Page",
+    style: { fontSize: "12px", fontWeight: "800", color: "#eab308", marginBottom: "6px" },
+  });
+  const pageText = createEl("pre", {
+    textContent: "Loading…",
+    style: {
+      margin: "0",
+      whiteSpace: "pre-wrap",
+      fontFamily: "Courier New, monospace",
+      fontSize: "11px",
+      color: "#e5e7eb",
+      lineHeight: "1.45",
+    },
+  });
+  pageWrap.appendChild(pageTitle);
+  pageWrap.appendChild(pageText);
+
   const buttons = createEl("div", {
     style: {
       display: "flex",
@@ -1578,6 +1628,7 @@ function renderResultsScene(score) {
   left.appendChild(scoreValue);
   left.appendChild(badge);
   left.appendChild(reactionText);
+  left.appendChild(pageWrap);
   left.appendChild(buttons);
 
   const right = createEl("div", {
@@ -1620,6 +1671,17 @@ function renderResultsScene(score) {
       });
       ctx.stroke();
     }
+
+  // Async: replace hardcoded dialogue with backend-generated text + recovered page.
+  fetchAshTrailAI(currentBook, score).then((ai) => {
+    if (!ai) {
+      pageText.textContent = "No backend page text available.";
+      return;
+    }
+    if (ai.dialogue) reactionText.textContent = ai.dialogue;
+    if (ai.page_title) pageTitle.textContent = ai.page_title;
+    if (ai.page_text) pageText.textContent = ai.page_text;
+  });
   }
 
   layout.appendChild(left);

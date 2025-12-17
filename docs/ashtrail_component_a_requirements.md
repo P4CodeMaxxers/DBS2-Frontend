@@ -147,6 +147,41 @@ function playPathPreview(path, onComplete) {
 
 Ash Trail saves and reads progress via the backend API:
 
+### AI-generated end dialogue + recovered page (backend-driven narrative)
+
+Ash Trail now also uses a **backend endpoint** to generate the end-of-run dialogue and a “recovered page” snippet based on the player's score.
+
+- **Endpoint**: `POST /api/dbs2/ash-trail/ai`
+- **Input**: `{ book_id, score, trail_stats }`
+- **Output**: `{ tone, speaker, dialogue, page_title, page_text }`
+
+The backend uses score bands to control how coherent the text is:
+- **< 40%**: corrupted / nonsense fragments
+- **40–60%**: partially coherent but missing important details
+- **60–80%**: mostly coherent and usable
+- **80–100%**: fully coherent and “clean” recovery
+
+This is an **online data stream** because the frontend requests dynamic text from the backend and updates the UI using the response.
+
+**Example request/response (shortened):**
+
+```json
+// POST /api/dbs2/ash-trail/ai
+{ "book_id": "defi_grimoire", "score": 72, "trail_stats": { "required": 60 } }
+```
+
+```json
+{
+  "tone": "good",
+  "speaker": "IShowGreen",
+  "dialogue": "IShowGreen nods: \"This mostly tracks...\"",
+  "page_title": "DeFi Grimoire — Mostly Restored",
+  "page_text": "Key idea: decentralized finance works when participants provide liquidity...\n..."
+}
+```
+
+On the frontend, the results screen calls the endpoint after a run ends and replaces the default hardcoded dialogue if the backend responds successfully (with a fallback to the default dialogue if the API call fails).
+
 ### Save score to backend (scores are stored per user)
 
 `StatsManager.updateScore(...)` calls the backend with `DBS2API.submitScore(game, score)`.
