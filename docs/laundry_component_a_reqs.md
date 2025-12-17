@@ -11,7 +11,7 @@
 
  Once ```window.minigameActive``` = true then the minigame starts and the player can begin to play.
 
- ## Encorporating lists
+## Encorporating lists
 
  ``` 
  const partsList = [
