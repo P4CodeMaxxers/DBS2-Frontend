@@ -214,6 +214,66 @@ class _MinigameLeaderboardResource(Resource):
     return {'game': game, 'leaderboard': leaderboard}, 200
 ```
 
+## Extra (AI connection) — backend-generated “recovered page” text
+
+When a run finishes, Ash Trail also calls a **backend endpoint that behaves like a tiny AI** to generate story text based on your score and the book you played.
+
+### Frontend: sending score + book id to the AI endpoint
+
+```1444:1460:DBS2-Frontend/assets/js/DBS2/AshTrailMinigame.js
+async function fetchAshTrailAI(book, score) {
+  try {
+    if (!book?.id) return null;
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const apiBase = isLocalhost ? "http://localhost:8587/api/dbs2" : "/api/dbs2";
+    const res = await fetch(`${apiBase}/ash-trail/ai`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        book_id: book.id,
+        score: score,
+        trail_stats: { required: book.requiredScore ?? 60 }
+      }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+```
+
+The client sends the **book id**, the **score (0–100)**, and simple stats.  
+The response includes a tone (`error`, `warn`, `good`, `great`), a line of dialogue, and a “recovered page” of text.
+
+### Backend: simple AI-like narrative generator
+
+```407:515:DBS2-Backend/api/dbs2_api.py
+class _AshTrailAIResource(Resource):
+  def post(self):
+    data = request.get_json() or {}
+    book_id = (data.get('book_id') or '').strip()
+    score = data.get('score', 0)
+    # ... clamp score into 0–100 ...
+    # pick metadata for each book (title, topic, keywords)
+    # choose tone and text based on score bands (<40, 40–60, 60–80, 80–100)
+    return {
+      'tone': tone,
+      'speaker': 'IShowGreen',
+      'dialogue': dialogue,
+      'page_title': page_title,
+      'page_text': page_text,
+    }, 200
+```
+
+Instead of using a third‑party AI API, this endpoint uses **template logic and score bands** to dynamically generate text that *feels* like an AI response:
+
+- **Input**: `book_id`, numeric `score`, and lightweight stats about the run.  
+- **Processing**: Python code chooses one of several narrative templates and fills in phrases based on the specific book’s topic and keywords.  
+- **Output**: the frontend displays this as IShowGreen’s reaction + a “recovered” book page, so higher scores unlock more coherent, detailed text.
+
+
 
 
 
