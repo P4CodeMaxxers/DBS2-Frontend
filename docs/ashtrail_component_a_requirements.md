@@ -161,7 +161,7 @@ The backend uses score bands to control how coherent the text is:
 - **60–80%**: mostly coherent and usable
 - **80–100%**: fully coherent and “clean” recovery
 
-This is an **online data stream** because the frontend requests dynamic text from the backend and updates the UI using the response.
+This is an **online data stream** because the frontend requests dynamic text from the backend and updates the UI using the response
 
 **Example request/response (shortened):**
 
@@ -180,7 +180,7 @@ This is an **online data stream** because the frontend requests dynamic text fro
 }
 ```
 
-On the frontend, the results screen calls the endpoint after a run ends and replaces the default hardcoded dialogue if the backend responds successfully (with a fallback to the default dialogue if the API call fails).
+On the frontend, the results screen calls the endpoint after a run ends and replaces the default hardcoded dialogue if the backend responds successfully
 
 ### Save score to backend (scores are stored per user)
 
