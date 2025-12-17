@@ -90,7 +90,7 @@ function keyHandler(event) {
 ...
 window.addEventListener("keydown", keyHandler, true);
 ```
-## Collection Data Types and Backend Integration
+## Collection Data Types, Procedures, and Backend Integration
 Various aspects of the game use collection data types, such as Javascript arrays and Python lists. For instance, a JSON file stored in the backend gets pulled into the frontend by the Javascript code and gets stored in an array for random picking in the game. Here is some of the code that controls that:
 ```
 ...
@@ -159,5 +159,17 @@ async function rotatePasswordOnBackend(oldPassword, newPassword) {
 }
 ...
 const selectedIndex = Math.floor(Math.random() * passwords.length);
+...
+```
+## Output
+Lastly, there is a lot of visual output since this is a game. Here is the code that creates a DOM element to display the encoded password:
+```
+...
+messageDiv.innerHTML = `
+        <div style="color: #888; margin-bottom: 10px;">Decrypt the alphanumeric password:</div>
+        <div style="font-size: 18px; letter-spacing: 2px; color: #0a5;">${convertToAlphaNumeric(selectedPassword)}</div>
+        <div style="color: #555; font-size: 10px; margin-top: 8px;">Hint: a=1, b=2, c=3... z=26</div>
+    `;
+quizWindow.appendChild(messageDiv);
 ...
 ```
