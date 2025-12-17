@@ -58,7 +58,7 @@ class GameLevelBasement {
     ------------------------*/
     const sprite_data_computer1 = {
       id: 'Computer1',
-      greeting: "Computer of Infinite Users",
+      greeting: "PASSWORD REQUIRED. DECRYPTION SEQUENCE: ACTIVATED.",
       src: `${this.path}/images/DBS2/computer1.png`,
       SCALE_FACTOR: 8,
       ANIMATION_RATE: 8,
@@ -66,7 +66,7 @@ class GameLevelBasement {
       INIT_POSITION: { x: width * 1 / 4, y: height * 0.07 },
       orientation: { rows: 1, columns: 20 },
       down: { row: 0, start: 0, columns: 20 },
-      hitbox: { widthPercentage: 0.1, heightPercentage: 0.2 }
+      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 }
     };
 
     const sprite_data_computer2 = {
@@ -85,7 +85,7 @@ class GameLevelBasement {
       INIT_POSITION: { x: width * 7 / 12, y: height * 0.01 },
       orientation: { rows: 1, columns: 13 },
       down: { row: 0, start: 0, columns: 12 },
-      hitbox: { widthPercentage: 0.1, heightPercentage: 0.1 }
+      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 }
     };
 
     const sprite_data_ishowgreen = {
@@ -115,10 +115,10 @@ class GameLevelBasement {
       id: 'SodaCan',
       greeting: 'Whack some rats! DONT EVEN THINK OF TOUCHING MY CANS!!!',
       src: `${this.path}/images/DBS2/sodacan.png`,
-      SCALE_FACTOR: 6,
+      SCALE_FACTOR: 8,
       ANIMATION_RATE: 0,
-      pixels: { height: 512, width: 512 },
-      INIT_POSITION: { x: width * 4 / 12, y: height * 0.5 },
+      pixels: { height: 1000, width: 750 },
+      INIT_POSITION: { x: width * 1 / 12, y: height * 0.6 },
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
@@ -132,10 +132,10 @@ class GameLevelBasement {
       SCALE_FACTOR: 5,
       ANIMATION_RATE: 0,
       pixels: { height: 423, width: 414 },
-      INIT_POSITION: { x: 500, y: 200 },
+      INIT_POSITION: { x: width * 8 / 21, y: height * 0.75 },
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 },
       stationary: true
     };
 
@@ -149,7 +149,7 @@ class GameLevelBasement {
       INIT_POSITION: { x: width * 19 / 22, y: height * 3 / 5 },
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 },
       stationary: true
     };
 

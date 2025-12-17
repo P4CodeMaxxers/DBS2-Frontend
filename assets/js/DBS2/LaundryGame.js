@@ -382,7 +382,7 @@ export async function showLaundryMinigame(onComplete) {
     `;
     
     // Show different message based on first completion
-    const rewardAmount = isFirstCompletion ? 520 : 20;
+    const rewardAmount = isFirstCompletion ? 35 : 15;
     paperDiscovery.innerHTML = `
         <h2 style="color: #0a5; margin-bottom: 10px; font-size: 16px; letter-spacing: 1px;">
             ${isFirstCompletion ? 'CODE FRAGMENT RECOVERED' : 'MACHINE REPAIRED'}

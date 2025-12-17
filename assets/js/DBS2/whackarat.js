@@ -247,8 +247,8 @@ export default async function startWhackGame(overlayElement, basePath = '/images
   
   // Reset state
   Whack.score = 0;
-  Whack.timer = 45000;
-  Whack.spawnInterval = 1000;
+  Whack.timer = 15000;
+  Whack.spawnInterval = Math.random()*1600;
   Whack.entities = [];
   Whack.running = true;
   Whack.lastSpawn = 0;
