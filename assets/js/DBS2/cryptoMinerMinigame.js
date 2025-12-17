@@ -38,7 +38,7 @@ function cryptoMinerMinigame() {
     `;
     
     minerUI.innerHTML = `
-        <h2 style="color: #f7931a; margin: 0 0 20px 0;">BITCOIN MINER</h2>
+        <h2 style="color: #f7931a; margin: 0 0 20px 0;">₿ BITCOIN MINER</h2>
         <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding: 10px; background: rgba(247, 147, 26, 0.1); border-radius: 5px; border: 1px solid #f7931a;">
             <div style="text-align: left;">
                 <div style="font-size: 12px; color: #888;">BTC Price</div>
@@ -54,13 +54,13 @@ function cryptoMinerMinigame() {
             </div>
         </div>
         <div style="font-size: 72px; font-weight: bold; margin: 20px 0;">
-            Press: <span id="key" style="text-shadow: 0 0 10px #0f0;">...</span>
+            Press: <span id="key" style="text-shadow: 0 0 10px #0f0;">-</span>
         </div>
         <div style="font-size: 24px; margin: 20px 0;">
             Progress: <span id="progress">0</span> / 50
         </div>
         <div id="reward-preview" style="font-size: 14px; color: #0ff; margin-bottom: 10px;">
-            Loading...
+            Est. Reward: ~10 Crypto
         </div>
         <div style="font-size: 12px; color: #888; margin-bottom: 15px;">
             (Tap keys - holding won't work!)
@@ -73,7 +73,7 @@ function cryptoMinerMinigame() {
     // Game state
     let currentKey = "";
     let nextKeyChange = 0;
-    let isActive = false;  // Start inactive until checks complete
+    let isActive = true;
     let heldKeys = new Set();
     let playerProgress = 0;
     const targetProgress = 50;
@@ -118,11 +118,10 @@ function cryptoMinerMinigame() {
     // Check first completion status
     async function checkFirstCompletion() {
         try {
-            const alreadyCompleted = await isMinigameCompleted('crypto_miner');
-            isFirstCompletion = !alreadyCompleted;
-            console.log('[CryptoMiner] Already completed:', alreadyCompleted, '-> First completion:', isFirstCompletion);
+            isFirstCompletion = !(await isMinigameCompleted('crypto_miner'));
+            console.log('[CryptoMiner] First completion:', isFirstCompletion);
         } catch (e) {
-            console.log('[CryptoMiner] Could not check completion status, assuming first time:', e);
+            console.log('Could not check completion status');
             isFirstCompletion = true; // Default to giving bonus if we can't check
         }
     }
@@ -229,7 +228,7 @@ function cryptoMinerMinigame() {
         
         popup.innerHTML = `
             <h2 style="color: #ffd700; margin: 0 0 10px 0; font-size: 28px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
-                FIRST COMPLETION!
+                🎉 FIRST COMPLETION! 🎉
             </h2>
             <p style="color: #0f0; font-size: 18px; margin-bottom: 20px;">
                 You earned <span style="color: #ffd700; font-weight: bold;">${finalReward} Crypto!</span>
@@ -242,7 +241,7 @@ function cryptoMinerMinigame() {
                          style="max-width: 300px; max-height: 200px; border: 3px solid #f7931a; border-radius: 10px; animation: glow 2s ease-in-out infinite;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                     <div style="display: none; padding: 20px; background: rgba(247, 147, 26, 0.2); border: 2px dashed #f7931a; border-radius: 10px;">
-                        <span style="font-size: 48px;">CODE SCRAP</span>
+                        <span style="font-size: 48px;">📜</span>
                         <p style="color: #f7931a; margin: 10px 0 0 0;">Code Scrap: Crypto Miner</p>
                     </div>
                 </div>
@@ -312,8 +311,7 @@ function cryptoMinerMinigame() {
             }
             
             // Award crypto
-            await updateCrypto(finalReward);
-            console.log('[CryptoMiner] Awarded', finalReward, 'crypto');
+            updateCrypto(finalReward);
             
             // Mark minigame complete and add code scrap to inventory
             try {
@@ -330,7 +328,7 @@ function cryptoMinerMinigame() {
                     console.log('[CryptoMiner] Code scrap added to inventory');
                 }
             } catch (e) {
-                console.log('[CryptoMiner] Could not save completion:', e);
+                console.log('Could not save completion:', e);
             }
             
             // Hide the miner UI
@@ -369,7 +367,7 @@ function cryptoMinerMinigame() {
         const now = Date.now();
         if (now > nextKeyChange) {
             currentKey = randomKey();
-            nextKeyChange = now + (2000 + Math.random() * 5000); // 2-7 sec
+            nextKeyChange = now + (2000 + Math.random() * 5000); // 2–7 sec
             const keyEl = document.getElementById('key');
             if (keyEl) keyEl.textContent = currentKey;
         }
@@ -445,23 +443,19 @@ function cryptoMinerMinigame() {
         } catch(e) { console.log('Could not refresh leaderboard'); }
     };
     
-    // Start keyboard listeners (but game won't respond until isActive = true)
+    // Start the game
     window.addEventListener('keydown', keyDownHandler, true);
     window.addEventListener('keyup', keyUpHandler, true);
     
-    // FIXED: Wait for completion check BEFORE starting the game loop
+    // Initialize: fetch Bitcoin data and check completion status
     Promise.all([fetchBitcoinData(), checkFirstCompletion()]).then(() => {
-        console.log('[CryptoMiner] Initialization complete. First completion:', isFirstCompletion);
         updateBitcoinUI();
-        isActive = true;  // NOW enable the game
-        loop();           // NOW start the game loop
-    }).catch(e => {
-        console.log('[CryptoMiner] Init error, starting anyway:', e);
-        isFirstCompletion = true; // Assume first time if check failed
-        updateBitcoinUI();
-        isActive = true;
-        loop();
     });
+    
+    // Refresh Bitcoin data every 5 minutes
+    setInterval(fetchBitcoinData, 5 * 60 * 1000);
+    
+    loop();
 }
 
 // Export default function that NPCs can call
