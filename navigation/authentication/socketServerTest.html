@@ -1,0 +1,50 @@
+<head>
+  <title>WebSocket Client</title>
+</head>
+<body>
+  <h2>WebSocket Live Messages</h2>
+  <button id="sendBtn">Send Hello</button>
+
+  <!-- 1) Table Markup -->
+  <table border="1" style="margin-top: 20px;">
+    <thead>
+      <tr>
+        <th>Message</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody id="messageTable">
+      <!-- JavaScript will add rows here -->
+    </tbody>
+  </table>
+
+  <!-- 2) Client-Side JavaScript -->
+  <script>
+    const ws = new WebSocket("ws://localhost:8765");
+    const table = document.getElementById("messageTable");
+
+    ws.onopen = () => {
+      console.log("Connected to server");
+    };
+
+    ws.onmessage = (event) => {
+      const now = new Date().toLocaleTimeString();
+      const tr = document.createElement("tr");
+      const messageTd = document.createElement("td");
+      const timeTd = document.createElement("td");
+      messageTd.textContent = event.data;
+      timeTd.textContent = now;
+      tr.appendChild(messageTd);
+      tr.appendChild(timeTd);
+      table.appendChild(tr);
+    };
+
+    document.getElementById("sendBtn").onclick = () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send("Hello from browser!");
+      } else {
+        console.warn("WebSocket is not open yet.");
+      }
+    };
+  </script>
+</body>
