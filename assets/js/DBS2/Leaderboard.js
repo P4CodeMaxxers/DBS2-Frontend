@@ -15,7 +15,7 @@ class Leaderboard {
         } else {
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             if (isLocalhost) {
-                this.apiBase = 'http://localhost:8587/api/dbs2';
+                this.apiBase = 'http://localhost:8403/api/dbs2';
             } else {
                 this.apiBase = '/api/dbs2';
             }

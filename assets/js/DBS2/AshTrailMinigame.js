@@ -1445,7 +1445,7 @@ async function fetchAshTrailAI(book, score) {
   try {
     if (!book?.id) return null;
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const apiBase = isLocalhost ? "http://localhost:8587/api/dbs2" : "/api/dbs2";
+    const apiBase = isLocalhost ? "http://localhost:8403/api/dbs2" : "/api/dbs2";
     const res = await fetch(`${apiBase}/ash-trail/ai`, {
       method: "POST",
       credentials: "include",

@@ -6,7 +6,7 @@ export const baseurl = "{{ site.baseurl }}";
 // Flask backend URI
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    pythonURI = "http://localhost:8587";
+    pythonURI = "http://localhost:8403";
 } else {
     pythonURI = "https://flaskstu.opencodingsociety.com";
 }

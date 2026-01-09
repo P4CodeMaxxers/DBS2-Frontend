@@ -15,7 +15,7 @@ export default class AshTrailLeaderboardWidget {
 
   _inferApiBase() {
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    return isLocalhost ? "http://localhost:8587/api/dbs2" : "/api/dbs2";
+    return isLocalhost ? "http://localhost:8403/api/dbs2" : "/api/dbs2";
   }
 
   async fetchLeaderboard(limit = 5) {

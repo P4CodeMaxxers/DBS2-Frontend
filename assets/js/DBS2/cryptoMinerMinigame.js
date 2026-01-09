@@ -82,7 +82,7 @@ function cryptoMinerMinigame() {
     async function fetchBitcoinData() {
         try {
             // Import config dynamically or use default
-            let baseUrl = 'http://localhost:8587';
+            let baseUrl = 'http://localhost:8403';
             try {
                 const config = await import('../api/config.js');
                 baseUrl = config.pythonURI || baseUrl;
