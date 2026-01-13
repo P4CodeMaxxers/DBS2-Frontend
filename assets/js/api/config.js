@@ -1,15 +1,12 @@
----
----
-
 export const baseurl = "{{ site.baseurl }}";
 
 // Flask backend URI
-export var pythonURI;
-if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    pythonURI = "http://localhost:8403";
-} else {
-    pythonURI = "https://flaskstu.opencodingsociety.com";
-}
+  export var pythonURI;
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+      pythonURI = "http://localhost:8587";  // Same URI for localhost or 127.0.0.1
+  } else {
+      pythonURI = "https://flask.opencodingsociety.com";
+  }
 
 // Keep javaURI pointing to Flask (for any legacy code that uses it)
 export var javaURI = pythonURI;
