@@ -1,7 +1,7 @@
 /**
  * StatsManager.js
  * Bridges local game state with backend DBS2 API
- * Handles crypto, inventory, scores, and minigame completion tracking
+ * Handles crypto, inventory, scores, minigame completion, and multi-coin wallet
  */
 
 // Try to import DBS2API - it may not be available in all contexts
@@ -18,7 +18,15 @@ let localState = {
     crypto: 0,
     inventory: [],
     scores: {},
-    minigames_completed: {}
+    minigames_completed: {},
+    wallet: {
+        satoshis: 0,
+        bitcoin: 0,
+        ethereum: 0,
+        solana: 0,
+        cardano: 0,
+        dogecoin: 0
+    }
 };
 
 // Load local state from localStorage
@@ -27,6 +35,17 @@ function loadLocalState() {
         const saved = localStorage.getItem('dbs2_local_state');
         if (saved) {
             localState = JSON.parse(saved);
+            // Ensure wallet exists in old saves
+            if (!localState.wallet) {
+                localState.wallet = {
+                    satoshis: localState.crypto || 0,
+                    bitcoin: 0,
+                    ethereum: 0,
+                    solana: 0,
+                    cardano: 0,
+                    dogecoin: 0
+                };
+            }
         }
     } catch (e) {
         console.log('Could not load local state:', e);
@@ -44,6 +63,8 @@ function saveLocalState() {
 
 // Initialize local state on load
 loadLocalState();
+
+// ==================== CRYPTO FUNCTIONS ====================
 
 /**
  * Get current crypto balance
@@ -77,6 +98,7 @@ export async function addCrypto(amount) {
     }
     // Local fallback
     localState.crypto += amount;
+    localState.wallet.satoshis = localState.crypto;
     saveLocalState();
     return localState.crypto;
 }
@@ -107,9 +129,166 @@ export async function setCrypto(amount) {
     }
     // Local fallback
     localState.crypto = amount;
+    localState.wallet.satoshis = amount;
     saveLocalState();
     return localState.crypto;
 }
+
+// ==================== WALLET FUNCTIONS ====================
+
+/**
+ * Get full wallet with all coin balances
+ * @returns {Promise<Object>} Wallet object
+ */
+export async function getWallet() {
+    try {
+        if (DBS2API && DBS2API.getWallet) {
+            const result = await DBS2API.getWallet();
+            return result.wallet || result;
+        }
+        // Try direct API call
+        const baseUrl = await getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/dbs2/wallet`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.wallet || data;
+        }
+    } catch (e) {
+        console.log('API getWallet failed, using local:', e);
+    }
+    return localState.wallet;
+}
+
+/**
+ * Update wallet balances (add amounts)
+ * @param {Object} updates - {satoshis: 100, bitcoin: 0.001, ...}
+ * @returns {Promise<Object>} Updated wallet
+ */
+export async function updateWallet(updates) {
+    try {
+        if (DBS2API && DBS2API.updateWallet) {
+            const result = await DBS2API.updateWallet(updates);
+            return result.wallet || result;
+        }
+        // Try direct API call
+        const baseUrl = await getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/dbs2/wallet`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ add: updates })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.wallet || data;
+        }
+    } catch (e) {
+        console.log('API updateWallet failed, using local:', e);
+    }
+    // Local fallback
+    if (updates.satoshis) {
+        localState.crypto += updates.satoshis;
+        localState.wallet.satoshis = localState.crypto;
+    }
+    if (updates.bitcoin) localState.wallet.bitcoin += updates.bitcoin;
+    if (updates.ethereum) localState.wallet.ethereum += updates.ethereum;
+    if (updates.solana) localState.wallet.solana += updates.solana;
+    if (updates.cardano) localState.wallet.cardano += updates.cardano;
+    if (updates.dogecoin) localState.wallet.dogecoin += updates.dogecoin;
+    saveLocalState();
+    return localState.wallet;
+}
+
+/**
+ * Convert cryptocurrency to satoshis
+ * @param {string} coinId - Coin to convert
+ * @param {number} amount - Amount to convert
+ * @returns {Promise<Object>} Conversion result
+ */
+export async function convertToSatoshis(coinId, amount) {
+    try {
+        const baseUrl = await getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/dbs2/wallet/convert`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coin: coinId, amount: amount })
+        });
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch (e) {
+        console.log('API convertToSatoshis failed:', e);
+    }
+    return { success: false, error: 'Conversion failed' };
+}
+
+// ==================== PRICE FUNCTIONS ====================
+
+/**
+ * Get API base URL
+ */
+async function getApiBaseUrl() {
+    try {
+        const config = await import('../api/config.js');
+        return config.pythonURI || 'http://localhost:8403';
+    } catch (e) {
+        return 'http://localhost:8403';
+    }
+}
+
+/**
+ * Get current price for a coin
+ * @param {string} coinId - Coin ID (bitcoin, ethereum, etc.)
+ * @returns {Promise<Object>} Price data with boost multiplier
+ */
+export async function getCoinPrice(coinId = 'bitcoin') {
+    try {
+        const baseUrl = await getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/dbs2/coin-price?coin=${coinId}`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(5000)
+        });
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch (e) {
+        console.log('getCoinPrice failed:', e);
+    }
+    return {
+        coin: coinId,
+        price_usd: 0,
+        change_24h: 0,
+        boost_multiplier: 1.0
+    };
+}
+
+/**
+ * Get all coin prices
+ * @returns {Promise<Object>} All prices
+ */
+export async function getAllPrices() {
+    try {
+        const baseUrl = await getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/api/dbs2/prices`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(5000)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.prices || data;
+        }
+    } catch (e) {
+        console.log('getAllPrices failed:', e);
+    }
+    return {};
+}
+
+// ==================== INVENTORY FUNCTIONS ====================
 
 /**
  * Get player's inventory
@@ -130,7 +309,7 @@ export async function getInventory() {
 
 /**
  * Add item to inventory
- * @param {string} item - Item to add
+ * @param {string|Object} item - Item to add
  * @returns {Promise<Array>} Updated inventory
  */
 export async function addInventoryItem(item) {
@@ -196,6 +375,8 @@ export async function hasItem(item) {
     return inventory.includes(item);
 }
 
+// ==================== SCORE FUNCTIONS ====================
+
 /**
  * Get player's scores
  * @returns {Promise<Object>} Scores object
@@ -237,6 +418,8 @@ export async function updateScore(game, score) {
     return localState.scores;
 }
 
+// ==================== ASH TRAIL FUNCTIONS ====================
+
 /**
  * Submit an Ash Trail run trace to backend for ghost replay.
  * @param {string} bookId - 'defi_grimoire' | 'lost_ledger' | 'proof_of_burn'
@@ -263,6 +446,8 @@ export async function getAshTrailRun(runId) {
     if (DBS2API && DBS2API.getAshTrailRun) return await DBS2API.getAshTrailRun(runId);
     return { run: null };
 }
+
+// ==================== MINIGAME FUNCTIONS ====================
 
 /**
  * Get minigame completion status
@@ -314,6 +499,8 @@ export async function completeMinigame(minigameName) {
     saveLocalState();
     return localState.minigames_completed;
 }
+
+// ==================== PLAYER FUNCTIONS ====================
 
 /**
  * Get full player data
@@ -389,20 +576,36 @@ export const updateBalance = updateCrypto;
 
 // Export default object with all functions for backwards compatibility
 export default {
+    // Crypto
     getCrypto,
     addCrypto,
     updateCrypto,
     updateBalance,
     setCrypto,
+    // Wallet
+    getWallet,
+    updateWallet,
+    convertToSatoshis,
+    // Prices
+    getCoinPrice,
+    getAllPrices,
+    // Inventory
     getInventory,
     addInventoryItem,
     removeInventoryItem,
     hasItem,
+    // Scores
     getScores,
     updateScore,
+    // Ash Trail
+    submitAshTrailRun,
+    getAshTrailRuns,
+    getAshTrailRun,
+    // Minigames
     getMinigameStatus,
     isMinigameCompleted,
     completeMinigame,
+    // Player
     getPlayerData,
     syncWithServer
 };
