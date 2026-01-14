@@ -1,4 +1,4 @@
-export const baseurl = "{{ site.baseurl }}";
+export const baseurl = "/DBS2-Frontend";
 
 // Flask backend URI
   export var pythonURI;
