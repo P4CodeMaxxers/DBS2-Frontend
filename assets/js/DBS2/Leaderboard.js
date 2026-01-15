@@ -3,6 +3,8 @@
  * Displays a pixel-themed leaderboard with data from backend API
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
+import { pythonURI } from '../api/config.js';
+
 class Leaderboard {
     constructor(apiBase = null) {
         this.container = null;
@@ -13,12 +15,8 @@ class Leaderboard {
         if (apiBase) {
             this.apiBase = apiBase;
         } else {
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            if (isLocalhost) {
-                this.apiBase = 'http://localhost:8403/api/dbs2';
-            } else {
-                this.apiBase = '/api/dbs2';
-            }
+            // Use pythonURI from config.js to ensure correct backend URL when deployed
+            this.apiBase = `${pythonURI}/api/dbs2`;
         }
         this.refreshInterval = null;
         this.isRefreshing = false;

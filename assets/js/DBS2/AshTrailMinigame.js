@@ -1,4 +1,5 @@
 import { addInventoryItem, updateCrypto, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun } from './StatsManager.js';
+import { pythonURI } from '../api/config.js';
 // Logical grid that everything lives on (player + path).
 // Higher numbers = smoother curves and more room for complex shapes.
 const GRID_COLS = 24;
@@ -1444,8 +1445,8 @@ function reactionForScore(score) {
 async function fetchAshTrailAI(book, score) {
   try {
     if (!book?.id) return null;
-    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const apiBase = isLocalhost ? "http://localhost:8403/api/dbs2" : "/api/dbs2";
+    // Use pythonURI from config.js to ensure correct backend URL when deployed
+    const apiBase = `${pythonURI}/api/dbs2`;
     const res = await fetch(`${apiBase}/ash-trail/ai`, {
       method: "POST",
       credentials: "include",
