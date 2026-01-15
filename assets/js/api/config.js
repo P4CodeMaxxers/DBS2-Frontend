@@ -1,12 +1,20 @@
 export const baseurl = "/DBS2-Frontend";
 
 // Flask backend URI
-  export var pythonURI;
-  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-      pythonURI = "http://localhost:8403";  // Same URI for localhost or 127.0.0.1
-  } else {
-      pythonURI = "https://flask.opencodingsociety.com";
-  }
+export var pythonURI;
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    pythonURI = "http://localhost:8403";  // Same URI for localhost or 127.0.0.1
+} else if (location.hostname === "dbs2.opencodingsociety.com") {
+    // Frontend and backend on same domain - use relative paths (empty string means same origin)
+    pythonURI = "";
+} else {
+    // Fallback for other deployed domains
+    pythonURI = "https://dbs2.opencodingsociety.com";
+}
+
+// Debug: Log the backend URI being used
+console.log('[Config] Frontend hostname:', location.hostname);
+console.log('[Config] Backend pythonURI:', pythonURI);
 
 // Keep javaURI pointing to Flask (for any legacy code that uses it)
 export var javaURI = pythonURI;
@@ -33,6 +41,10 @@ export function login(options) {
     // Clear the message area
     document.getElementById(options.message).textContent = "";
 
+    // Debug: Log the URL being called
+    console.log('[Login] Attempting to fetch:', options.URL);
+    console.log('[Login] Request options:', requestOptions);
+
     fetch(options.URL, requestOptions)
         .then(response => {
             if (!response.ok) {
@@ -44,7 +56,14 @@ export function login(options) {
             options.callback();
         })
         .catch(error => {
+            console.error('[Login] Fetch error details:', {
+                error: error.message,
+                url: options.URL,
+                type: error.name,
+                stack: error.stack
+            });
+            const errorMsg = `CORS or service error: ${error.message}. URL: ${options.URL}`;
             console.log('Possible CORS or Service Down error: ' + error);
-            document.getElementById(options.message).textContent = 'Possible CORS or service down error: ' + error;
+            document.getElementById(options.message).textContent = errorMsg;
         });
 }
