@@ -8,54 +8,54 @@
  * in his basement until you help him recover the fragments of his lost program.
  */
 
-import { getInventory, addInventoryItem } from './StatsManager.js';
+import { getInventory, addInventoryItem, getWallet, convertCoin, getPrices } from './StatsManager.js';
 
-// Code scrap definitions with story elements
+// Code scrap definitions - physical paper fragments with handwritten code
 const CODE_SCRAPS = {
     crypto_miner: {
         id: 'crypto_miner',
-        name: 'Mining Algorithm Core',
-        icon: 'CORE',
+        name: 'Mining Algorithm',
+        icon: 'PAGE',
         image: 'codescrapCrypto.png',
-        description: 'The heart of The Green Machine. A mining algorithm that once generated thousands of crypto per hour. IShowGreen wrote this during a sleepless weekend, fueled by energy drinks and desperation. Without it, the rest of the code is worthless.',
-        hint: 'Prove your worth at the mining terminal.',
-        storyFragment: '"The algorithm was my masterpiece. Sixty hours of pure focus. I would give anything to have it back." - Journal Entry #47'
+        description: 'A crumpled page covered in dense handwritten code. The mining algorithm that powered The Green Machine. IShowGreen wrote it during a mass power outage when he couldnt use his computer. He typed it in later but lost the original page behind the terminal.',
+        hint: 'Check behind the mining terminal.',
+        storyFragment: '"I wrote the whole algorithm by hand during the blackout. Twelve pages. This was the most important one." - Journal Entry #47'
     },
     laundry: {
         id: 'laundry',
-        name: 'Transaction Validator',
-        icon: 'VALID',
+        name: 'Transaction Ledger',
+        icon: 'PAGE',
         image: 'codescrapLaundry.png', 
-        description: 'The transaction verification module. It processed and validated every crypto exchange. A burst pipe flooded the basement and destroyed the drive it was stored on. The water damage was total.',
-        hint: 'The old washing machine holds secrets in its wreckage.',
-        storyFragment: '"The flood came at 3 AM. By morning, half my drives were dead. The validator was gone." - Journal Entry #62'
+        description: 'A soggy, barely legible page. The transaction validation formulas were written on this paper. IShowGreen left it in his pants pocket and threw them in the wash. The ink ran but the code is still readable if you squint.',
+        hint: 'Something paper is stuck in the washing machine drum.',
+        storyFragment: '"I keep important notes in my pockets. I also never check my pockets before doing laundry. You can see the problem." - Journal Entry #62'
     },
     whackarat: {
         id: 'whackarat',
-        name: 'Security Protocol',
-        icon: 'SECURE',
+        name: 'Security Keys',
+        icon: 'PAGE',
         image: 'codescrapRats.png',
-        description: 'The firewall and intrusion detection system that kept The Green Machine safe from hackers. When the rat infestation hit, they chewed through everything. Power cables. Network lines. Storage drives. The security module was corrupted beyond recovery.',
-        hint: 'The rats still guard their territory.',
-        storyFragment: '"I heard them in the walls for weeks before I saw the damage. By then it was too late." - Journal Entry #78'
+        description: 'A chewed and torn page with bite marks all over it. The security protocol keys were written here. IShowGreen hid it in a crack in the wall. The rats found it and shredded half of it for their nest. What remains is still usable.',
+        hint: 'The rats took paper into the walls. Get it back.',
+        storyFragment: '"I hid it where no one would look. The rats looked. They ate the corners but the important parts survived." - Journal Entry #78'
     },
     ash_trail: {
         id: 'ash_trail',
-        name: 'Backup Recovery Data',
-        icon: 'BACKUP',
+        name: 'Backup Documentation',
+        icon: 'PAGE',
         image: 'codescrapPages.png',
-        description: 'Printed documentation and recovery keys. IShowGreen was paranoid about digital-only backups, so he printed everything. Then he knocked over a candle. The fire was small, but his "paper backups" were ash in minutes.',
-        hint: 'Trace what remains of the burned pages.',
-        storyFragment: '"I printed them to be SAFE. Ironic. The fire took everything on the bookshelf." - Journal Entry #91'
+        description: 'A charred page with burned edges. IShowGreen printed his backup codes and recovery keys on paper for safekeeping. A candle fell on the bookshelf. Most of the pages burned but this one only lost the margins.',
+        hint: 'Trace the burned pages on the bookshelf.',
+        storyFragment: '"Paper cant be hacked, I said. Paper is safe, I said. Paper burns, I learned." - Journal Entry #91'
     },
     infinite_user: {
         id: 'infinite_user',
-        name: 'Authentication System',
-        icon: 'AUTH',
+        name: 'Master Password List',
+        icon: 'PAGE',
         image: 'codescrapPassword.png',
-        description: 'The master access control system. After months of not logging in, IShowGreen forgot his own credentials. The system he built to keep others out now keeps him locked away from his own creation.',
-        hint: 'Crack the password encryption to recover the access keys.',
-        storyFragment: '"PASSWORD DENIED. Again. I wrote this system. I should remember. Why cant I remember?" - Journal Entry #103'
+        description: 'A faded page with a list of passwords and authentication codes. IShowGreen wrote them down so he wouldnt forget. Then he forgot where he put the paper. It was wedged behind the keyboard the whole time.',
+        hint: 'The password terminal might have something stuck behind it.',
+        storyFragment: '"I wrote down every password so I would never be locked out. Then I lost the paper. I was locked out for three months." - Journal Entry #103'
     }
 };
 
@@ -237,7 +237,7 @@ const Inventory = {
             window.dispatchEvent(new CustomEvent('allCodeScrapsCollected', {
                 detail: { items: this.items }
             }));
-            console.log('[Inventory] All code scraps collected. Player can present to IShowGreen.');
+            console.log('[Inventory] All pages found. Player can present to IShowGreen.');
         }
     },
 
@@ -499,6 +499,123 @@ const Inventory = {
                 background: #0a5;
                 color: #000;
             }
+            
+            /* Wallet Section Styles */
+            .wallet-section {
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid #0a5;
+            }
+            .wallet-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            .wallet-title {
+                color: #f7931a;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            .wallet-total {
+                color: #0f0;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            .wallet-coins {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            .wallet-coin {
+                background: rgba(0, 40, 20, 0.4);
+                border: 1px solid #052;
+                border-radius: 6px;
+                padding: 8px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .wallet-coin:hover {
+                border-color: #0a5;
+                background: rgba(0, 80, 40, 0.4);
+            }
+            .wallet-coin.selected {
+                border-color: #f7931a;
+                background: rgba(100, 80, 20, 0.4);
+            }
+            .wallet-coin-icon {
+                font-size: 18px;
+                display: block;
+            }
+            .wallet-coin-balance {
+                color: #fff;
+                font-size: 11px;
+                margin-top: 3px;
+            }
+            .wallet-coin-usd {
+                color: #888;
+                font-size: 9px;
+            }
+            .wallet-coin-change {
+                font-size: 9px;
+            }
+            .wallet-coin-change.up { color: #0f0; }
+            .wallet-coin-change.down { color: #f66; }
+            .wallet-convert {
+                background: rgba(100, 80, 20, 0.2);
+                border: 1px solid #640;
+                border-radius: 6px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+            .convert-title {
+                color: #f7931a;
+                font-size: 11px;
+                margin-bottom: 8px;
+                text-align: center;
+            }
+            .convert-select, .convert-input {
+                width: 100%;
+                background: #111;
+                border: 1px solid #333;
+                color: #fff;
+                padding: 6px 8px;
+                border-radius: 4px;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+            .convert-btn {
+                width: 100%;
+                background: #640;
+                color: #fa0;
+                border: 1px solid #a80;
+                padding: 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                transition: all 0.2s;
+            }
+            .convert-btn:hover {
+                background: #a80;
+                color: #000;
+            }
+            .convert-btn:disabled {
+                background: #333;
+                color: #666;
+                cursor: not-allowed;
+            }
+            .convert-result {
+                margin-top: 8px;
+                font-size: 10px;
+                text-align: center;
+                min-height: 16px;
+            }
+            .convert-result.success { color: #0f0; }
+            .convert-result.error { color: #f66; }
         `;
         document.head.appendChild(style);
     },
@@ -508,8 +625,8 @@ const Inventory = {
         
         const btn = document.createElement('div');
         btn.id = 'inventory-btn';
-        btn.innerHTML = 'DATA<span class="badge" style="display:none">0</span>';
-        btn.title = 'Code Fragments [I]';
+        btn.innerHTML = 'PAGES<span class="badge" style="display:none">0</span>';
+        btn.title = 'Code Pages [I]';
         btn.onclick = () => this.toggle();
         document.body.appendChild(btn);
     },
@@ -530,12 +647,32 @@ const Inventory = {
             </div>
             
             <div class="inventory-progress">
-                <div class="inventory-progress-title">Code Fragments</div>
-                <div class="inventory-progress-icons" id="progress-icons">[ ] [ ] [ ] [ ] [ ]</div>
+                <div class="inventory-progress-title">CODE FRAGMENTS</div>
+                <div class="inventory-progress-icons" id="progress-icons">[X] [X] [ ] [ ] [ ]</div>
                 <div class="inventory-progress-text" id="progress-text">0 of 5 recovered</div>
             </div>
             
             <div class="inventory-grid" id="inventory-grid"></div>
+            
+            <!-- WALLET SECTION -->
+            <div class="wallet-section" id="wallet-section">
+                <div class="wallet-header">
+                    <span class="wallet-title">💰 WALLET</span>
+                    <span class="wallet-total" id="wallet-total">$0.00</span>
+                </div>
+                <div class="wallet-coins" id="wallet-coins">
+                    <div style="color: #666; text-align: center; padding: 10px;">Loading wallet...</div>
+                </div>
+                <div class="wallet-convert" id="wallet-convert" style="display: none;">
+                    <div class="convert-title">Convert to Satoshis</div>
+                    <select id="convert-coin" class="convert-select">
+                        <option value="">Select coin...</option>
+                    </select>
+                    <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="0.0001" min="0">
+                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertToSats()">CONVERT (5% fee)</button>
+                    <div id="convert-result" class="convert-result"></div>
+                </div>
+            </div>
             
             <div class="inventory-loading" id="inventory-loading" style="display:none">
                 Loading...
@@ -600,9 +737,9 @@ const Inventory = {
         if (text) {
             const count = collected.size;
             if (count >= 5) {
-                text.innerHTML = '<span style="color:#0a5">All fragments recovered. Present them to IShowGreen.</span>';
+                text.innerHTML = '<span style="color:#0a5">All pages found. Bring them to IShowGreen.</span>';
             } else {
-                text.textContent = `${count} of 5 recovered`;
+                text.textContent = `${count} of 5 found`;
             }
         }
     },
@@ -625,7 +762,7 @@ const Inventory = {
                     ? `<img src="${this.baseImagePath}/${scrap.image}" alt="${scrap.name}" onerror="this.style.display='none'">`
                     : '<div style="font-size: 48px; margin: 20px 0; color: #333;">?</div>'
                 }
-                <p>${isCollected ? scrap.description : 'Fragment not yet recovered.'}</p>
+                <p>${isCollected ? scrap.description : 'Page not yet found.'}</p>
                 ${isCollected 
                     ? `<div class="story-fragment">${scrap.storyFragment}</div>`
                     : `<p class="hint">${scrap.hint}</p>`
@@ -659,6 +796,7 @@ const Inventory = {
             panel.classList.add('open');
             this.isOpen = true;
             this.loadFromBackend();
+            this.loadWallet();
         }
     },
 
@@ -676,6 +814,208 @@ const Inventory = {
 
     getCodeScrapCount() {
         return this.getCollectedMinigames().size;
+    },
+
+    // ==================== WALLET METHODS ====================
+    
+    walletData: null,
+    pricesData: null,
+    selectedCoin: null,
+
+    COIN_CONFIG: {
+        satoshis: { symbol: 'SATS', icon: '₿', color: '#f7931a', decimals: 0 },
+        bitcoin: { symbol: 'BTC', icon: '₿', color: '#f7931a', decimals: 8 },
+        ethereum: { symbol: 'ETH', icon: 'Ξ', color: '#627eea', decimals: 6 },
+        solana: { symbol: 'SOL', icon: '◎', color: '#00ffa3', decimals: 4 },
+        cardano: { symbol: 'ADA', icon: '₳', color: '#0033ad', decimals: 2 },
+        dogecoin: { symbol: 'DOGE', icon: 'Ð', color: '#c2a633', decimals: 2 }
+    },
+
+    async loadWallet() {
+        try {
+            const [walletResult, pricesResult] = await Promise.all([
+                getWallet(),
+                getPrices()
+            ]);
+            
+            this.walletData = walletResult;
+            this.pricesData = pricesResult?.prices || {};
+            
+            this.refreshWalletDisplay();
+        } catch (e) {
+            console.log('[Inventory] Wallet load failed:', e);
+            const coinsEl = document.getElementById('wallet-coins');
+            if (coinsEl) {
+                coinsEl.innerHTML = '<div style="color: #f66; text-align: center; padding: 10px;">Failed to load wallet</div>';
+            }
+        }
+    },
+
+    refreshWalletDisplay() {
+        const coinsEl = document.getElementById('wallet-coins');
+        const totalEl = document.getElementById('wallet-total');
+        const convertSection = document.getElementById('wallet-convert');
+        const convertSelect = document.getElementById('convert-coin');
+        
+        if (!coinsEl || !this.walletData) return;
+        
+        const wallet = this.walletData.raw_balances || {};
+        const totalUsd = this.walletData.total_usd || 0;
+        
+        if (totalEl) {
+            totalEl.textContent = `$${totalUsd.toFixed(2)}`;
+        }
+        
+        let html = '';
+        let hasConvertibleCoins = false;
+        let selectOptions = '<option value="">Select coin...</option>';
+        
+        for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
+            const balance = wallet[coinId] || 0;
+            const priceInfo = this.pricesData[coinId] || {};
+            const usdValue = balance * (priceInfo.price_usd || 0);
+            const change = priceInfo.change_24h || 0;
+            
+            const changeClass = change >= 0 ? 'up' : 'down';
+            const changeSymbol = change >= 0 ? '▲' : '▼';
+            const isSelected = this.selectedCoin === coinId;
+            
+            html += `
+                <div class="wallet-coin ${isSelected ? 'selected' : ''}" 
+                     onclick="Inventory.selectCoin('${coinId}')"
+                     title="${config.symbol}: ${this.formatBalance(balance, config.decimals)}">
+                    <span class="wallet-coin-icon" style="color: ${config.color}">${config.icon}</span>
+                    <div class="wallet-coin-balance">${this.formatBalance(balance, config.decimals)}</div>
+                    <div class="wallet-coin-usd">$${usdValue.toFixed(2)}</div>
+                    <div class="wallet-coin-change ${changeClass}">${changeSymbol} ${Math.abs(change).toFixed(1)}%</div>
+                </div>
+            `;
+            
+            // Add to select if has balance and not satoshis
+            if (balance > 0 && coinId !== 'satoshis') {
+                hasConvertibleCoins = true;
+                selectOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+            }
+        }
+        
+        coinsEl.innerHTML = html;
+        
+        // Show/hide convert section
+        if (convertSection) {
+            convertSection.style.display = hasConvertibleCoins ? 'block' : 'none';
+        }
+        if (convertSelect) {
+            convertSelect.innerHTML = selectOptions;
+        }
+    },
+
+    formatBalance(balance, decimals) {
+        if (decimals === 0) {
+            return balance.toLocaleString();
+        }
+        return balance.toFixed(Math.min(decimals, 4));
+    },
+
+    selectCoin(coinId) {
+        this.selectedCoin = coinId;
+        
+        // Update visual selection
+        document.querySelectorAll('.wallet-coin').forEach(el => {
+            el.classList.remove('selected');
+        });
+        event.currentTarget?.classList.add('selected');
+        
+        // If not satoshis, populate convert fields
+        if (coinId !== 'satoshis') {
+            const select = document.getElementById('convert-coin');
+            const amountInput = document.getElementById('convert-amount');
+            
+            if (select) {
+                select.value = coinId;
+            }
+            if (amountInput && this.walletData?.raw_balances) {
+                amountInput.value = this.walletData.raw_balances[coinId] || '';
+            }
+        }
+    },
+
+    async convertToSats() {
+        const coinSelect = document.getElementById('convert-coin');
+        const amountInput = document.getElementById('convert-amount');
+        const resultDiv = document.getElementById('convert-result');
+        const btn = document.getElementById('convert-btn');
+        
+        const coinId = coinSelect?.value;
+        const amount = parseFloat(amountInput?.value || 0);
+        
+        if (!coinId) {
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = 'Select a coin to convert';
+            }
+            return;
+        }
+        
+        if (amount <= 0) {
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = 'Enter an amount';
+            }
+            return;
+        }
+        
+        // Check balance
+        const balance = this.walletData?.raw_balances?.[coinId] || 0;
+        if (amount > balance) {
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = 'Insufficient balance';
+            }
+            return;
+        }
+        
+        // Disable button
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Converting...';
+        }
+        if (resultDiv) {
+            resultDiv.className = 'convert-result';
+            resultDiv.textContent = '';
+        }
+        
+        try {
+            const result = await convertCoin(coinId, 'satoshis', amount);
+            
+            if (result && result.success) {
+                if (resultDiv) {
+                    resultDiv.className = 'convert-result success';
+                    resultDiv.textContent = `✓ Converted to ${result.to_amount.toLocaleString()} sats`;
+                }
+                
+                // Refresh wallet
+                await this.loadWallet();
+                
+                // Clear inputs
+                if (amountInput) amountInput.value = '';
+                if (coinSelect) coinSelect.value = '';
+                
+            } else {
+                throw new Error(result?.error || 'Conversion failed');
+            }
+            
+        } catch (e) {
+            console.error('[Inventory] Convert error:', e);
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = e.message || 'Conversion failed';
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'CONVERT (5% fee)';
+            }
+        }
     }
 };
 
