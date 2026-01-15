@@ -286,13 +286,46 @@ function cryptoMinerMinigame() {
         }
         if (boostEl) boostEl.textContent = `${boostMultiplier.toFixed(2)}x`;
     }
-    
+    let failedAttempts = 0;
+
     function generateHash() {
         const chars = '0123456789abcdef';
         let hash = '';
-        for (let i = 0; i < 64; i++) {
-            hash += chars[Math.floor(Math.random() * chars.length)];
+        
+        // Increase chance of valid hash after failures
+        // Base chance ~1/256 for "00", we boost it significantly
+        let guaranteeValid = false;
+        
+        if (failedAttempts >= 20) {
+            guaranteeValid = true; // Guarantee after 20 fails
+        } else if (failedAttempts >= 15) {
+            guaranteeValid = Math.random() < 0.5; // 50% chance
+        } else if (failedAttempts >= 10) {
+            guaranteeValid = Math.random() < 0.25; // 25% chance
+        } else if (failedAttempts >= 5) {
+            guaranteeValid = Math.random() < 0.1; // 10% chance
         }
+        
+        if (guaranteeValid) {
+            // Start with the target prefix (assumes targetPrefix is accessible)
+            hash = targetPrefix;
+            for (let i = targetPrefix.length; i < 64; i++) {
+                hash += chars[Math.floor(Math.random() * chars.length)];
+            }
+            failedAttempts = 0; // Reset on success
+        } else {
+            for (let i = 0; i < 64; i++) {
+                hash += chars[Math.floor(Math.random() * chars.length)];
+            }
+            
+            // Track if this was a failure
+            if (!hash.startsWith(targetPrefix)) {
+                failedAttempts++;
+            } else {
+                failedAttempts = 0;
+            }
+        }
+        
         return hash;
     }
     

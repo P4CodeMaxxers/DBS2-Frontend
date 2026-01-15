@@ -240,6 +240,7 @@ export async function showLaundryMinigame(onComplete) {
         background: rgba(0, 0, 0, 0.7);
         padding: 10px;
         border-radius: 8px;
+        z-index: 50;
     `;
     
     const laundryTitle = document.createElement('div');
@@ -319,6 +320,7 @@ export async function showLaundryMinigame(onComplete) {
         border-radius: 8px;
         cursor: not-allowed;
         font-family: 'Courier New', monospace;
+        z-index: 100;
     `;
 
     machineArea.appendChild(startBtn);
