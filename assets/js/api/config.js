@@ -4,11 +4,8 @@ export const baseurl = "/DBS2-Frontend";
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
     pythonURI = "http://localhost:8403";  // Same URI for localhost or 127.0.0.1
-} else if (location.hostname === "dbs2.opencodingsociety.com") {
-    // Frontend and backend on same domain - use relative paths (empty string means same origin)
-    pythonURI = "";
 } else {
-    // Fallback for other deployed domains
+    // Use full URL for deployed backend
     pythonURI = "https://dbs2.opencodingsociety.com";
 }
 
