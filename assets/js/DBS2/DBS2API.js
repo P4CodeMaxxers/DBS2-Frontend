@@ -1,4 +1,27 @@
+/**
+ * DBS2API.js - Multi-coin wallet support
+ * Handles all backend communication for DBS2 game
+ */
 import { pythonURI, fetchOptions } from '../api/config.js';
+
+// Coin configuration - must match backend
+const SUPPORTED_COINS = {
+    satoshis: { symbol: 'SATS', name: 'Satoshis', decimals: 0 },
+    bitcoin: { symbol: 'BTC', name: 'Bitcoin', decimals: 8 },
+    ethereum: { symbol: 'ETH', name: 'Ethereum', decimals: 6 },
+    solana: { symbol: 'SOL', name: 'Solana', decimals: 4 },
+    cardano: { symbol: 'ADA', name: 'Cardano', decimals: 2 },
+    dogecoin: { symbol: 'DOGE', name: 'Dogecoin', decimals: 2 }
+};
+
+// Minigame to coin mapping
+const MINIGAME_COINS = {
+    crypto_miner: 'satoshis',
+    whackarat: 'dogecoin',
+    laundry: 'cardano',
+    ash_trail: 'solana',
+    infinite_user: 'ethereum'
+};
 
 const DBS2API = {
     baseUrl: `${pythonURI}/api/dbs2`,
@@ -19,7 +42,107 @@ const DBS2API = {
         return res.json();
     },
     
-    // ============ CRYPTO ============
+    // ============ WALLET ============
+    async getWallet() {
+        try {
+            const res = await fetch(`${this.baseUrl}/wallet`, fetchOptions);
+            if (!res.ok) {
+                console.log('[DBS2API] getWallet failed:', res.status);
+                return { wallet: {}, raw_balances: {}, total_usd: 0 };
+            }
+            return res.json();
+        } catch (e) {
+            console.log('[DBS2API] getWallet error:', e);
+            return { wallet: {}, raw_balances: {}, total_usd: 0 };
+        }
+    },
+    
+    async addToWallet(coin, amount) {
+        try {
+            const res = await fetch(`${this.baseUrl}/wallet/add`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({ coin: coin, amount: amount })
+            });
+            if (!res.ok) {
+                console.log('[DBS2API] addToWallet failed:', res.status);
+                return { success: false };
+            }
+            const data = await res.json();
+            this.refreshLeaderboard();
+            return data;
+        } catch (e) {
+            console.log('[DBS2API] addToWallet error:', e);
+            return { success: false };
+        }
+    },
+    
+    async convertCoin(fromCoin, toCoin, amount) {
+        try {
+            const res = await fetch(`${this.baseUrl}/wallet/convert`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({
+                    from_coin: fromCoin,
+                    to_coin: toCoin,
+                    amount: amount
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                return { success: false, error: err.error || 'Conversion failed' };
+            }
+            const data = await res.json();
+            this.refreshLeaderboard();
+            return data;
+        } catch (e) {
+            console.log('[DBS2API] convertCoin error:', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
+    
+    // ============ PRICES ============
+    async getPrices() {
+        try {
+            const res = await fetch(`${this.baseUrl}/prices`);
+            if (!res.ok) return { prices: {} };
+            return res.json();
+        } catch (e) {
+            console.log('[DBS2API] getPrices error:', e);
+            return { prices: {} };
+        }
+    },
+    
+    // ============ MINIGAME REWARDS ============
+    async rewardMinigame(minigame, amount) {
+        try {
+            const res = await fetch(`${this.baseUrl}/minigame/reward`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({ minigame: minigame, amount: amount })
+            });
+            if (!res.ok) {
+                console.log('[DBS2API] rewardMinigame failed:', res.status);
+                return { success: false };
+            }
+            const data = await res.json();
+            this.refreshLeaderboard();
+            return data;
+        } catch (e) {
+            console.log('[DBS2API] rewardMinigame error:', e);
+            return { success: false };
+        }
+    },
+    
+    getCoinForMinigame(minigame) {
+        return MINIGAME_COINS[minigame] || 'satoshis';
+    },
+    
+    getCoinInfo(coinId) {
+        return SUPPORTED_COINS[coinId] || { symbol: '???', name: 'Unknown', decimals: 0 };
+    },
+    
+    // ============ CRYPTO (Legacy - maps to satoshis) ============
     async getCrypto() {
         try {
             const res = await fetch(`${this.baseUrl}/crypto`, fetchOptions);
@@ -30,7 +153,6 @@ const DBS2API = {
             const data = await res.json();
             const cryptoValue = typeof data === 'number' ? data : (data.crypto || 0);
             console.log('[DBS2API] getCrypto:', cryptoValue);
-            // Return object with crypto property for StatsManager compatibility
             return { crypto: cryptoValue };
         } catch (e) {
             console.log('[DBS2API] getCrypto error:', e);
@@ -107,7 +229,6 @@ const DBS2API = {
                 return {};
             }
             const data = await res.json();
-            // Backend returns: { scores: { game: score, ... } }
             const scores = data && typeof data === 'object' ? (data.scores || {}) : {};
             return scores;
         } catch (e) {
@@ -117,14 +238,9 @@ const DBS2API = {
     },
     
     async updateScore(game, score) {
-        // Backwards-compatible helper that mirrors submitScore
         return this.submitScore(game, score);
     },
 
-    /**
-     * Submit a score for a given game.
-     * Expected by StatsManager.updateScore(game, score) to return {scores: {...}}.
-     */
     async submitScore(game, score) {
         try {
             const res = await fetch(`${this.baseUrl}/scores`, {
@@ -168,19 +284,16 @@ const DBS2API = {
     
     // ============ LEADERBOARD ============
     async getLeaderboard(limit = 10) {
-        // Leaderboard is public, no auth needed
         const res = await fetch(`${this.baseUrl}/leaderboard?limit=${limit}`);
         const data = await res.json();
         return data.leaderboard || [];
     },
     
-    // Refresh leaderboard widget
     refreshLeaderboard() {
         try {
             if (window.Leaderboard && typeof window.Leaderboard.refresh === 'function') {
                 window.Leaderboard.refresh();
             }
-            // Also try the instance on GameControl
             if (window.GameControl && window.GameControl.leaderboard) {
                 window.GameControl.leaderboard.refresh();
             }
@@ -189,26 +302,16 @@ const DBS2API = {
         }
     },
     
-    // ============ BITCOIN BOOST (for Crypto Miner) ============
+    // ============ BITCOIN BOOST ============
     async getBitcoinBoost() {
         const res = await fetch(`${this.baseUrl}/bitcoin-boost`);
         return res.json();
     },
     
-    /**
-     * Add crypto with Bitcoin boost applied
-     * @param {number} baseAmount - Base crypto to add before boost
-     * @returns {object} { crypto, boost_multiplier, boosted_amount, btc_change_24h }
-     */
     async addCryptoWithBoost(baseAmount) {
-        // Get current Bitcoin boost
         const boostData = await this.getBitcoinBoost();
         const multiplier = boostData.boost_multiplier || 1.0;
-        
-        // Calculate boosted amount
         const boostedAmount = Math.round(baseAmount * multiplier);
-        
-        // Add the boosted crypto
         const result = await this.addCrypto(boostedAmount);
         
         return {
@@ -226,21 +329,17 @@ const DBS2API = {
     async hasSeenIntro() {
         try {
             const player = await this.getPlayer();
-            // Check if player has any progress (crypto > 0, any minigames completed, or inventory items)
             const hasProgress = (player.crypto > 0) || 
                                (player.inventory && player.inventory.length > 0) ||
                                (player.minigames_completed && Object.values(player.minigames_completed).some(v => v));
             return hasProgress;
         } catch (e) {
-            // Not logged in - check localStorage as fallback
             return localStorage.getItem('dbs2_intro_seen') === 'true';
         }
     },
     
     async markIntroSeen() {
-        // Store in localStorage as fallback
         localStorage.setItem('dbs2_intro_seen', 'true');
-        // The backend tracks this implicitly via player progress
     },
     
     // ============ UI HELPERS ============
@@ -259,6 +358,7 @@ const DBS2API = {
             window.playerCrypto = player.crypto;
             window.playerBalance = player.crypto;
             window.playerInventory = player.inventory;
+            window.playerWallet = player.wallet;
             this.updateCryptoUI(player.crypto);
             console.log('[DBS2API] Initialized:', player);
             return player;

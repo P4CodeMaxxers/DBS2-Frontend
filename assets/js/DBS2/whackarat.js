@@ -1,6 +1,10 @@
 /// whackarat.js
-// Whack-a-rat minigame with proper backend sync for code scrap rewards
-import { updateCrypto, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
+// Whack-a-rat minigame - rewards DOGECOIN
+import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem, getCoinForMinigame } from './StatsManager.js';
+
+const MINIGAME_NAME = 'whackarat';
+const COIN_NAME = 'Dogecoin';
+const COIN_SYMBOL = 'DOGE';
 
 const Whack = {
   canvas: null,
@@ -71,7 +75,7 @@ function createCanvasInOverlay(overlay) {
     max-width: 95%;
     height: 700px;
     background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-    border: 2px solid #0a5;
+    border: 2px solid #c2a633;
     border-radius: 10px;
     padding: 12px;
     display: flex;
@@ -113,7 +117,7 @@ function createCanvasInOverlay(overlay) {
   canvas.width = Whack.width;
   canvas.height = Whack.height;
   canvas.style.cssText = `
-    border: 2px solid #052;
+    border: 2px solid #c2a633;
     border-radius: 6px;
   `;
   root.appendChild(canvas);
@@ -203,12 +207,12 @@ function draw() {
     }
   });
 
-  // HUD
+  // HUD - Dogecoin themed (gold/yellow)
   ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
   ctx.fillRect(10, 10, 150, 50);
   ctx.fillRect(Whack.width - 160, 10, 150, 50);
   
-  ctx.fillStyle = "#0a5";
+  ctx.fillStyle = "#c2a633";
   ctx.font = "18px 'Courier New', monospace";
   ctx.fillText("Time: " + Math.ceil(Whack.timer / 1000) + "s", 20, 42);
   ctx.fillText("Score: " + Whack.score, Whack.width - 150, 42);
@@ -232,31 +236,31 @@ function loop(ts) {
 async function endGame() {
   Whack.running = false;
   
-  // Calculate crypto reward - proportional to score
-  // Score of 500 = 25 crypto, Score of 1000 = 50 crypto, etc.
+  // Calculate reward - score/20 = DOGE earned
   const baseReward = Math.max(0, Math.floor(Whack.score / 20));
   const bonus = Whack.isFirstCompletion ? 25 : 0;
   const totalReward = baseReward + bonus;
   
-  // Award crypto
+  // Award DOGECOIN via rewardMinigame
+  let rewardResult = null;
   if (totalReward > 0) {
     try {
-      await updateCrypto(totalReward);
-      console.log('[Whackarat] Awarded crypto:', totalReward);
+      rewardResult = await rewardMinigame(MINIGAME_NAME, totalReward);
+      console.log('[Whackarat] Awarded:', totalReward, COIN_SYMBOL);
     } catch (e) {
-      console.log('[Whackarat] Could not award crypto:', e);
+      console.log('[Whackarat] Could not award:', e);
     }
   }
   
   // Mark complete and add code scrap on first completion
   if (Whack.isFirstCompletion) {
     try {
-      await completeMinigame('whackarat');
+      await completeMinigame(MINIGAME_NAME);
       console.log('[Whackarat] Marked as complete');
       
       await addInventoryItem({
         name: 'Code Scrap: Whack-a-Rat',
-        found_at: 'whackarat',
+        found_at: MINIGAME_NAME,
         timestamp: new Date().toISOString()
       });
       console.log('[Whackarat] Code scrap added to inventory');
@@ -303,7 +307,7 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
     left: 50%;
     transform: translate(-50%, -50%);
     background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-    border: 2px solid #0a5;
+    border: 2px solid #c2a633;
     border-radius: 15px;
     padding: 30px;
     text-align: center;
@@ -311,43 +315,42 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
     min-width: 350px;
     max-width: 450px;
     font-family: 'Courier New', monospace;
-    box-shadow: 0 0 30px rgba(0, 170, 85, 0.3);
+    box-shadow: 0 0 30px rgba(194, 166, 51, 0.3);
   `;
   
-  // Different content based on first completion
   let contentHtml = '';
   
   if (Whack.isFirstCompletion && score > 0) {
     contentHtml = `
-      <h2 style="color: #0a5; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
+      <h2 style="color: #c2a633; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
         CODE FRAGMENT RECOVERED
       </h2>
       <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
         Found a piece of paper behind the pipes. The rats were using it as bedding.
       </p>
-      <div style="background: rgba(0,170,85,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #052;">
+      <div style="background: rgba(194,166,51,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #52410a;">
         <img src="${Whack.baseurl}/images/DBS2/codescrapWhackarat.png" 
-             style="max-width: 100px; margin: 10px auto; display: block; border: 2px solid #0a5; border-radius: 6px;" 
-             onerror="this.outerHTML='<div style=\\'font-size:48px;\\'>📜</div>'">
-        <p style="color: #0a5; font-size: 12px; margin: 10px 0 0 0;">Code fragment added to inventory</p>
+             style="max-width: 100px; margin: 10px auto; display: block; border: 2px solid #c2a633; border-radius: 6px;" 
+             onerror="this.outerHTML='<div style=\\'font-size:48px;\\'>D</div>'">
+        <p style="color: #c2a633; font-size: 12px; margin: 10px 0 0 0;">Code fragment added to inventory</p>
       </div>
       <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
         <div style="color: #888; font-size: 12px;">Final Score</div>
-        <div style="color: #0a5; font-size: 28px; font-weight: bold;">${score}</div>
+        <div style="color: #c2a633; font-size: 28px; font-weight: bold;">${score}</div>
       </div>
-      <div style="color: #0a5; font-size: 16px; margin-bottom: 5px;">
-        +${baseReward} Crypto (from score)
+      <div style="color: #c2a633; font-size: 16px; margin-bottom: 5px;">
+        +${baseReward} ${COIN_SYMBOL} (from score)
       </div>
       <div style="color: #ffd700; font-size: 14px; margin-bottom: 15px;">
-        +${bonus} Crypto (first completion bonus!)
+        +${bonus} ${COIN_SYMBOL} (first completion bonus!)
       </div>
       <div style="color: #0f0; font-size: 18px; font-weight: bold; margin-bottom: 20px;">
-        Total: +${totalReward} Crypto
+        Total: +${totalReward} ${COIN_NAME}
       </div>
     `;
   } else if (score > 0) {
     contentHtml = `
-      <h2 style="color: #0a5; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
+      <h2 style="color: #c2a633; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
         EXTERMINATION COMPLETE
       </h2>
       <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
@@ -355,10 +358,10 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
       </p>
       <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
         <div style="color: #888; font-size: 12px;">Final Score</div>
-        <div style="color: #0a5; font-size: 32px; font-weight: bold;">${score}</div>
+        <div style="color: #c2a633; font-size: 32px; font-weight: bold;">${score}</div>
       </div>
-      <div style="color: #0a5; font-size: 18px; margin-bottom: 20px;">
-        +${totalReward} Crypto
+      <div style="color: #c2a633; font-size: 18px; margin-bottom: 20px;">
+        +${totalReward} ${COIN_NAME} (${COIN_SYMBOL})
       </div>
     `;
   } else {
@@ -374,16 +377,16 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
         <div style="color: #800; font-size: 32px; font-weight: bold;">${score}</div>
       </div>
       <div style="color: #666; font-size: 14px; margin-bottom: 20px;">
-        No crypto earned. Try again!
+        No ${COIN_NAME} earned. Try again!
       </div>
     `;
   }
   
   popup.innerHTML = contentHtml + `
     <button id="whack-continue-btn" style="
-      background: #052;
-      color: #0a5;
-      border: 1px solid #0a5;
+      background: #52410a;
+      color: #c2a633;
+      border: 1px solid #c2a633;
       padding: 12px 30px;
       cursor: pointer;
       font-family: 'Courier New', monospace;
@@ -397,12 +400,12 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
   const continueBtn = document.getElementById('whack-continue-btn');
   if (continueBtn) {
     continueBtn.onmouseover = () => {
-      continueBtn.style.background = '#0a5';
+      continueBtn.style.background = '#c2a633';
       continueBtn.style.color = '#000';
     };
     continueBtn.onmouseout = () => {
-      continueBtn.style.background = '#052';
-      continueBtn.style.color = '#0a5';
+      continueBtn.style.background = '#52410a';
+      continueBtn.style.color = '#c2a633';
     };
     continueBtn.onclick = () => {
       if (Whack.overlay && Whack.overlay.parentNode) {
@@ -436,7 +439,7 @@ function stopGame() {
 
 // PUBLIC: startWhackGame(overlayElement, basePath, onComplete)
 export default async function startWhackGame(overlayElement, basePath = '/images/DBS2', onComplete = null) {
-  console.log('[Whackarat] Starting game...');
+  console.log('[Whackarat] Starting game... Rewards:', COIN_NAME);
   
   window.whackaratActive = true;
   window.minigameActive = true;
@@ -448,7 +451,7 @@ export default async function startWhackGame(overlayElement, basePath = '/images
   
   // Check if first completion BEFORE starting
   try {
-    Whack.isFirstCompletion = !(await isMinigameCompleted('whackarat'));
+    Whack.isFirstCompletion = !(await isMinigameCompleted(MINIGAME_NAME));
     console.log('[Whackarat] First completion:', Whack.isFirstCompletion);
   } catch (e) {
     console.log('[Whackarat] Could not check completion status:', e);
@@ -472,7 +475,7 @@ export default async function startWhackGame(overlayElement, basePath = '/images
   // Show loading message
   Whack.ctx.fillStyle = '#0d0d1a';
   Whack.ctx.fillRect(0, 0, Whack.width, Whack.height);
-  Whack.ctx.fillStyle = '#0a5';
+  Whack.ctx.fillStyle = '#c2a633';
   Whack.ctx.font = '24px "Courier New", monospace';
   Whack.ctx.textAlign = 'center';
   Whack.ctx.fillText('Loading...', Whack.width / 2, Whack.height / 2);

@@ -1,7 +1,7 @@
 /**
  * StatsManager.js
  * Bridges local game state with backend DBS2 API
- * Handles crypto, inventory, scores, minigame completion, and multi-coin wallet
+ * Handles multi-coin wallet, inventory, scores, minigame completion
  */
 
 // Try to import DBS2API - it may not be available in all contexts
@@ -12,6 +12,15 @@ try {
 } catch (e) {
     console.log('DBS2API not available, using local storage fallback');
 }
+
+// Minigame to coin mapping
+const MINIGAME_COINS = {
+    crypto_miner: 'satoshis',
+    whackarat: 'dogecoin',
+    laundry: 'cardano',
+    ash_trail: 'solana',
+    infinite_user: 'ethereum'
+};
 
 // Local state (fallback when API unavailable)
 let localState = {
@@ -35,7 +44,6 @@ function loadLocalState() {
         const saved = localStorage.getItem('dbs2_local_state');
         if (saved) {
             localState = JSON.parse(saved);
-            // Ensure wallet exists in old saves
             if (!localState.wallet) {
                 localState.wallet = {
                     satoshis: localState.crypto || 0,
@@ -64,10 +72,125 @@ function saveLocalState() {
 // Initialize local state on load
 loadLocalState();
 
-// ==================== CRYPTO FUNCTIONS ====================
+// ==================== WALLET FUNCTIONS ====================
 
 /**
- * Get current crypto balance
+ * Get the coin ID for a minigame
+ * @param {string} minigame - Minigame name
+ * @returns {string} Coin ID
+ */
+export function getCoinForMinigame(minigame) {
+    return MINIGAME_COINS[minigame] || 'satoshis';
+}
+
+/**
+ * Get full wallet with all coin balances
+ * @returns {Promise<Object>} Wallet object
+ */
+export async function getWallet() {
+    try {
+        if (DBS2API && DBS2API.getWallet) {
+            const result = await DBS2API.getWallet();
+            return result;
+        }
+    } catch (e) {
+        console.log('API getWallet failed, using local:', e);
+    }
+    return { wallet: localState.wallet, raw_balances: localState.wallet, total_usd: 0 };
+}
+
+/**
+ * Add to a specific coin balance
+ * @param {string} coin - Coin ID (satoshis, dogecoin, etc)
+ * @param {number} amount - Amount to add
+ * @returns {Promise<Object>} Updated wallet
+ */
+export async function addToWallet(coin, amount) {
+    try {
+        if (DBS2API && DBS2API.addToWallet) {
+            const result = await DBS2API.addToWallet(coin, amount);
+            return result;
+        }
+    } catch (e) {
+        console.log('API addToWallet failed, using local:', e);
+    }
+    // Local fallback
+    if (coin in localState.wallet) {
+        localState.wallet[coin] = (localState.wallet[coin] || 0) + amount;
+        if (coin === 'satoshis') {
+            localState.crypto = localState.wallet.satoshis;
+        }
+        saveLocalState();
+    }
+    return { wallet: localState.wallet };
+}
+
+/**
+ * Reward player for completing a minigame with appropriate coin
+ * @param {string} minigame - Minigame name
+ * @param {number} amount - Amount to reward
+ * @returns {Promise<Object>} Result with coin info
+ */
+export async function rewardMinigame(minigame, amount) {
+    const coin = getCoinForMinigame(minigame);
+    
+    try {
+        if (DBS2API && DBS2API.rewardMinigame) {
+            const result = await DBS2API.rewardMinigame(minigame, amount);
+            return result;
+        }
+    } catch (e) {
+        console.log('API rewardMinigame failed, using local:', e);
+    }
+    
+    // Local fallback
+    const result = await addToWallet(coin, amount);
+    return {
+        success: true,
+        minigame: minigame,
+        coin: coin,
+        amount: amount,
+        wallet: result.wallet
+    };
+}
+
+/**
+ * Convert between coins (5% fee)
+ * @param {string} fromCoin - Source coin
+ * @param {string} toCoin - Target coin
+ * @param {number} amount - Amount to convert
+ * @returns {Promise<Object>} Conversion result
+ */
+export async function convertCoin(fromCoin, toCoin, amount) {
+    try {
+        if (DBS2API && DBS2API.convertCoin) {
+            return await DBS2API.convertCoin(fromCoin, toCoin, amount);
+        }
+    } catch (e) {
+        console.log('API convertCoin failed:', e);
+    }
+    return { success: false, error: 'Conversion not available offline' };
+}
+
+/**
+ * Get current coin prices
+ * @returns {Promise<Object>} Prices object
+ */
+export async function getPrices() {
+    try {
+        if (DBS2API && DBS2API.getPrices) {
+            return await DBS2API.getPrices();
+        }
+    } catch (e) {
+        console.log('API getPrices failed:', e);
+    }
+    return { prices: {} };
+}
+
+// ==================== CRYPTO FUNCTIONS (Legacy - maps to satoshis) ====================
+
+/**
+ * Get current crypto balance (satoshis)
  * @returns {Promise<number>} Current crypto amount
  */
 export async function getCrypto() {
@@ -83,7 +206,7 @@ export async function getCrypto() {
 }
 
 /**
- * Add crypto to player's balance
+ * Add crypto to player's balance (satoshis)
  * @param {number} amount - Amount to add
  * @returns {Promise<number>} New crypto balance
  */
@@ -134,99 +257,6 @@ export async function setCrypto(amount) {
     return localState.crypto;
 }
 
-// ==================== WALLET FUNCTIONS ====================
-
-/**
- * Get full wallet with all coin balances
- * @returns {Promise<Object>} Wallet object
- */
-export async function getWallet() {
-    try {
-        if (DBS2API && DBS2API.getWallet) {
-            const result = await DBS2API.getWallet();
-            return result.wallet || result;
-        }
-        // Try direct API call
-        const baseUrl = await getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/api/dbs2/wallet`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            return data.wallet || data;
-        }
-    } catch (e) {
-        console.log('API getWallet failed, using local:', e);
-    }
-    return localState.wallet;
-}
-
-/**
- * Update wallet balances (add amounts)
- * @param {Object} updates - {satoshis: 100, bitcoin: 0.001, ...}
- * @returns {Promise<Object>} Updated wallet
- */
-export async function updateWallet(updates) {
-    try {
-        if (DBS2API && DBS2API.updateWallet) {
-            const result = await DBS2API.updateWallet(updates);
-            return result.wallet || result;
-        }
-        // Try direct API call
-        const baseUrl = await getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/api/dbs2/wallet`, {
-            method: 'PUT',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ add: updates })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            return data.wallet || data;
-        }
-    } catch (e) {
-        console.log('API updateWallet failed, using local:', e);
-    }
-    // Local fallback
-    if (updates.satoshis) {
-        localState.crypto += updates.satoshis;
-        localState.wallet.satoshis = localState.crypto;
-    }
-    if (updates.bitcoin) localState.wallet.bitcoin += updates.bitcoin;
-    if (updates.ethereum) localState.wallet.ethereum += updates.ethereum;
-    if (updates.solana) localState.wallet.solana += updates.solana;
-    if (updates.cardano) localState.wallet.cardano += updates.cardano;
-    if (updates.dogecoin) localState.wallet.dogecoin += updates.dogecoin;
-    saveLocalState();
-    return localState.wallet;
-}
-
-/**
- * Convert cryptocurrency to satoshis
- * @param {string} coinId - Coin to convert
- * @param {number} amount - Amount to convert
- * @returns {Promise<Object>} Conversion result
- */
-export async function convertToSatoshis(coinId, amount) {
-    try {
-        const baseUrl = await getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/api/dbs2/wallet/convert`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ coin: coinId, amount: amount })
-        });
-        if (res.ok) {
-            return await res.json();
-        }
-    } catch (e) {
-        console.log('API convertToSatoshis failed:', e);
-    }
-    return { success: false, error: 'Conversion failed' };
-}
-
 // ==================== PRICE FUNCTIONS ====================
 
 /**
@@ -248,22 +278,18 @@ async function getApiBaseUrl() {
  */
 export async function getCoinPrice(coinId = 'bitcoin') {
     try {
-        const baseUrl = await getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/api/dbs2/coin-price?coin=${coinId}`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-            return await res.json();
+        const priceData = await getPrices();
+        const prices = priceData.prices || {};
+        if (coinId in prices) {
+            return prices[coinId];
         }
     } catch (e) {
         console.log('getCoinPrice failed:', e);
     }
     return {
-        coin: coinId,
         price_usd: 0,
         change_24h: 0,
-        boost_multiplier: 1.0
+        sats_per_unit: 0
     };
 }
 
@@ -272,20 +298,7 @@ export async function getCoinPrice(coinId = 'bitcoin') {
  * @returns {Promise<Object>} All prices
  */
 export async function getAllPrices() {
-    try {
-        const baseUrl = await getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/api/dbs2/prices`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-            const data = await res.json();
-            return data.prices || data;
-        }
-    } catch (e) {
-        console.log('getAllPrices failed:', e);
-    }
-    return {};
+    return getPrices();
 }
 
 // ==================== INVENTORY FUNCTIONS ====================
@@ -298,8 +311,7 @@ export async function getInventory() {
     try {
         if (DBS2API && DBS2API.getInventory) {
             const result = await DBS2API.getInventory();
-            // API returns array directly or in inventory property
-            return Array.isArray(result) ? result : (result.inventory || []);
+            return result.inventory || [];
         }
     } catch (e) {
         console.log('API getInventory failed, using local:', e);
@@ -313,25 +325,19 @@ export async function getInventory() {
  * @returns {Promise<Array>} Updated inventory
  */
 export async function addInventoryItem(item) {
+    const itemObj = typeof item === 'string' 
+        ? { name: item, found_at: 'unknown', timestamp: new Date().toISOString() }
+        : item;
+    
     try {
         if (DBS2API && DBS2API.addInventoryItem) {
-            // Handle both object format and string format
-            let name, foundAt;
-            if (typeof item === 'object') {
-                name = item.name;
-                foundAt = item.found_at || 'unknown';
-            } else {
-                name = item;
-                foundAt = 'unknown';
-            }
-            const result = await DBS2API.addInventoryItem(name, foundAt);
+            const result = await DBS2API.addInventoryItem(itemObj);
             return result.inventory || [];
         }
     } catch (e) {
         console.log('API addInventoryItem failed, using local:', e);
     }
     // Local fallback
-    const itemObj = typeof item === 'object' ? item : { name: item, found_at: 'unknown' };
     const exists = localState.inventory.some(i => 
         (typeof i === 'object' ? i.name : i) === (itemObj.name)
     );
@@ -384,7 +390,6 @@ export async function hasItem(item) {
 export async function getScores() {
     try {
         if (DBS2API && DBS2API.getScores) {
-            // DBS2API.getScores() returns the raw scores dict
             const scores = await DBS2API.getScores();
             return scores || {};
         }
@@ -402,7 +407,6 @@ export async function getScores() {
  */
 export async function updateScore(game, score) {
     try {
-        // DBS2API exposes submitScore(game, score) which returns {scores: {...}}
         if (DBS2API && DBS2API.submitScore) {
             const result = await DBS2API.submitScore(game, score);
             return result.scores || {};
@@ -584,11 +588,14 @@ export default {
     setCrypto,
     // Wallet
     getWallet,
-    updateWallet,
-    convertToSatoshis,
+    addToWallet,
+    rewardMinigame,
+    convertCoin,
+    getCoinForMinigame,
     // Prices
     getCoinPrice,
     getAllPrices,
+    getPrices,
     // Inventory
     getInventory,
     addInventoryItem,

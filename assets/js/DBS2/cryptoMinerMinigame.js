@@ -1,7 +1,14 @@
-import { updateCrypto, updateWallet, completeMinigame, isMinigameCompleted, addInventoryItem, getCoinPrice } from './StatsManager.js';
+// cryptoMinerMinigame.js - Rewards SATOSHIS
+// Change: Replace updateCrypto() with rewardMinigame()
+
+import { rewardMinigame, completeMinigame, isMinigameCompleted, addInventoryItem, getCoinPrice } from './StatsManager.js';
 import Prompt from './Prompt.js';
 
-// Supported cryptocurrencies
+const MINIGAME_NAME = 'crypto_miner';
+const COIN_NAME = 'Satoshis';
+const COIN_SYMBOL = 'SATS';
+
+// Supported cryptocurrencies (for display rotation)
 const CRYPTO_COINS = [
     { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', color: '#f7931a' },
     { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', color: '#627eea' },
@@ -12,12 +19,10 @@ const CRYPTO_COINS = [
 
 // Function to be called by Computer2 - Educational Proof of Work Mining
 function cryptoMinerMinigame() {
-    // Check if already running
     if (window.cryptoMinerActive) return;
     window.cryptoMinerActive = true;
     window.minigameActive = true;
     
-    // Get baseurl for images
     const baseurl = document.body.getAttribute('data-baseurl') || '';
     
     // Game state
@@ -42,15 +47,13 @@ function cryptoMinerMinigame() {
     let lastAttemptTime = Date.now();
     let recentAttempts = [];
     
-    // Create overlay container
+    // Create overlay
     const overlay = document.createElement('div');
     overlay.id = 'crypto-miner-overlay';
     overlay.style.cssText = `
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.95);
         z-index: 10000;
         display: flex;
@@ -60,7 +63,6 @@ function cryptoMinerMinigame() {
     `;
     document.body.appendChild(overlay);
     
-    // Show educational intro first
     showEducationalIntro();
     
     function showEducationalIntro() {
@@ -117,7 +119,7 @@ function cryptoMinerMinigame() {
                     Press <span style="color: #0f0; font-weight: bold;">SPACE</span> to generate hashes. 
                     Find hashes starting with zeros to mine blocks!
                     <br><br>
-                    💰 <strong>Rewards</strong> are based on real crypto prices. The coin being mined changes every minute!
+                    💰 <strong>Earn ${COIN_NAME}</strong> based on blocks mined!
                 </p>
             </div>
             
@@ -146,18 +148,15 @@ function cryptoMinerMinigame() {
     async function startMiningGame() {
         gameStarted = true;
         
-        // Check first completion
         try {
-            isFirstCompletion = !(await isMinigameCompleted('crypto_miner'));
+            isFirstCompletion = !(await isMinigameCompleted(MINIGAME_NAME));
             console.log('[CryptoMiner] First completion:', isFirstCompletion);
         } catch (e) {
             isFirstCompletion = true;
         }
         
-        // Pick random coin and fetch price
         await selectRandomCoin();
         
-        // Rotate coin every 60 seconds
         coinRotationInterval = setInterval(async () => {
             await selectRandomCoin();
             updateCoinDisplay();
@@ -183,7 +182,6 @@ function cryptoMinerMinigame() {
             console.log('Coin price fetch failed, using simulation');
         }
         
-        // Fallback simulation
         const simulated = {
             'bitcoin': 95000,
             'ethereum': 3500,
@@ -197,17 +195,11 @@ function cryptoMinerMinigame() {
     }
     
     function calculateBoost() {
-        if (coinChange24h >= 5) {
-            boostMultiplier = 1.5;
-        } else if (coinChange24h >= 2) {
-            boostMultiplier = 1.25;
-        } else if (coinChange24h >= 0) {
-            boostMultiplier = 1.0;
-        } else if (coinChange24h >= -2) {
-            boostMultiplier = 0.85;
-        } else {
-            boostMultiplier = 0.7;
-        }
+        if (coinChange24h >= 5) boostMultiplier = 1.5;
+        else if (coinChange24h >= 2) boostMultiplier = 1.25;
+        else if (coinChange24h >= 0) boostMultiplier = 1.0;
+        else if (coinChange24h >= -2) boostMultiplier = 0.85;
+        else boostMultiplier = 0.7;
     }
     
     function createMiningUI() {
@@ -215,79 +207,66 @@ function cryptoMinerMinigame() {
         ui.id = 'mining-ui';
         ui.style.cssText = `
             background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-            border: 2px solid #0f0;
+            border: 2px solid #f7931a;
             border-radius: 15px;
             padding: 25px;
-            min-width: 550px;
+            width: 700px;
+            max-width: 95%;
             color: #eee;
         `;
         
         ui.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: #0f0; margin: 0;">⛏️ PROOF OF WORK MINER</h2>
-                <button id="exit-miner" style="background: #600; border: 1px solid #800; color: #ccc; padding: 8px 15px; cursor: pointer; font-family: monospace; border-radius: 4px;">EXIT (ESC)</button>
+                <h2 style="color: #f7931a; margin: 0;">⛏️ MINING TERMINAL</h2>
+                <button id="exit-mining" style="background: #600; color: #ccc; border: 1px solid #800; padding: 8px 15px; cursor: pointer; font-family: monospace;">EXIT</button>
             </div>
             
-            <!-- Current Coin Display -->
-            <div id="coin-display" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div id="coin-display" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-size: 12px; color: #888;">Currently Mining</div>
-                    <div id="coin-name" style="font-size: 20px; color: ${currentCoin.color}; font-weight: bold;">${currentCoin.symbol}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 12px; color: #888;">Price</div>
-                    <div id="coin-price" style="font-size: 18px; color: #fff;">$${coinPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 12px; color: #888;">24h Change</div>
-                    <div id="coin-change" style="font-size: 18px; color: ${coinChange24h >= 0 ? '#0f0' : '#f00'};">${coinChange24h >= 0 ? '+' : ''}${coinChange24h.toFixed(2)}%</div>
+                    <span style="color: #888;">Currently Mining:</span>
+                    <span id="coin-name" style="color: ${currentCoin?.color || '#f7931a'}; font-weight: bold; margin-left: 10px;">${currentCoin?.name || 'Bitcoin'}</span>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 12px; color: #888;">Boost</div>
-                    <div id="boost-mult" style="font-size: 18px; color: ${boostMultiplier >= 1 ? '#0f0' : '#f00'};">${boostMultiplier.toFixed(2)}x</div>
+                    <div style="color: #888; font-size: 12px;">Price: $<span id="coin-price">${coinPrice.toLocaleString()}</span></div>
+                    <div style="font-size: 12px;"><span id="coin-change" style="color: ${coinChange24h >= 0 ? '#0f0' : '#f00'};">${coinChange24h >= 0 ? '+' : ''}${coinChange24h.toFixed(2)}%</span> (24h)</div>
                 </div>
             </div>
             
-            <!-- Block Progress -->
             <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span>Block <span id="current-block">${blocksCompleted + 1}</span> / ${totalBlocks}</span>
-                    <span>Difficulty: <span style="color: #f7931a;">${targetPrefix}...</span></span>
+                <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Current Hash:</div>
+                <div id="hash-display" style="font-family: monospace; font-size: 14px; color: #0f0; word-break: break-all;">Press SPACE to mine...</div>
+                <div id="hash-result" style="margin-top: 10px; font-size: 13px; color: #888;"></div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
+                    <div style="color: #888; font-size: 11px;">Block Progress</div>
+                    <div style="font-size: 18px; color: #f7931a;"><span id="valid-count">0</span>/${hashesPerBlock}</div>
+                    <div style="background: #333; height: 6px; border-radius: 3px; margin-top: 5px;">
+                        <div id="block-progress" style="background: #f7931a; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
+                    </div>
                 </div>
-                <div style="background: #222; height: 20px; border-radius: 10px; overflow: hidden;">
-                    <div id="block-progress" style="background: linear-gradient(90deg, #0f0, #0a0); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
+                    <div style="color: #888; font-size: 11px;">Blocks Mined</div>
+                    <div style="font-size: 18px; color: #0f0;"><span id="current-block">1</span>/${totalBlocks}</div>
                 </div>
-                <div style="text-align: center; margin-top: 5px; font-size: 12px; color: #888;">
-                    Valid Hashes: <span id="valid-count">0</span> / ${hashesPerBlock}
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
+                    <div style="color: #888; font-size: 11px;">Est. ${COIN_SYMBOL}</div>
+                    <div style="font-size: 18px; color: #f7931a;"><span id="est-reward">0</span></div>
                 </div>
             </div>
             
-            <!-- Hash Display -->
-            <div style="background: #000; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333;">
-                <div style="font-size: 12px; color: #888; margin-bottom: 5px;">CURRENT HASH:</div>
-                <div id="hash-display" style="font-size: 14px; color: #666; word-break: break-all; min-height: 20px;">
-                    Press SPACE to generate hash...
-                </div>
-                <div id="hash-result" style="font-size: 14px; margin-top: 10px; min-height: 20px;"></div>
-            </div>
-            
-            <!-- Instructions -->
-            <div style="text-align: center; color: #888; font-size: 14px; margin-bottom: 15px;">
-                Press <span style="color: #0f0; font-weight: bold;">SPACE</span> to generate hashes
-            </div>
-            
-            <!-- Stats -->
-            <div style="display: flex; justify-content: space-around; font-size: 12px; color: #888;">
+            <div style="display: flex; justify-content: space-between; color: #666; font-size: 11px;">
                 <span>Attempts: <span id="total-attempts">0</span></span>
-                <span>Hash Rate: <span id="hash-rate">0</span> H/s</span>
-                <span>Est. Reward: <span id="est-reward">0</span> sats</span>
+                <span>Hash Rate: <span id="hash-rate">0</span>/sec</span>
+                <span>Difficulty: "${targetPrefix}..."</span>
+                <span>Boost: <span id="boost-mult">${boostMultiplier.toFixed(2)}x</span></span>
             </div>
         `;
         
         overlay.appendChild(ui);
         
-        document.getElementById('exit-miner').onclick = exitMiner;
-        updateEstReward();
+        document.getElementById('exit-mining').onclick = exitMiner;
     }
     
     function updateCoinDisplay() {
@@ -297,54 +276,36 @@ function cryptoMinerMinigame() {
         const boostEl = document.getElementById('boost-mult');
         
         if (nameEl) {
-            nameEl.textContent = currentCoin.symbol;
-            nameEl.style.color = currentCoin.color;
+            nameEl.textContent = currentCoin?.name || 'Bitcoin';
+            nameEl.style.color = currentCoin?.color || '#f7931a';
         }
-        if (priceEl) priceEl.textContent = `$${coinPrice.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+        if (priceEl) priceEl.textContent = coinPrice.toLocaleString();
         if (changeEl) {
             changeEl.textContent = `${coinChange24h >= 0 ? '+' : ''}${coinChange24h.toFixed(2)}%`;
             changeEl.style.color = coinChange24h >= 0 ? '#0f0' : '#f00';
         }
-        if (boostEl) {
-            boostEl.textContent = `${boostMultiplier.toFixed(2)}x`;
-            boostEl.style.color = boostMultiplier >= 1 ? '#0f0' : '#f00';
-        }
-        updateEstReward();
+        if (boostEl) boostEl.textContent = `${boostMultiplier.toFixed(2)}x`;
     }
     
     function generateHash() {
         const chars = '0123456789abcdef';
         let hash = '';
-        
-        // ~15% chance to generate valid hash (starts with target prefix)
-        const isValid = Math.random() < 0.15;
-        
-        if (isValid) {
-            hash = targetPrefix;
-            for (let i = targetPrefix.length; i < 64; i++) {
-                hash += chars[Math.floor(Math.random() * chars.length)];
-            }
-        } else {
-            // Generate hash that doesn't start with zeros
-            hash = chars[Math.floor(Math.random() * 15) + 1]; // 1-f, not 0
-            for (let i = 1; i < 64; i++) {
-                hash += chars[Math.floor(Math.random() * chars.length)];
-            }
+        for (let i = 0; i < 64; i++) {
+            hash += chars[Math.floor(Math.random() * chars.length)];
         }
-        
-        return { hash, isValid };
+        return hash;
     }
     
     function attemptMine() {
-        if (!gameStarted) return;
+        const now = Date.now();
+        recentAttempts = recentAttempts.filter(t => now - t < 1000);
+        recentAttempts.push(now);
         
         totalAttempts++;
-        const now = Date.now();
-        recentAttempts.push(now);
-        recentAttempts = recentAttempts.filter(t => now - t < 1000);
-        
-        const { hash, isValid } = generateHash();
+        const hash = generateHash();
         currentHash = hash;
+        
+        const isValid = hash.startsWith(targetPrefix);
         
         const hashDisplay = document.getElementById('hash-display');
         const hashResult = document.getElementById('hash-result');
@@ -352,7 +313,6 @@ function cryptoMinerMinigame() {
         const hashRateEl = document.getElementById('hash-rate');
         
         if (hashDisplay) {
-            // Color the leading zeros green
             if (isValid) {
                 hashDisplay.innerHTML = `<span style="color: #0f0; font-weight: bold;">${targetPrefix}</span>${hash.slice(targetPrefix.length)}`;
             } else {
@@ -385,17 +345,14 @@ function cryptoMinerMinigame() {
         if (progressEl) progressEl.style.width = `${progress}%`;
         if (validEl) validEl.textContent = validHashes % hashesPerBlock || (validHashes > 0 ? hashesPerBlock : 0);
         
-        // Check for block completion
         if (validHashes > 0 && validHashes % hashesPerBlock === 0) {
             blocksCompleted++;
             
             if (blocksCompleted >= totalBlocks) {
                 completeMining();
             } else {
-                // Increase difficulty for next block
                 targetPrefix += '0';
                 if (blockEl) blockEl.textContent = blocksCompleted + 1;
-                
                 showBlockComplete();
             }
         }
@@ -432,18 +389,18 @@ function cryptoMinerMinigame() {
         let satoshiReward = Math.floor(baseReward * boostMultiplier);
         
         if (isFirstCompletion) {
-            satoshiReward += 250; // First completion bonus
+            satoshiReward += 250;
         }
         
-        // Award crypto (satoshis)
+        // *** KEY CHANGE: Use rewardMinigame instead of updateCrypto ***
         try {
-            await updateCrypto(satoshiReward);
-            await completeMinigame('crypto_miner');
+            await rewardMinigame(MINIGAME_NAME, satoshiReward);
+            await completeMinigame(MINIGAME_NAME);
             
             if (isFirstCompletion) {
                 await addInventoryItem({
                     name: 'Code Scrap: Crypto Miner',
-                    found_at: 'crypto_miner',
+                    found_at: MINIGAME_NAME,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -473,8 +430,8 @@ function cryptoMinerMinigame() {
             <p style="color: #888; margin-bottom: 20px;">You successfully mined ${totalBlocks} blocks!</p>
             
             <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="font-size: 14px; color: #888;">Satoshis Earned</div>
-                <div style="font-size: 32px; color: #f7931a; font-weight: bold;">${satoshiReward} sats</div>
+                <div style="font-size: 14px; color: #888;">${COIN_NAME} Earned</div>
+                <div style="font-size: 32px; color: #f7931a; font-weight: bold;">${satoshiReward} ${COIN_SYMBOL}</div>
                 ${isFirstCompletion ? '<div style="color: #0f0; font-size: 12px;">+250 first completion bonus!</div>' : ''}
             </div>
             
@@ -543,7 +500,6 @@ function cryptoMinerMinigame() {
             overlay.remove();
         }
         
-        // Refresh leaderboard
         try {
             if (window.Leaderboard && typeof window.Leaderboard.refresh === 'function') {
                 window.Leaderboard.refresh();
@@ -552,5 +508,4 @@ function cryptoMinerMinigame() {
     }
 }
 
-// Export default function that NPCs can call
 export default cryptoMinerMinigame;
