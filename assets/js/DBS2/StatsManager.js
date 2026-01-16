@@ -1,7 +1,7 @@
 /**
  * StatsManager.js
  * Bridges local game state with backend DBS2 API
- * Handles crypto, inventory, scores, and minigame completion tracking
+ * Handles multi-coin wallet, inventory, scores, minigame completion
  */
 
 // Try to import DBS2API - it may not be available in all contexts
@@ -13,12 +13,29 @@ try {
     console.log('DBS2API not available, using local storage fallback');
 }
 
+// Minigame to coin mapping
+const MINIGAME_COINS = {
+    crypto_miner: 'satoshis',
+    whackarat: 'dogecoin',
+    laundry: 'cardano',
+    ash_trail: 'solana',
+    infinite_user: 'ethereum'
+};
+
 // Local state (fallback when API unavailable)
 let localState = {
     crypto: 0,
     inventory: [],
     scores: {},
-    minigames_completed: {}
+    minigames_completed: {},
+    wallet: {
+        satoshis: 0,
+        bitcoin: 0,
+        ethereum: 0,
+        solana: 0,
+        cardano: 0,
+        dogecoin: 0
+    }
 };
 
 // Load local state from localStorage
@@ -27,6 +44,16 @@ function loadLocalState() {
         const saved = localStorage.getItem('dbs2_local_state');
         if (saved) {
             localState = JSON.parse(saved);
+            if (!localState.wallet) {
+                localState.wallet = {
+                    satoshis: localState.crypto || 0,
+                    bitcoin: 0,
+                    ethereum: 0,
+                    solana: 0,
+                    cardano: 0,
+                    dogecoin: 0
+                };
+            }
         }
     } catch (e) {
         console.log('Could not load local state:', e);
@@ -45,8 +72,125 @@ function saveLocalState() {
 // Initialize local state on load
 loadLocalState();
 
+// ==================== WALLET FUNCTIONS ====================
+
 /**
- * Get current crypto balance
+ * Get the coin ID for a minigame
+ * @param {string} minigame - Minigame name
+ * @returns {string} Coin ID
+ */
+export function getCoinForMinigame(minigame) {
+    return MINIGAME_COINS[minigame] || 'satoshis';
+}
+
+/**
+ * Get full wallet with all coin balances
+ * @returns {Promise<Object>} Wallet object
+ */
+export async function getWallet() {
+    try {
+        if (DBS2API && DBS2API.getWallet) {
+            const result = await DBS2API.getWallet();
+            return result;
+        }
+    } catch (e) {
+        console.log('API getWallet failed, using local:', e);
+    }
+    return { wallet: localState.wallet, raw_balances: localState.wallet, total_usd: 0 };
+}
+
+/**
+ * Add to a specific coin balance
+ * @param {string} coin - Coin ID (satoshis, dogecoin, etc)
+ * @param {number} amount - Amount to add
+ * @returns {Promise<Object>} Updated wallet
+ */
+export async function addToWallet(coin, amount) {
+    try {
+        if (DBS2API && DBS2API.addToWallet) {
+            const result = await DBS2API.addToWallet(coin, amount);
+            return result;
+        }
+    } catch (e) {
+        console.log('API addToWallet failed, using local:', e);
+    }
+    // Local fallback
+    if (coin in localState.wallet) {
+        localState.wallet[coin] = (localState.wallet[coin] || 0) + amount;
+        if (coin === 'satoshis') {
+            localState.crypto = localState.wallet.satoshis;
+        }
+        saveLocalState();
+    }
+    return { wallet: localState.wallet };
+}
+
+/**
+ * Reward player for completing a minigame with appropriate coin
+ * @param {string} minigame - Minigame name
+ * @param {number} amount - Amount to reward
+ * @returns {Promise<Object>} Result with coin info
+ */
+export async function rewardMinigame(minigame, amount) {
+    const coin = getCoinForMinigame(minigame);
+    
+    try {
+        if (DBS2API && DBS2API.rewardMinigame) {
+            const result = await DBS2API.rewardMinigame(minigame, amount);
+            return result;
+        }
+    } catch (e) {
+        console.log('API rewardMinigame failed, using local:', e);
+    }
+    
+    // Local fallback
+    const result = await addToWallet(coin, amount);
+    return {
+        success: true,
+        minigame: minigame,
+        coin: coin,
+        amount: amount,
+        wallet: result.wallet
+    };
+}
+
+/**
+ * Convert between coins (5% fee)
+ * @param {string} fromCoin - Source coin
+ * @param {string} toCoin - Target coin
+ * @param {number} amount - Amount to convert
+ * @returns {Promise<Object>} Conversion result
+ */
+export async function convertCoin(fromCoin, toCoin, amount) {
+    try {
+        if (DBS2API && DBS2API.convertCoin) {
+            return await DBS2API.convertCoin(fromCoin, toCoin, amount);
+        }
+    } catch (e) {
+        console.log('API convertCoin failed:', e);
+    }
+    return { success: false, error: 'Conversion not available offline' };
+}
+
+/**
+ * Get current coin prices
+ * @returns {Promise<Object>} Prices object
+ */
+export async function getPrices() {
+    try {
+        if (DBS2API && DBS2API.getPrices) {
+            return await DBS2API.getPrices();
+        }
+    } catch (e) {
+        console.log('API getPrices failed:', e);
+    }
+    return { prices: {} };
+}
+
+// ==================== CRYPTO FUNCTIONS (Legacy - maps to satoshis) ====================
+
+/**
+ * Get current crypto balance (satoshis)
  * @returns {Promise<number>} Current crypto amount
  */
 export async function getCrypto() {
@@ -62,7 +206,7 @@ export async function getCrypto() {
 }
 
 /**
- * Add crypto to player's balance
+ * Add crypto to player's balance (satoshis)
  * @param {number} amount - Amount to add
  * @returns {Promise<number>} New crypto balance
  */
@@ -77,6 +221,7 @@ export async function addCrypto(amount) {
     }
     // Local fallback
     localState.crypto += amount;
+    localState.wallet.satoshis = localState.crypto;
     saveLocalState();
     return localState.crypto;
 }
@@ -107,9 +252,56 @@ export async function setCrypto(amount) {
     }
     // Local fallback
     localState.crypto = amount;
+    localState.wallet.satoshis = amount;
     saveLocalState();
     return localState.crypto;
 }
+
+// ==================== PRICE FUNCTIONS ====================
+
+/**
+ * Get API base URL
+ */
+async function getApiBaseUrl() {
+    try {
+        const config = await import('../api/config.js');
+        return config.pythonURI || 'http://localhost:8403';
+    } catch (e) {
+        return 'http://localhost:8403';
+    }
+}
+
+/**
+ * Get current price for a coin
+ * @param {string} coinId - Coin ID (bitcoin, ethereum, etc.)
+ * @returns {Promise<Object>} Price data with boost multiplier
+ */
+export async function getCoinPrice(coinId = 'bitcoin') {
+    try {
+        const priceData = await getPrices();
+        const prices = priceData.prices || {};
+        if (coinId in prices) {
+            return prices[coinId];
+        }
+    } catch (e) {
+        console.log('getCoinPrice failed:', e);
+    }
+    return {
+        price_usd: 0,
+        change_24h: 0,
+        sats_per_unit: 0
+    };
+}
+
+/**
+ * Get all coin prices
+ * @returns {Promise<Object>} All prices
+ */
+export async function getAllPrices() {
+    return getPrices();
+}
+
+// ==================== INVENTORY FUNCTIONS ====================
 
 /**
  * Get player's inventory
@@ -119,8 +311,7 @@ export async function getInventory() {
     try {
         if (DBS2API && DBS2API.getInventory) {
             const result = await DBS2API.getInventory();
-            // API returns array directly or in inventory property
-            return Array.isArray(result) ? result : (result.inventory || []);
+            return result.inventory || [];
         }
     } catch (e) {
         console.log('API getInventory failed, using local:', e);
@@ -130,29 +321,23 @@ export async function getInventory() {
 
 /**
  * Add item to inventory
- * @param {string} item - Item to add
+ * @param {string|Object} item - Item to add
  * @returns {Promise<Array>} Updated inventory
  */
 export async function addInventoryItem(item) {
+    const itemObj = typeof item === 'string' 
+        ? { name: item, found_at: 'unknown', timestamp: new Date().toISOString() }
+        : item;
+    
     try {
         if (DBS2API && DBS2API.addInventoryItem) {
-            // Handle both object format and string format
-            let name, foundAt;
-            if (typeof item === 'object') {
-                name = item.name;
-                foundAt = item.found_at || 'unknown';
-            } else {
-                name = item;
-                foundAt = 'unknown';
-            }
-            const result = await DBS2API.addInventoryItem(name, foundAt);
+            const result = await DBS2API.addInventoryItem(itemObj);
             return result.inventory || [];
         }
     } catch (e) {
         console.log('API addInventoryItem failed, using local:', e);
     }
     // Local fallback
-    const itemObj = typeof item === 'object' ? item : { name: item, found_at: 'unknown' };
     const exists = localState.inventory.some(i => 
         (typeof i === 'object' ? i.name : i) === (itemObj.name)
     );
@@ -196,6 +381,8 @@ export async function hasItem(item) {
     return inventory.includes(item);
 }
 
+// ==================== SCORE FUNCTIONS ====================
+
 /**
  * Get player's scores
  * @returns {Promise<Object>} Scores object
@@ -203,7 +390,6 @@ export async function hasItem(item) {
 export async function getScores() {
     try {
         if (DBS2API && DBS2API.getScores) {
-            // DBS2API.getScores() returns the raw scores dict
             const scores = await DBS2API.getScores();
             return scores || {};
         }
@@ -221,7 +407,6 @@ export async function getScores() {
  */
 export async function updateScore(game, score) {
     try {
-        // DBS2API exposes submitScore(game, score) which returns {scores: {...}}
         if (DBS2API && DBS2API.submitScore) {
             const result = await DBS2API.submitScore(game, score);
             return result.scores || {};
@@ -236,6 +421,8 @@ export async function updateScore(game, score) {
     }
     return localState.scores;
 }
+
+// ==================== ASH TRAIL FUNCTIONS ====================
 
 /**
  * Submit an Ash Trail run trace to backend for ghost replay.
@@ -263,6 +450,8 @@ export async function getAshTrailRun(runId) {
     if (DBS2API && DBS2API.getAshTrailRun) return await DBS2API.getAshTrailRun(runId);
     return { run: null };
 }
+
+// ==================== MINIGAME FUNCTIONS ====================
 
 /**
  * Get minigame completion status
@@ -314,6 +503,8 @@ export async function completeMinigame(minigameName) {
     saveLocalState();
     return localState.minigames_completed;
 }
+
+// ==================== PLAYER FUNCTIONS ====================
 
 /**
  * Get full player data
@@ -389,20 +580,39 @@ export const updateBalance = updateCrypto;
 
 // Export default object with all functions for backwards compatibility
 export default {
+    // Crypto
     getCrypto,
     addCrypto,
     updateCrypto,
     updateBalance,
     setCrypto,
+    // Wallet
+    getWallet,
+    addToWallet,
+    rewardMinigame,
+    convertCoin,
+    getCoinForMinigame,
+    // Prices
+    getCoinPrice,
+    getAllPrices,
+    getPrices,
+    // Inventory
     getInventory,
     addInventoryItem,
     removeInventoryItem,
     hasItem,
+    // Scores
     getScores,
     updateScore,
+    // Ash Trail
+    submitAshTrailRun,
+    getAshTrailRuns,
+    getAshTrailRun,
+    // Minigames
     getMinigameStatus,
     isMinigameCompleted,
     completeMinigame,
+    // Player
     getPlayerData,
     syncWithServer
 };

@@ -1,105 +1,68 @@
-import { updateCrypto, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
+// InfiniteUserMinigame.js - Rewards ETHEREUM (ETH)
+// Change: Replace updateCrypto() with rewardMinigame()
+
+import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
 import { javaURI, pythonURI, fetchOptions } from '../api/config.js';
 import Prompt from './Prompt.js';
 
-// Backend setup - uses DBS2 endpoint (uppercase)
+const MINIGAME_NAME = 'infinite_user';
+const COIN_NAME = 'Ethereum';
+const COIN_SYMBOL = 'ETH';
+
 const PASSWORDS_URL = `${pythonURI}/api/DBS2/passwords`;
 const ROTATE_URL = `${pythonURI}/api/DBS2/passwords/rotate`;
 const MAX_PASSWORDS = 5;
 
-// Banned words list (lowercase) - also enforced on backend
 const BANNED_WORDS = [
     'fuck', 'shit', 'damn', 'bitch', 'ass', 'dick', 'cock', 'pussy', 'cunt',
     'fag', 'nigger', 'nigga', 'retard', 'slut', 'whore', 'porn', 'sex',
     'nazi', 'hitler', 'rape', 'kill', 'murder', 'die', 'kys'
 ];
 
-// Default passwords if backend is empty
-const DEFAULT_PASSWORDS = [
-    "ishowgreen",
-    "cryptoking",
-    "basement",
-    "password",
-    "helloworld"
-];
+const DEFAULT_PASSWORDS = ["ishowgreen", "cryptoking", "basement", "password", "helloworld"];
 
 let quizzing = false;
 let passwords = [...DEFAULT_PASSWORDS];
 let passwordsLoaded = false;
 
-// Fetch GLOBAL passwords from backend
 async function loadPasswordsFromBackend() {
     try {
-        console.log('[InfiniteUser] Fetching global passwords from:', PASSWORDS_URL);
-        const response = await fetch(PASSWORDS_URL, {
-            ...fetchOptions,
-            method: 'GET'
-        });
-        
-        if (!response.ok) {
-            console.warn("[InfiniteUser] Could not fetch passwords:", response.status);
-            return;
-        }
-        
+        const response = await fetch(PASSWORDS_URL, { ...fetchOptions, method: 'GET' });
+        if (!response.ok) return;
         const data = await response.json();
-        console.log('[InfiniteUser] Backend response:', data);
-        
         if (data && Array.isArray(data.data) && data.data.length > 0) {
             passwords = data.data.filter(p => typeof p === 'string' && p.length >= 4);
-            
-            // Ensure we have at least some passwords
-            if (passwords.length === 0) {
-                passwords = [...DEFAULT_PASSWORDS];
-            }
-            
+            if (passwords.length === 0) passwords = [...DEFAULT_PASSWORDS];
             passwordsLoaded = true;
-            console.log('[InfiniteUser] Global passwords loaded:', passwords);
         }
     } catch (err) {
-        console.warn("[InfiniteUser] Could not fetch passwords from backend:", err);
+        console.warn("[InfiniteUser] Could not fetch passwords:", err);
     }
 }
 
-// Rotate password on backend (remove old, add new)
 async function rotatePasswordOnBackend(oldPassword, newPassword) {
     try {
-        console.log('[InfiniteUser] Rotating password:', oldPassword, '->', newPassword);
         const response = await fetch(ROTATE_URL, {
             ...fetchOptions,
             method: 'POST',
-            body: JSON.stringify({
-                old: oldPassword,
-                new: newPassword
-            })
+            body: JSON.stringify({ old: oldPassword, new: newPassword })
         });
-        
         if (response.ok) {
             const data = await response.json();
-            console.log('[InfiniteUser] Password rotated successfully:', data);
-            
-            // Update local passwords from server response
-            if (data && Array.isArray(data.data)) {
-                passwords = data.data;
-            }
+            if (data && Array.isArray(data.data)) passwords = data.data;
             return true;
-        } else {
-            const error = await response.json();
-            console.error('[InfiniteUser] Failed to rotate password:', error);
-            return false;
         }
+        return false;
     } catch (e) {
-        console.error('[InfiniteUser] Could not rotate password on backend:', e);
         return false;
     }
 }
 
-// Check if password contains banned words
 function containsBannedWord(password) {
     const lower = password.toLowerCase();
     return BANNED_WORDS.some(banned => lower.includes(banned));
 }
 
-// Convert to alphanumeric puzzle format (a=1, b=2, etc.)
 function convertToAlphaNumeric(str) {
     let newString = "";
     for (let i = 0; i < str.length; i++) {
@@ -109,16 +72,13 @@ function convertToAlphaNumeric(str) {
     return newString;
 }
 
-// Load passwords on module init
 loadPasswordsFromBackend();
 
 export default async function infiniteUserMinigame() {
     if (quizzing) return;
     
-    // Refresh passwords before starting
     await loadPasswordsFromBackend();
     
-    // Cleanup any existing instance
     const existing = document.getElementById("quizWindow");
     if (existing) existing.remove();
     if (window._infiniteUserKeyHandler) {
@@ -136,19 +96,16 @@ export default async function infiniteUserMinigame() {
     
     const baseurl = document.body.getAttribute('data-baseurl') || '';
     
-    // Create DOM elements
     let quizWindow = document.createElement("div");
     quizWindow.style.cssText = `
         position: fixed;
-        width: 55%;
-        height: 55%;
-        top: 22%;
-        left: 22%;
+        width: 55%; height: 55%;
+        top: 22%; left: 22%;
         z-index: 10000;
         background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-        border: 2px solid #0a5;
+        border: 2px solid #627eea;
         text-align: center;
-        color: #0a5;
+        color: #627eea;
         font-family: "Courier New", monospace;
         border-radius: 10px;
         padding: 20px;
@@ -156,123 +113,68 @@ export default async function infiniteUserMinigame() {
     quizWindow.id = "quizWindow";
     document.body.appendChild(quizWindow);
     
-    // Header
     let header = document.createElement("div");
-    header.style.cssText = `
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    `;
+    header.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;`;
     
     let title = document.createElement("div");
     title.textContent = "PASSWORD TERMINAL";
-    title.style.cssText = `
-        color: #0a5;
-        font-size: 16px;
-        font-weight: bold;
-        letter-spacing: 2px;
-    `;
+    title.style.cssText = `color: #627eea; font-size: 16px; font-weight: bold; letter-spacing: 2px;`;
     
     let closeBtn = document.createElement("button");
     closeBtn.innerText = "EXIT";
-    closeBtn.style.cssText = `
-        background: #600;
-        color: #ccc;
-        border: 1px solid #800;
-        padding: 6px 15px;
-        cursor: pointer;
-        font-size: 12px;
-        font-family: "Courier New", monospace;
-    `;
+    closeBtn.style.cssText = `background: #600; color: #ccc; border: 1px solid #800; padding: 6px 15px; cursor: pointer; font-size: 12px; font-family: "Courier New", monospace;`;
     closeBtn.onclick = closeMinigame;
     
     header.appendChild(title);
     header.appendChild(closeBtn);
     quizWindow.appendChild(header);
     
-    // Global indicator
+    // Coin indicator
+    let coinNote = document.createElement("div");
+    coinNote.style.cssText = `color: #627eea; font-size: 10px; margin-bottom: 10px; padding: 5px; background: rgba(98,126,234,0.1); border-radius: 3px;`;
+    coinNote.innerHTML = `Rewards: <strong>${COIN_NAME} (${COIN_SYMBOL})</strong>`;
+    quizWindow.appendChild(coinNote);
+    
     let globalNote = document.createElement("div");
-    globalNote.style.cssText = `
-        color: #a80;
-        font-size: 10px;
-        margin-bottom: 10px;
-        padding: 5px;
-        background: rgba(170, 136, 0, 0.1);
-        border-radius: 3px;
-    `;
+    globalNote.style.cssText = `color: #a80; font-size: 10px; margin-bottom: 10px; padding: 5px; background: rgba(170, 136, 0, 0.1); border-radius: 3px;`;
     globalNote.textContent = "GLOBAL SYSTEM - Passwords shared between all users";
     quizWindow.appendChild(globalNote);
     
-    // Message area
     let messageDiv = document.createElement("div");
-    messageDiv.style.cssText = `
-        color: #0a5;
-        font-size: 14px;
-        margin: 15px 0;
-        min-height: 80px;
-    `;
+    messageDiv.style.cssText = `color: #627eea; font-size: 14px; margin: 15px 0;`;
     messageDiv.innerHTML = `
-        <div style="color: #888; margin-bottom: 10px;">Decrypt the alphanumeric password:</div>
-        <div style="font-size: 18px; letter-spacing: 2px; color: #0a5;">${convertToAlphaNumeric(selectedPassword)}</div>
-        <div style="color: #555; font-size: 10px; margin-top: 8px;">Hint: a=1, b=2, c=3... z=26</div>
+        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">Decode the password:</div>
+        <div style="font-size: 20px; letter-spacing: 3px; color: #627eea;">${convertToAlphaNumeric(selectedPassword)}</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">Hint: a=1, b=2, c=3...</div>
     `;
     quizWindow.appendChild(messageDiv);
-
-    // Input box
+    
     let typebox = document.createElement("div");
-    typebox.style.cssText = `
-        width: 80%;
-        margin: 0 auto;
-        height: 50px;
-        background: rgba(0, 40, 20, 0.5);
-        font-family: "Courier New", monospace;
-        font-size: 24px;
-        text-align: center;
-        color: #0a5;
-        border: 1px solid #052;
-        border-radius: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
     typebox.innerText = ">";
+    typebox.style.cssText = `
+        width: 80%; margin: 15px auto;
+        padding: 12px 15px;
+        border: 2px solid #314177;
+        background: #000;
+        color: #627eea;
+        font-family: "Courier New", monospace;
+        font-size: 18px;
+        text-align: left;
+        border-radius: 5px;
+    `;
     quizWindow.appendChild(typebox);
     
-    // Instructions
     let instructions = document.createElement("div");
-    instructions.style.cssText = `
-        color: #666;
-        font-size: 11px;
-        margin-top: 15px;
-    `;
-    instructions.textContent = "Type the password and press Enter. Letters only.";
+    instructions.style.cssText = `color: #666; font-size: 11px; margin-bottom: 10px;`;
+    instructions.textContent = "Type the decoded password and press Enter.";
     quizWindow.appendChild(instructions);
     
-    // Bottom bar
     let bottomBar = document.createElement("div");
-    bottomBar.style.cssText = `
-        position: absolute;
-        bottom: 15px;
-        left: 15px;
-        right: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    `;
+    bottomBar.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-top: 10px;`;
     
-    // Auto-complete button (for testing)
     let autoCompleteBtn = document.createElement("button");
-    autoCompleteBtn.innerText = "AUTO (TEST)";
-    autoCompleteBtn.style.cssText = `
-        background: #330;
-        color: #aa0;
-        border: 1px solid #550;
-        padding: 6px 12px;
-        cursor: pointer;
-        font-size: 10px;
-        font-family: "Courier New", monospace;
-    `;
+    autoCompleteBtn.textContent = "[DEV] Auto-Complete";
+    autoCompleteBtn.style.cssText = `background: #333; color: #666; border: 1px solid #444; padding: 5px 10px; cursor: pointer; font-size: 10px; font-family: "Courier New", monospace;`;
     autoCompleteBtn.onclick = () => {
         if (!creatingNew) {
             typebox.innerText = ">" + selectedPassword;
@@ -290,26 +192,19 @@ export default async function infiniteUserMinigame() {
         }
     };
     
-    // Password count indicator
     let pwCount = document.createElement("div");
-    pwCount.style.cssText = `
-        color: #444;
-        font-size: 10px;
-    `;
+    pwCount.style.cssText = `color: #444; font-size: 10px;`;
     pwCount.textContent = `Global passwords: ${passwords.length}/${MAX_PASSWORDS}`;
     
     bottomBar.appendChild(autoCompleteBtn);
     bottomBar.appendChild(pwCount);
     quizWindow.appendChild(bottomBar);
     
-    // Check if first completion
     let isFirstCompletion = false;
     try {
-        isFirstCompletion = !(await isMinigameCompleted('infinite_user'));
+        isFirstCompletion = !(await isMinigameCompleted(MINIGAME_NAME));
         console.log('[InfiniteUser] First completion:', isFirstCompletion);
-    } catch (e) {
-        console.log('[InfiniteUser] Could not check completion status:', e);
-    }
+    } catch (e) {}
     
     function closeMinigame() {
         try { quizWindow.remove(); } catch (e) {}
@@ -325,64 +220,50 @@ export default async function infiniteUserMinigame() {
     }
     
     async function completeWithReward(newPassword) {
-        // Rotate password on backend (removes old, adds new)
         const rotated = await rotatePasswordOnBackend(selectedPassword, newPassword);
         
         if (!rotated) {
-            // Update local only if backend failed
             const idx = passwords.indexOf(selectedPassword);
             if (idx > -1) passwords.splice(idx, 1);
-            if (!passwords.includes(newPassword)) {
-                passwords.push(newPassword);
-            }
-            while (passwords.length > MAX_PASSWORDS) {
-                passwords.shift();
-            }
+            if (!passwords.includes(newPassword)) passwords.push(newPassword);
+            while (passwords.length > MAX_PASSWORDS) passwords.shift();
         }
-        
-        console.log('[InfiniteUser] Current passwords:', passwords);
         
         // Calculate reward
-        const baseReward = 15 + Math.floor(Math.random() * 10);
-        const bonus = isFirstCompletion ? 20 : 0;
+        const baseReward = 0.0001 + Math.random() * 0.0001; // Small ETH amount
+        const bonus = isFirstCompletion ? 0.0002 : 0;
         const totalReward = baseReward + bonus;
+        const displayReward = totalReward.toFixed(6);
         
-        // Award crypto
-        await updateCrypto(totalReward);
+        // *** KEY CHANGE: Use rewardMinigame for Ethereum ***
+        await rewardMinigame(MINIGAME_NAME, totalReward);
         
-        // Mark complete and add code scrap on first completion
         if (isFirstCompletion) {
             try {
-                await completeMinigame('infinite_user');
-                console.log('[InfiniteUser] Marked as complete');
-                
+                await completeMinigame(MINIGAME_NAME);
                 await addInventoryItem({
                     name: 'Code Scrap: Infinite User',
-                    found_at: 'infinite_user',
+                    found_at: MINIGAME_NAME,
                     timestamp: new Date().toISOString()
                 });
-                console.log('[InfiniteUser] Code scrap added to inventory');
-            } catch (e) {
-                console.log('[InfiniteUser] Could not save completion:', e);
-            }
+            } catch (e) {}
         }
         
-        // Show completion message
         if (isFirstCompletion) {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #0a5;">CODE FRAGMENT RECOVERED</div>
+                <div style="font-size: 16px; color: #627eea;">CODE FRAGMENT RECOVERED</div>
                 <div style="font-size: 12px; margin-top: 10px; color: #888;">Found the password list behind the keyboard.</div>
                 <div style="margin-top: 15px;">
-                    <img src="${baseurl}/images/DBS2/codescrapPassword.png" style="max-width: 70px; border: 1px solid #0a5; border-radius: 4px;" onerror="this.style.display='none'">
+                    <img src="${baseurl}/images/DBS2/codescrapPassword.png" style="max-width: 70px; border: 1px solid #627eea; border-radius: 4px;" onerror="this.style.display='none'">
                 </div>
-                <div style="font-size: 14px; margin-top: 10px; color: #0a5;">+${totalReward} Crypto</div>
+                <div style="font-size: 14px; margin-top: 10px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
             `;
         } else {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #0a5;">PASSWORD UPDATED</div>
+                <div style="font-size: 16px; color: #627eea;">PASSWORD UPDATED</div>
                 <div style="font-size: 12px; margin-top: 10px; color: #888;">"${newPassword}" added to the global system.</div>
                 <div style="font-size: 11px; margin-top: 5px; color: #a80;">Other players may now have to decrypt your password!</div>
-                <div style="font-size: 14px; margin-top: 15px; color: #0a5;">+${totalReward} Crypto</div>
+                <div style="font-size: 14px; margin-top: 15px; color: #627eea;">+${displayReward} ${COIN_NAME}</div>
             `;
         }
         
@@ -390,18 +271,13 @@ export default async function infiniteUserMinigame() {
         instructions.style.display = 'none';
         bottomBar.style.display = 'none';
         globalNote.style.display = 'none';
+        coinNote.style.display = 'none';
         
         setTimeout(() => {
             closeMinigame();
             try {
-                if (isFirstCompletion) {
-                    Prompt.showDialoguePopup('System', `Password list recovered. +${totalReward} Crypto.`);
-                } else {
-                    Prompt.showDialoguePopup('System', `Password "${newPassword}" saved globally. +${totalReward} Crypto.`);
-                }
-            } catch(e) {
-                console.log(`Earned ${totalReward} Crypto`);
-            }
+                Prompt.showDialoguePopup('System', `+${displayReward} ${COIN_NAME} earned!`);
+            } catch(e) {}
         }, isFirstCompletion ? 2500 : 1500);
     }
 
@@ -417,13 +293,12 @@ export default async function infiniteUserMinigame() {
             const input = typebox.innerText.slice(1).toLowerCase();
             
             if (creatingNew) {
-                // Validate new password
                 if (input.length < 4) {
                     typebox.style.borderColor = "#f00";
                     instructions.textContent = "Password must be at least 4 characters.";
                     instructions.style.color = "#f00";
                     setTimeout(() => {
-                        typebox.style.borderColor = "#052";
+                        typebox.style.borderColor = "#314177";
                         instructions.textContent = "Type a new password (4+ letters, no bad words).";
                         instructions.style.color = "#666";
                     }, 1500);
@@ -437,20 +312,19 @@ export default async function infiniteUserMinigame() {
                     instructions.style.color = "#f00";
                     setTimeout(() => {
                         typebox.innerText = ">";
-                        typebox.style.borderColor = "#052";
+                        typebox.style.borderColor = "#314177";
                         instructions.textContent = "Type a new password (4+ letters, no bad words).";
                         instructions.style.color = "#666";
                     }, 1500);
                     return;
                 }
                 
-                // Check for duplicates
                 if (passwords.includes(input)) {
                     typebox.style.borderColor = "#f00";
                     instructions.textContent = "Password already exists. Choose another.";
                     instructions.style.color = "#f00";
                     setTimeout(() => {
-                        typebox.style.borderColor = "#052";
+                        typebox.style.borderColor = "#314177";
                         instructions.textContent = "Type a new password (4+ letters, no bad words).";
                         instructions.style.color = "#666";
                     }, 1500);
@@ -459,10 +333,9 @@ export default async function infiniteUserMinigame() {
                 
                 completeWithReward(input);
             } else {
-                // Check if password matches
                 if (input === selectedPassword) {
                     messageDiv.innerHTML = `
-                        <div style="color: #0a5; font-size: 16px;">ACCESS GRANTED</div>
+                        <div style="color: #627eea; font-size: 16px;">ACCESS GRANTED</div>
                         <div style="color: #888; font-size: 12px; margin-top: 10px;">Now create a replacement password for the global system.</div>
                         <div style="color: #a80; font-size: 10px; margin-top: 5px;">Your password will be shared with other players!</div>
                     `;
@@ -474,7 +347,7 @@ export default async function infiniteUserMinigame() {
                     typebox.innerText = ">DENIED";
                     setTimeout(() => {
                         typebox.innerText = ">";
-                        typebox.style.borderColor = "#052";
+                        typebox.style.borderColor = "#314177";
                     }, 800);
                 }
             }

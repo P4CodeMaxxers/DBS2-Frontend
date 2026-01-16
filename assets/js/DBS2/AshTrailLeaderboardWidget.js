@@ -3,6 +3,8 @@
  * Pulls from backend: GET /api/dbs2/leaderboard/minigame?game=ash_trail&limit=5
  * Auto-refreshes on an interval.
  */
+import { pythonURI } from '../api/config.js';
+
 export default class AshTrailLeaderboardWidget {
   constructor(apiBase = null) {
     this.container = null;
@@ -14,8 +16,8 @@ export default class AshTrailLeaderboardWidget {
   }
 
   _inferApiBase() {
-    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    return isLocalhost ? "http://localhost:8403/api/dbs2" : "/api/dbs2";
+    // Use pythonURI from config.js to ensure correct backend URL when deployed
+    return `${pythonURI}/api/dbs2`;
   }
 
   async fetchLeaderboard(limit = 5) {
