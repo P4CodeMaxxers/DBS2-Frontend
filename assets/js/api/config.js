@@ -3,9 +3,9 @@ export const baseurl = "{{ site.baseurl }}";
 // Flask backend URI
   export var pythonURI;
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-      pythonURI = "http://localhost:8587";  // Same URI for localhost or 127.0.0.1
+      pythonURI = "http://localhost:8403";  // Same URI for localhost or 127.0.0.1
   } else {
-      pythonURI = "https://flask.opencodingsociety.com";
+      pythonURI = "https://dbs2.opencodingsociety.com";
   }
 
 // Keep javaURI pointing to Flask (for any legacy code that uses it)
