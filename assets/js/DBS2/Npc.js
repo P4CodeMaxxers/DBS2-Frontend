@@ -61,20 +61,24 @@ class Npc extends Character {
                     console.log(`NPC ID: ${this.spriteData.id}, Players colliding: ${players.length}`);
                     
                     if (players.length === 0) {
-                        // Check if player is at least close to this NPC (fallback for SodaCan)
+                        // Check if player is at least close to this NPC (fallback for SodaCan and Cards)
                         const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
-                        if (player && this.spriteData.id === 'SodaCan') {
+                        if (player && (this.spriteData.id === 'SodaCan' || this.spriteData.id === 'Cards')) {
                             // Calculate distance
                             const dist = Math.sqrt(
                                 Math.pow(player.position.x - this.position.x, 2) + 
                                 Math.pow(player.position.y - this.position.y, 2)
                             );
-                            console.log(`Distance to SodaCan: ${dist}`);
+                            console.log(`Distance to ${this.spriteData.id}: ${dist}`);
                             
                             // If within 200 pixels, launch anyway
                             if (dist < 200) {
-                                console.log('Player close enough to SodaCan, launching game...');
-                                this.launchWhackARat();
+                                console.log(`Player close enough to ${this.spriteData.id}, launching game...`);
+                                if (this.spriteData.id === 'SodaCan') {
+                                    this.launchWhackARat();
+                                } else if (this.spriteData.id === 'Cards') {
+                                    this.launchCryptoChecker();
+                                }
                                 return;
                             }
                         }
@@ -106,6 +110,11 @@ class Npc extends Character {
                         case 'SodaCan':
                             console.log('✅ SodaCan interaction detected!');
                             this.launchWhackARat();
+                            return;
+
+                        case 'Cards':
+                            console.log('✅ Cards interaction detected!');
+                            this.launchCryptoChecker();
                             return;
 
                         case 'IShowGreen':
@@ -189,6 +198,67 @@ class Npc extends Character {
         } catch (error) {
             console.error('❌ Error launching Rat Clicker:', error);
             const overlay = document.getElementById('whackarat-overlay');
+            if (overlay?.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+            alert('Error starting minigame: ' + error.message);
+        }
+    }
+
+    async launchCryptoChecker() {
+        try {
+            console.log('🎮 Starting Crypto Checker minigame...');
+
+            // Dynamically import the module to avoid errors if it doesn't exist
+            const { default: startCryptoChecker } = await import('./cryptochecker.js').catch(err => {
+                console.error('Failed to load cryptochecker.js:', err);
+                throw new Error('Crypto Checker game module not found');
+            });
+
+            // Create fullscreen overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'cryptochecker-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.style.zIndex = '10000';
+            document.body.appendChild(overlay);
+
+            // Get player for crypto reward
+            const player = GameEnv.gameObjects?.find(obj => obj.spriteData?.id === 'player');
+
+            // Start the game
+            await startCryptoChecker(overlay, (result) => {
+                console.log('✅ Crypto Checker finished!', result);
+
+                // Award crypto based on score
+                if (player?.spriteData?.crypto !== undefined && result.cryptoEarned > 0) {
+                    player.spriteData.crypto += result.cryptoEarned;
+                    console.log(`💰 Total crypto: ${player.spriteData.crypto}`);
+
+                    setTimeout(() => {
+                        alert(`🎉 Game Complete!\n\n💰 +${result.cryptoEarned} Crypto Earned!\n🎯 Score: ${result.score}\n📊 Accuracy: ${result.accuracy}%\n💎 Total Crypto: ${player.spriteData.crypto}`);
+                    }, 100);
+                } else {
+                    setTimeout(() => {
+                        alert(`😞 Game Over!\n\n🎯 Score: ${result.score}\n📊 Accuracy: ${result.accuracy}%\n\nTry again!`);
+                    }, 100);
+                }
+
+                // Remove overlay
+                if (overlay?.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            });
+        } catch (error) {
+            console.error('❌ Error launching Crypto Checker:', error);
+            const overlay = document.getElementById('cryptochecker-overlay');
             if (overlay?.parentNode) {
                 overlay.parentNode.removeChild(overlay);
             }
