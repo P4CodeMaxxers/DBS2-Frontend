@@ -107,14 +107,13 @@ show_reading_time: false
 <script type="module">
     import { pythonURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
 
-    // Login - Direct fetch without using the login() helper
+    // Login
     window.pythonLogin = async function (event) {
         event.preventDefault();
         
         const messageEl = document.getElementById("message");
         const loginButton = document.querySelector(".login-card button");
         
-        // Clear previous messages
         messageEl.textContent = "";
         loginButton.disabled = true;
 
@@ -123,7 +122,10 @@ show_reading_time: false
             password: document.getElementById("password").value,
         };
 
-        console.log("Attempting login with:", { uid: loginData.uid }); // Debug log (don't log password)
+        console.log("=== LOGIN ATTEMPT ===");
+        console.log("Backend URI:", pythonURI);
+        console.log("Login endpoint:", `${pythonURI}/api/authenticate`);
+        console.log("Username:", loginData.uid);
 
         try {
             const response = await fetch(`${pythonURI}/api/authenticate`, {
@@ -131,27 +133,52 @@ show_reading_time: false
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: "include",
+                credentials: "include", // This is critical for cookies
+                mode: "cors", // Explicitly set CORS mode
                 body: JSON.stringify(loginData)
             });
 
-            console.log("Login response status:", response.status);
+            console.log("Response status:", response.status);
+            console.log("Response headers:", [...response.headers.entries()]);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Authentication failed: ${response.status}`);
+                // Try to get error details from response
+                let errorMessage = `Authentication failed (${response.status})`;
+                try {
+                    const errorData = await response.json();
+                    console.log("Error data:", errorData);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.log("Error text:", errorText);
+                    if (errorText) errorMessage = errorText;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log("Login successful:", data);
+            console.log("Login successful! Response:", data);
 
             // Redirect to profile on success
             window.location.href = '{{site.baseurl}}/profile';
 
         } catch (error) {
-            console.error("Login Error:", error);
+            console.error("=== LOGIN ERROR ===");
+            console.error("Error type:", error.name);
+            console.error("Error message:", error.message);
+            console.error("Full error:", error);
+            
             messageEl.style.color = "red";
-            messageEl.textContent = error.message || "Invalid username or password";
+            
+            // More helpful error messages
+            if (error.message.includes("Failed to fetch")) {
+                messageEl.textContent = "Cannot connect to server. Check if backend is running and CORS is configured.";
+            } else if (error.message.includes("401")) {
+                messageEl.textContent = "Invalid username or password. Please check your credentials.";
+            } else {
+                messageEl.textContent = error.message;
+            }
+            
             loginButton.disabled = false;
         }
     }
@@ -174,7 +201,11 @@ show_reading_time: false
             kasm_server_needed: document.getElementById("kasmNeeded").checked,
         };
 
-        console.log("Attempting signup with:", { uid: signupData.uid, email: signupData.email });
+        console.log("=== SIGNUP ATTEMPT ===");
+        console.log("Backend URI:", pythonURI);
+        console.log("Signup endpoint:", `${pythonURI}/api/user`);
+        console.log("Username:", signupData.uid);
+        console.log("Email:", signupData.email);
 
         try {
             const response = await fetch(`${pythonURI}/api/user`, {
@@ -183,29 +214,49 @@ show_reading_time: false
                     "Content-Type": "application/json"
                 },
                 credentials: "include",
+                mode: "cors",
                 body: JSON.stringify(signupData)
             });
 
-            console.log("Signup response status:", response.status);
+            console.log("Response status:", response.status);
+            console.log("Response headers:", [...response.headers.entries()]);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Signup failed: ${response.status}`);
+                let errorMessage = `Signup failed (${response.status})`;
+                try {
+                    const errorData = await response.json();
+                    console.log("Error data:", errorData);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.log("Error text:", errorText);
+                    if (errorText) errorMessage = errorText;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log("Signup successful:", data);
+            console.log("Signup successful! Response:", data);
             
             messageEl.style.color = "green";
-            messageEl.textContent = "Signup successful! You can now log in.";
+            messageEl.textContent = "Signup successful! You can now log in with your credentials.";
             
             // Clear form
             document.getElementById("signupForm").reset();
 
         } catch (error) {
-            console.error("Signup Error:", error);
+            console.error("=== SIGNUP ERROR ===");
+            console.error("Error type:", error.name);
+            console.error("Error message:", error.message);
+            console.error("Full error:", error);
+            
             messageEl.style.color = "red";
-            messageEl.textContent = error.message || "Signup failed. Please try again.";
+            
+            if (error.message.includes("Failed to fetch")) {
+                messageEl.textContent = "Cannot connect to server. Check if backend is running and CORS is configured.";
+            } else {
+                messageEl.textContent = error.message;
+            }
         } finally {
             signupButton.disabled = false;
         }
