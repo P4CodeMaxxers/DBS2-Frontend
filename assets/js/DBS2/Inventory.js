@@ -186,6 +186,7 @@ const Inventory = {
         for (const [minigame, scrap] of Object.entries(CODE_SCRAPS)) {
             if (foundAt.includes(minigame) || 
                 foundAt.includes(minigame.replace('_', '')) ||
+                foundAt.includes('shop_purchase') || // Handle purchased code scraps
                 itemName.includes(minigame) ||
                 itemName.includes(minigame.replace('_', ' ')) ||
                 itemName.includes(scrap.name.toLowerCase())) {
@@ -669,7 +670,7 @@ const Inventory = {
                         <option value="">Select coin...</option>
                     </select>
                     <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="0.0001" min="0">
-                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertToSats()">CONVERT (5% fee)</button>
+                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertCoins()">TRADE (5% fee)</button>
                     <div id="convert-result" class="convert-result"></div>
                 </div>
             </div>
@@ -855,7 +856,8 @@ const Inventory = {
         const coinsEl = document.getElementById('wallet-coins');
         const totalEl = document.getElementById('wallet-total');
         const convertSection = document.getElementById('wallet-convert');
-        const convertSelect = document.getElementById('convert-coin');
+        const fromCoinSelect = document.getElementById('convert-from-coin');
+        const toCoinSelect = document.getElementById('convert-to-coin');
         
         if (!coinsEl || !this.walletData) return;
         
@@ -868,7 +870,8 @@ const Inventory = {
         
         let html = '';
         let hasConvertibleCoins = false;
-        let selectOptions = '<option value="">Select coin...</option>';
+        let fromOptions = '<option value="">From...</option>';
+        let toOptions = '<option value="">To...</option>';
         
         for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
             const balance = wallet[coinId] || 0;
@@ -891,10 +894,11 @@ const Inventory = {
                 </div>
             `;
             
-            // Add to select if has balance and not satoshis
-            if (balance > 0 && coinId !== 'satoshis') {
+            // Add to select options if has balance (any coin, including satoshis)
+            if (balance > 0) {
                 hasConvertibleCoins = true;
-                selectOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+                fromOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+                toOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
             }
         }
         
@@ -904,8 +908,11 @@ const Inventory = {
         if (convertSection) {
             convertSection.style.display = hasConvertibleCoins ? 'block' : 'none';
         }
-        if (convertSelect) {
-            convertSelect.innerHTML = selectOptions;
+        if (fromCoinSelect) {
+            fromCoinSelect.innerHTML = fromOptions;
+        }
+        if (toCoinSelect) {
+            toCoinSelect.innerHTML = toOptions;
         }
     },
 
@@ -925,33 +932,41 @@ const Inventory = {
         });
         event.currentTarget?.classList.add('selected');
         
-        // If not satoshis, populate convert fields
-        if (coinId !== 'satoshis') {
-            const select = document.getElementById('convert-coin');
-            const amountInput = document.getElementById('convert-amount');
-            
-            if (select) {
-                select.value = coinId;
-            }
-            if (amountInput && this.walletData?.raw_balances) {
-                amountInput.value = this.walletData.raw_balances[coinId] || '';
-            }
+        // Populate convert fields
+        const fromSelect = document.getElementById('convert-from-coin');
+        const amountInput = document.getElementById('convert-amount');
+        
+        if (fromSelect) {
+            fromSelect.value = coinId;
+        }
+        if (amountInput && this.walletData?.raw_balances) {
+            amountInput.value = this.walletData.raw_balances[coinId] || '';
         }
     },
 
-    async convertToSats() {
-        const coinSelect = document.getElementById('convert-coin');
+    async convertCoins() {
+        const fromCoinSelect = document.getElementById('convert-from-coin');
+        const toCoinSelect = document.getElementById('convert-to-coin');
         const amountInput = document.getElementById('convert-amount');
         const resultDiv = document.getElementById('convert-result');
         const btn = document.getElementById('convert-btn');
         
-        const coinId = coinSelect?.value;
+        const fromCoin = fromCoinSelect?.value;
+        const toCoin = toCoinSelect?.value;
         const amount = parseFloat(amountInput?.value || 0);
         
-        if (!coinId) {
+        if (!fromCoin || !toCoin) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Select a coin to convert';
+                resultDiv.textContent = 'Select both source and destination coins';
+            }
+            return;
+        }
+        
+        if (fromCoin === toCoin) {
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = 'Cannot convert to the same coin';
             }
             return;
         }
@@ -965,7 +980,7 @@ const Inventory = {
         }
         
         // Check balance
-        const balance = this.walletData?.raw_balances?.[coinId] || 0;
+        const balance = this.walletData?.raw_balances?.[fromCoin] || 0;
         if (amount > balance) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
@@ -977,7 +992,7 @@ const Inventory = {
         // Disable button
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Converting...';
+            btn.textContent = 'Trading...';
         }
         if (resultDiv) {
             resultDiv.className = 'convert-result';
@@ -985,12 +1000,16 @@ const Inventory = {
         }
         
         try {
-            const result = await convertCoin(coinId, 'satoshis', amount);
+            const result = await convertCoin(fromCoin, toCoin, amount);
             
             if (result && result.success) {
+                const fromConfig = this.COIN_CONFIG[fromCoin];
+                const toConfig = this.COIN_CONFIG[toCoin];
+                const formattedAmount = this.formatBalance(result.to_amount || 0, toConfig.decimals);
+                
                 if (resultDiv) {
                     resultDiv.className = 'convert-result success';
-                    resultDiv.textContent = `✓ Converted to ${result.to_amount.toLocaleString()} sats`;
+                    resultDiv.textContent = `✓ Traded ${this.formatBalance(amount, fromConfig.decimals)} ${fromConfig.symbol} → ${formattedAmount} ${toConfig.symbol}`;
                 }
                 
                 // Refresh wallet
@@ -998,22 +1017,23 @@ const Inventory = {
                 
                 // Clear inputs
                 if (amountInput) amountInput.value = '';
-                if (coinSelect) coinSelect.value = '';
+                if (fromCoinSelect) fromCoinSelect.value = '';
+                if (toCoinSelect) toCoinSelect.value = '';
                 
             } else {
-                throw new Error(result?.error || 'Conversion failed');
+                throw new Error(result?.error || 'Trade failed');
             }
             
         } catch (e) {
-            console.error('[Inventory] Convert error:', e);
+            console.error('[Inventory] Trade error:', e);
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = e.message || 'Conversion failed';
+                resultDiv.textContent = e.message || 'Trade failed';
             }
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = 'CONVERT (5% fee)';
+                btn.textContent = 'TRADE (5% fee)';
             }
         }
     }

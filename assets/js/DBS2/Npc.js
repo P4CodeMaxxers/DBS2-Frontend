@@ -117,6 +117,23 @@ class Npc extends Character {
                             this.launchCryptoChecker();
                             return;
 
+                        case 'Closet':
+                            if (window.ClosetShop && window.ClosetShop.show) {
+                                window.ClosetShop.show();
+                            } else {
+                                // Fallback: try to import and show
+                                import('./ClosetShop.js').then(module => {
+                                    const ClosetShop = module.default || module;
+                                    if (ClosetShop && ClosetShop.showClosetShop) {
+                                        ClosetShop.showClosetShop();
+                                    }
+                                }).catch(e => {
+                                    console.error('Failed to load ClosetShop:', e);
+                                    Prompt.showDialoguePopup('Closet', 'The closet shop is temporarily unavailable.');
+                                });
+                            }
+                            return;
+
                         case 'IShowGreen':
                             Prompt.currentNpc = this;
                             Prompt.openPromptPanel(this);

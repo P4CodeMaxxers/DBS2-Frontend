@@ -40,6 +40,17 @@ const GameControl = {
         // Initialize inventory UI
         try { Inventory.init(); } catch (e) { console.error('Inventory init failed', e); }
         
+        // Initialize closet shop (no separate button needed - accessed via game object)
+        // Load asynchronously without blocking
+        import('./ClosetShop.js').then(module => {
+            const ClosetShop = module.default || module;
+            if (ClosetShop && ClosetShop.initClosetShop) {
+                ClosetShop.initClosetShop();
+            }
+        }).catch(e => { 
+            console.error('ClosetShop init failed', e); 
+        });
+        
         // Initialize win condition listeners
         this.initWinConditionListeners();
         

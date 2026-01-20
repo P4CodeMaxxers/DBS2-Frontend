@@ -220,6 +220,33 @@ const DBS2API = {
         return { inventory: data.inventory || [] };
     },
     
+    // ============ SHOP ============
+    async purchaseShopItem(itemId, item) {
+        try {
+            // Backend endpoint will be: POST /api/dbs2/shop/purchase
+            const res = await fetch(`${this.baseUrl}/shop/purchase`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({
+                    item_id: itemId,
+                    item_type: item.type,
+                    price_coin: item.price.coin,
+                    price_amount: item.price.amount
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                return { success: false, error: err.error || 'Purchase failed' };
+            }
+            const data = await res.json();
+            this.refreshLeaderboard();
+            return { success: true, ...data };
+        } catch (e) {
+            console.log('[DBS2API] purchaseShopItem error:', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
+    
     // ============ SCORES ============
     async getScores() {
         try {
