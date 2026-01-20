@@ -7,6 +7,7 @@ import cryptoMinerMinigame from "./cryptoMinerMinigame.js";
 import { showLaundryMinigame } from "./LaundryGame.js";
 import startWhackGame from "./whackarat.js";
 
+
 class Npc extends Character {
     constructor(data = null) {
         super(data);

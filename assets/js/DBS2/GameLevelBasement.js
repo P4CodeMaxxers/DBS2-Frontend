@@ -1,4 +1,4 @@
-// GameLevelBasement.js
+/// GameLevelBasement.js
 import GameEnv from './GameEnv.js';
 import Background from './Background.js';
 import Player from './Player.js';
@@ -9,6 +9,7 @@ import startWhackGame from './whackarat.js';
  * GameLevelBasement
  * - All asset paths use `${path}/images/DBS2/...`
  * - SodaCan NPC replaces ShellNpc1 and launches Whackarat minigame
+ * - Cards NPC launches Crypto Checker minigame (positioned right beside SodaCan)
  */
 class GameLevelBasement {
   constructor(path = '') {
@@ -108,8 +109,7 @@ class GameLevelBasement {
     };
 
     /* ----------------------
-       SODA CAN (NPC) - REPLACES ShellNpc1
-       Shows "whack some rats" greeting and launches minigame
+       SODA CAN (NPC) - Launches Whackarat
     ------------------------*/
     const sprite_data_sodacan = {
       id: 'SodaCan',
@@ -119,6 +119,24 @@ class GameLevelBasement {
       ANIMATION_RATE: 0,
       pixels: { height: 1000, width: 750 },
       INIT_POSITION: { x: width * 1 / 12, y: height * 0.6 },
+      orientation: { rows: 1, columns: 1 },
+      down: { row: 0, start: 0, columns: 1 },
+      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      stationary: true
+    };
+
+    /* ----------------------
+       CARDS (NPC) - Launches Crypto Checker
+       Positioned RIGHT BESIDE the soda can
+    ------------------------*/
+    const sprite_data_cards = {
+      id: 'Cards',
+      greeting: 'Test your crypto knowledge! Approve legit coins, reject scams!',
+      src: `${this.path}/images/DBS2/cards.png`,
+      SCALE_FACTOR: 10,
+      ANIMATION_RATE: 0,
+      pixels: { height: 600, width: 600 },
+      INIT_POSITION: { x: width * 1 / 12 + width * 0.08, y: height * 0.62 }, // Right beside soda can
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
@@ -160,13 +178,11 @@ class GameLevelBasement {
       { class: Npc, data: sprite_data_computer1 },
       { class: Npc, data: sprite_data_computer2 },
       { class: Npc, data: sprite_data_ishowgreen },
-      { class: Npc, data: sprite_data_sodacan }, // REPLACED ShellNpc1 with SodaCan
+      { class: Npc, data: sprite_data_sodacan }, // Monster can - launches Whackarat
+      { class: Npc, data: sprite_data_cards },   // Cards - launches Crypto Checker (RIGHT BESIDE soda can)
       { class: Npc, data: sprite_data_shell2 },
       { class: Npc, data: sprite_data_bookshelf },
     ];
-
-    // REMOVED: _createSodaLauncher - no longer need floating button
-    // The SodaCan NPC now handles the interaction directly
   }
 }
 
