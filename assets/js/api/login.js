@@ -61,7 +61,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 loginArea.innerHTML = `<a href="${baseurl}/login">Login</a>`;
             }
         });
+
+    // Add login form handler
+    const loginForm = document.querySelector('form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 });
+
+// New function for handling login form submission
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const username = event.target.querySelector('input[name="uid"]').value;
+    const password = event.target.querySelector('input[name="password"]').value;
+    
+    try {
+        const response = await fetch(pythonURI + '/api/authenticate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                uid: username,
+                password: password
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Login successful:', data);
+            window.location.href = baseurl; // Redirect to home
+        } else {
+            const error = await response.json();
+            console.error('Login failed:', error);
+            alert('Invalid username or password');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to connect to server. CORS error - check backend configuration.');
+    }
+}
 
 function getCredentials(baseurl) {
     const URL = pythonURI + '/api/id';
