@@ -56,7 +56,7 @@ show_reading_time: false
     <div class="login-card">
         <h1 id="pythonTitle">User Login</h1>
         <hr>
-        <form id="pythonForm" onsubmit="pythonLogin(); return false;">
+        <form id="pythonForm" onsubmit="pythonLogin(event); return false;">
             <div class="form-group">
                 <input type="text" id="uid" placeholder="GitHub ID" required>
             </div>
@@ -74,7 +74,7 @@ show_reading_time: false
     <div class="signup-card">
         <h1 id="signupTitle">Sign Up</h1>
         <hr>
-        <form id="signupForm" onsubmit="signup(); return false;">
+        <form id="signupForm" onsubmit="signup(event); return false;">
             <div class="form-group">
                 <input type="text" id="name" placeholder="Name" required>
             </div>
@@ -105,46 +105,66 @@ show_reading_time: false
 </div>
 
 <script type="module">
-    import { login, pythonURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
 
-    // Login - Flask only
-    window.pythonLogin = function () {
-        const options = {
-            URL: `${pythonURI}/api/authenticate`,
-            callback: onLoginSuccess,
-            message: "message",
-            method: "POST",
-            cache: "no-cache",
-            body: {
-                uid: document.getElementById("uid").value,
-                password: document.getElementById("password").value,
-            }
+    // Login - Direct fetch without using the login() helper
+    window.pythonLogin = async function (event) {
+        event.preventDefault();
+        
+        const messageEl = document.getElementById("message");
+        const loginButton = document.querySelector(".login-card button");
+        
+        // Clear previous messages
+        messageEl.textContent = "";
+        loginButton.disabled = true;
+
+        const loginData = {
+            uid: document.getElementById("uid").value,
+            password: document.getElementById("password").value,
         };
-        login(options);
-    }
 
-    // On successful login, redirect to profile
-    function onLoginSuccess() {
-        const URL = `${pythonURI}/api/id`;
-        fetch(URL, fetchOptions)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Flask server response: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                window.location.href = '{{site.baseurl}}/profile';
-            })
-            .catch(error => {
-                document.getElementById("message").textContent = `Error: ${error.message}`;
+        console.log("Attempting login with:", { uid: loginData.uid }); // Debug log (don't log password)
+
+        try {
+            const response = await fetch(`${pythonURI}/api/authenticate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+                body: JSON.stringify(loginData)
             });
+
+            console.log("Login response status:", response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Authentication failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Login successful:", data);
+
+            // Redirect to profile on success
+            window.location.href = '{{site.baseurl}}/profile';
+
+        } catch (error) {
+            console.error("Login Error:", error);
+            messageEl.style.color = "red";
+            messageEl.textContent = error.message || "Invalid username or password";
+            loginButton.disabled = false;
+        }
     }
 
-    // Signup - Flask only
-    window.signup = function () {
+    // Signup
+    window.signup = async function (event) {
+        event.preventDefault();
+        
         const signupButton = document.querySelector(".signup-card button");
+        const messageEl = document.getElementById("signupMessage");
+        
         signupButton.disabled = true;
+        messageEl.textContent = "";
 
         const signupData = {
             name: document.getElementById("name").value,
@@ -154,30 +174,40 @@ show_reading_time: false
             kasm_server_needed: document.getElementById("kasmNeeded").checked,
         };
 
-        fetch(`${pythonURI}/api/user`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify(signupData)
-        })
-        .then(response => {
+        console.log("Attempting signup with:", { uid: signupData.uid, email: signupData.email });
+
+        try {
+            const response = await fetch(`${pythonURI}/api/user`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+                body: JSON.stringify(signupData)
+            });
+
+            console.log("Signup response status:", response.status);
+
             if (!response.ok) {
-                throw new Error(`Signup failed: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Signup failed: ${response.status}`);
             }
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById("signupMessage").style.color = "green";
-            document.getElementById("signupMessage").textContent = "Signup successful! You can now log in.";
-            signupButton.disabled = false;
-        })
-        .catch(error => {
+
+            const data = await response.json();
+            console.log("Signup successful:", data);
+            
+            messageEl.style.color = "green";
+            messageEl.textContent = "Signup successful! You can now log in.";
+            
+            // Clear form
+            document.getElementById("signupForm").reset();
+
+        } catch (error) {
             console.error("Signup Error:", error);
-            document.getElementById("signupMessage").style.color = "red";
-            document.getElementById("signupMessage").textContent = `Signup Error: ${error.message}`;
+            messageEl.style.color = "red";
+            messageEl.textContent = error.message || "Signup failed. Please try again.";
+        } finally {
             signupButton.disabled = false;
-        });
+        }
     }
 </script>
