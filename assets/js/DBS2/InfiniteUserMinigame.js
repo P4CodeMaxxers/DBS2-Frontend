@@ -1,7 +1,7 @@
 // InfiniteUserMinigame.js - Rewards ETHEREUM (ETH)
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
+import { rewardMinigame, isMinigameCompleted, completeMinigame } from './StatsManager.js';
 import { javaURI, pythonURI, fetchOptions } from '../api/config.js';
 import Prompt from './Prompt.js';
 
@@ -241,21 +241,13 @@ export default async function infiniteUserMinigame() {
         if (isFirstCompletion) {
             try {
                 await completeMinigame(MINIGAME_NAME);
-                await addInventoryItem({
-                    name: 'Code Scrap: Infinite User',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
             } catch (e) {}
         }
         
         if (isFirstCompletion) {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #627eea;">CODE FRAGMENT RECOVERED</div>
-                <div style="font-size: 12px; margin-top: 10px; color: #888;">Found the password list behind the keyboard.</div>
-                <div style="margin-top: 15px;">
-                    <img src="${baseurl}/images/DBS2/codescrapPassword.png" style="max-width: 70px; border: 1px solid #627eea; border-radius: 4px;" onerror="this.style.display='none'">
-                </div>
+                <div style="font-size: 16px; color: #627eea;">PASSWORD UPDATED (First Time)</div>
+                <div style="font-size: 12px; margin-top: 10px; color: #888;">First completion bonus earned!</div>
                 <div style="font-size: 14px; margin-top: 10px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
             `;
         } else {

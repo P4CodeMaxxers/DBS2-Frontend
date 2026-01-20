@@ -1,7 +1,7 @@
 // LaundryGame.js - Rewards CARDANO (ADA)
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { isMinigameCompleted, completeMinigame, addInventoryItem, rewardMinigame } from './StatsManager.js';
+import { isMinigameCompleted, completeMinigame, rewardMinigame } from './StatsManager.js';
 
 const MINIGAME_NAME = 'laundry';
 const COIN_NAME = 'Cardano';
@@ -363,18 +363,13 @@ export async function showLaundryMinigame(onComplete) {
     
     const rewardAmount = isFirstCompletion ? 35 : 20;
     paperDiscovery.innerHTML = `
-        <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
+        <div style="font-size: 36px; margin-bottom: 10px;">✅</div>
         <div style="color: #0033ad; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-            ${isFirstCompletion ? 'CODE FRAGMENT FOUND!' : 'LAUNDRY DONE!'}
+            ${isFirstCompletion ? 'LAUNDRY COMPLETE! (First Time)' : 'LAUNDRY DONE!'}
         </div>
         <div style="color: #888; font-size: 12px; margin-bottom: 15px;">
-            ${isFirstCompletion ? 'Found a soggy piece of paper stuck to a sock. The ink is smeared but still readable.' : 'The machine hums along. Another load complete.'}
+            ${isFirstCompletion ? 'The machine hums perfectly. First completion bonus earned!' : 'The machine hums along. Another load complete.'}
         </div>
-        ${isFirstCompletion ? `
-        <div style="background: rgba(0,51,173,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-            <img src="${baseurl}/images/DBS2/codescrapLaundry.png" style="max-width: 80px; border: 1px solid #0033ad; border-radius: 4px;" onerror="this.style.display='none'">
-        </div>
-        ` : ''}
         <div style="color: #0033ad; font-size: 18px; font-weight: bold; margin-bottom: 15px;">
             +${rewardAmount} ${COIN_NAME} (${COIN_SYMBOL})
         </div>
@@ -593,13 +588,6 @@ export async function showLaundryMinigame(onComplete) {
             if (isFirstCompletion) {
                 await completeMinigame(MINIGAME_NAME);
                 console.log('✅ Minigame marked complete');
-                
-                await addInventoryItem({
-                    name: 'Code Scrap: Laundry',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
-                console.log('✅ Code scrap added to inventory');
             }
             
             // Refresh leaderboard

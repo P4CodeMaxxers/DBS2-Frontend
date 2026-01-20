@@ -1,7 +1,7 @@
 // cryptoMinerMinigame.js - Rewards SATOSHIS
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { rewardMinigame, completeMinigame, isMinigameCompleted, addInventoryItem, getCoinPrice } from './StatsManager.js';
+import { rewardMinigame, completeMinigame, isMinigameCompleted, getCoinPrice } from './StatsManager.js';
 import Prompt from './Prompt.js';
 
 const MINIGAME_NAME = 'crypto_miner';
@@ -429,14 +429,6 @@ function cryptoMinerMinigame() {
         try {
             await rewardMinigame(MINIGAME_NAME, satoshiReward);
             await completeMinigame(MINIGAME_NAME);
-            
-            if (isFirstCompletion) {
-                await addInventoryItem({
-                    name: 'Code Scrap: Crypto Miner',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
-            }
         } catch (e) {
             console.log('Could not save progress:', e);
         }
@@ -476,14 +468,6 @@ function cryptoMinerMinigame() {
             </div>
         `;
         
-        if (isFirstCompletion) {
-            html += `
-                <div style="background: rgba(247,147,26,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f7931a;">
-                    <div style="font-size: 14px; color: #f7931a;">🧩 CODE SCRAP FOUND!</div>
-                    <div style="font-size: 12px; color: #888; margin-top: 5px;">Added to inventory</div>
-                </div>
-            `;
-        }
         
         html += `<button id="close-complete" style="
             background: linear-gradient(135deg, #0f0 0%, #050 100%);

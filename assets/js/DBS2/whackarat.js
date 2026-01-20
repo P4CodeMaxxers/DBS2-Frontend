@@ -1,6 +1,6 @@
 /// whackarat.js
 // Whack-a-rat minigame - rewards DOGECOIN
-import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem, getCoinForMinigame } from './StatsManager.js';
+import { rewardMinigame, isMinigameCompleted, completeMinigame, getCoinForMinigame } from './StatsManager.js';
 
 const MINIGAME_NAME = 'whackarat';
 const COIN_NAME = 'Dogecoin';
@@ -252,18 +252,11 @@ async function endGame() {
     }
   }
   
-  // Mark complete and add code scrap on first completion
+  // Mark complete on first completion
   if (Whack.isFirstCompletion) {
     try {
       await completeMinigame(MINIGAME_NAME);
       console.log('[Whackarat] Marked as complete');
-      
-      await addInventoryItem({
-        name: 'Code Scrap: Whack-a-Rat',
-        found_at: MINIGAME_NAME,
-        timestamp: new Date().toISOString()
-      });
-      console.log('[Whackarat] Code scrap added to inventory');
     } catch (e) {
       console.log('[Whackarat] Could not save completion:', e);
     }
@@ -323,17 +316,11 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
   if (Whack.isFirstCompletion && score > 0) {
     contentHtml = `
       <h2 style="color: #c2a633; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
-        CODE FRAGMENT RECOVERED
+        EXTERMINATION COMPLETE
       </h2>
       <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        Found a piece of paper behind the pipes. The rats were using it as bedding.
+        The rats scatter back into the walls. First completion bonus earned!
       </p>
-      <div style="background: rgba(194,166,51,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #52410a;">
-        <img src="${Whack.baseurl}/images/DBS2/codescrapWhackarat.png" 
-             style="max-width: 100px; margin: 10px auto; display: block; border: 2px solid #c2a633; border-radius: 6px;" 
-             onerror="this.outerHTML='<div style=\\'font-size:48px;\\'>D</div>'">
-        <p style="color: #c2a633; font-size: 12px; margin: 10px 0 0 0;">Code fragment added to inventory</p>
-      </div>
       <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
         <div style="color: #888; font-size: 12px;">Final Score</div>
         <div style="color: #c2a633; font-size: 28px; font-weight: bold;">${score}</div>
