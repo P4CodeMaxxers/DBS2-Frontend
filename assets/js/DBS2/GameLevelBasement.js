@@ -1,4 +1,4 @@
-/// GameLevelBasement.js
+// GameLevelBasement.js
 import GameEnv from './GameEnv.js';
 import Background from './Background.js';
 import Player from './Player.js';
@@ -127,7 +127,7 @@ class GameLevelBasement {
 
     /* ----------------------
        CARDS (NPC) - Launches Crypto Checker
-       Positioned RIGHT BESIDE the soda can
+       Positioned to the RIGHT of the soda can (further away to avoid overlap)
     ------------------------*/
     const sprite_data_cards = {
       id: 'Cards',
@@ -136,7 +136,7 @@ class GameLevelBasement {
       SCALE_FACTOR: 10,
       ANIMATION_RATE: 0,
       pixels: { height: 600, width: 600 },
-      INIT_POSITION: { x: width * 1 / 12 + width * 0.08, y: height * 0.62 }, // Right beside soda can
+      INIT_POSITION: { x: width * 1 / 12 + width * 0.15, y: height * 0.62 }, // Moved further right
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
