@@ -21,14 +21,14 @@ export const fetchOptions = {
     mode: 'cors',
     cache: 'default',
     credentials: 'include',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-Origin': 'client',
-        get 'Authorization'() {
-            const token = localStorage.getItem('jwt_token');
-            return token ? `Bearer ${token}` : '';
-        }
-    },
+    get headers() {
+        const token = localStorage.getItem('jwt_token');
+        return {
+            'Content-Type': 'application/json',
+            'X-Origin': 'client',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+    }
 };
 
 // User Login Function
