@@ -23,7 +23,11 @@ export const fetchOptions = {
     credentials: 'include',
     headers: {
         'Content-Type': 'application/json',
-        'X-Origin': 'client'
+        'X-Origin': 'client',
+        get 'Authorization'() {
+            const token = localStorage.getItem('jwt_token');
+            return token ? `Bearer ${token}` : '';
+        }
     },
 };
 
