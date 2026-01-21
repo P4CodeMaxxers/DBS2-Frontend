@@ -1,6 +1,6 @@
 /// whackarat.js
 // Whack-a-rat minigame - rewards DOGECOIN
-import { rewardMinigame, isMinigameCompleted, completeMinigame, getCoinForMinigame } from './StatsManager.js';
+import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem, getCoinForMinigame } from './StatsManager.js';
 
 const MINIGAME_NAME = 'whackarat';
 const COIN_NAME = 'Dogecoin';
@@ -92,7 +92,7 @@ function createCanvasInOverlay(overlay) {
     top: 10px;
     right: 10px;
     z-index: 10;
-    font-size: 12px;
+    font-size: 15px;
     background: #600;
     border: 1px solid #800;
     color: #ccc;
@@ -252,11 +252,18 @@ async function endGame() {
     }
   }
   
-  // Mark complete on first completion
+  // Mark complete and add code scrap on first completion
   if (Whack.isFirstCompletion) {
     try {
       await completeMinigame(MINIGAME_NAME);
       console.log('[Whackarat] Marked as complete');
+      
+      await addInventoryItem({
+        name: 'Code Scrap: Whack-a-Rat',
+        found_at: MINIGAME_NAME,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[Whackarat] Code scrap added to inventory');
     } catch (e) {
       console.log('[Whackarat] Could not save completion:', e);
     }
@@ -316,19 +323,25 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
   if (Whack.isFirstCompletion && score > 0) {
     contentHtml = `
       <h2 style="color: #c2a633; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
-        EXTERMINATION COMPLETE
+        CODE FRAGMENT RECOVERED
       </h2>
-      <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-        The rats scatter back into the walls. First completion bonus earned!
+      <p style="color: #888; font-size: 16px; margin-bottom: 15px;">
+        Found a piece of paper behind the pipes. The rats were using it as bedding.
       </p>
+      <div style="background: rgba(194,166,51,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #52410a;">
+        <img src="${Whack.baseurl}/images/DBS2/codescrapWhackarat.png" 
+             style="max-width: 100px; margin: 10px auto; display: block; border: 2px solid #c2a633; border-radius: 6px;" 
+             onerror="this.outerHTML='<div style=\\'font-size:48px;\\'>D</div>'">
+        <p style="color: #c2a633; font-size: 15px; margin: 10px 0 0 0;">Code fragment added to inventory</p>
+      </div>
       <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-        <div style="color: #888; font-size: 12px;">Final Score</div>
+        <div style="color: #888; font-size: 15px;">Final Score</div>
         <div style="color: #c2a633; font-size: 28px; font-weight: bold;">${score}</div>
       </div>
       <div style="color: #c2a633; font-size: 16px; margin-bottom: 5px;">
         +${baseReward} ${COIN_SYMBOL} (from score)
       </div>
-      <div style="color: #ffd700; font-size: 14px; margin-bottom: 15px;">
+      <div style="color: #ffd700; font-size: 17px; margin-bottom: 15px;">
         +${bonus} ${COIN_SYMBOL} (first completion bonus!)
       </div>
       <div style="color: #0f0; font-size: 18px; font-weight: bold; margin-bottom: 20px;">
@@ -340,11 +353,11 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
       <h2 style="color: #c2a633; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
         EXTERMINATION COMPLETE
       </h2>
-      <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+      <p style="color: #888; font-size: 16px; margin-bottom: 15px;">
         The rats scatter back into the walls. For now.
       </p>
       <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <div style="color: #888; font-size: 12px;">Final Score</div>
+        <div style="color: #888; font-size: 15px;">Final Score</div>
         <div style="color: #c2a633; font-size: 32px; font-weight: bold;">${score}</div>
       </div>
       <div style="color: #c2a633; font-size: 18px; margin-bottom: 20px;">
@@ -356,14 +369,14 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
       <h2 style="color: #800; margin: 0 0 15px 0; font-size: 20px; letter-spacing: 2px;">
         THE RATS WIN
       </h2>
-      <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+      <p style="color: #888; font-size: 16px; margin-bottom: 15px;">
         You hit more soda cans than rats. The basement remains infested.
       </p>
       <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <div style="color: #888; font-size: 12px;">Final Score</div>
+        <div style="color: #888; font-size: 15px;">Final Score</div>
         <div style="color: #800; font-size: 32px; font-weight: bold;">${score}</div>
       </div>
-      <div style="color: #666; font-size: 14px; margin-bottom: 20px;">
+      <div style="color: #666; font-size: 17px; margin-bottom: 20px;">
         No ${COIN_NAME} earned. Try again!
       </div>
     `;
@@ -377,7 +390,7 @@ function showResultsPopup(score, baseReward, bonus, totalReward) {
       padding: 12px 30px;
       cursor: pointer;
       font-family: 'Courier New', monospace;
-      font-size: 14px;
+      font-size: 17px;
       transition: all 0.2s;
     ">CONTINUE</button>
   `;
@@ -447,7 +460,7 @@ export default async function startWhackGame(overlayElement, basePath = '/images
   
   // Reset state
   Whack.score = 0;
-  Whack.timer = 15000;
+  Whack.timer = 45000;
   Whack.spawnInterval = 800 + Math.random() * 400;
   Whack.entities = [];
   Whack.running = true;

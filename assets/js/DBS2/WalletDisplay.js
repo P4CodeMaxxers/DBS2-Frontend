@@ -3,8 +3,7 @@
  * UI component showing player's multi-coin wallet with live prices
  */
 
-import { getWallet, getAllPrices, getPrices} from './StatsManager.js';
-
+import { getWallet, getAllPrices, convertCoin, getPrices } from './StatsManager.js';
 // Coin definitions with styling
 const COINS = [
     { id: 'satoshis', symbol: 'SATS', name: 'Satoshis', color: '#f7931a', icon: '₿', decimals: 0 },
@@ -49,6 +48,7 @@ export function initWalletDisplay(containerId = null) {
         z-index: 9000;
         font-family: 'Courier New', monospace;
         user-select: none;
+        font-size: 16px;
     `;
     
     // Add to container or body
@@ -96,21 +96,21 @@ function renderWallet(wallet) {
             background: linear-gradient(135deg, #1a1a2e 0%, #0d0d1a 100%);
             border: 2px solid #f7931a;
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 14px 18px;
             cursor: pointer;
-            min-width: 180px;
+            min-width: 200px;
             box-shadow: 0 4px 20px rgba(247, 147, 26, 0.3);
         ">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-size: 11px; color: #888; margin-bottom: 2px;">WALLET</div>
-                    <div style="font-size: 20px; color: #f7931a; font-weight: bold;">
-                        ${formatNumber(totalSats)} <span style="font-size: 12px;">SATS</span>
+                    <div style="font-size: 14px; color: #888; margin-bottom: 4px;">WALLET</div>
+                    <div style="font-size: 26px; color: #f7931a; font-weight: bold;">
+                        ${formatNumber(totalSats)} <span style="font-size: 16px;">SATS</span>
                     </div>
                 </div>
                 <div id="wallet-expand-icon" style="
                     color: #f7931a;
-                    font-size: 18px;
+                    font-size: 22px;
                     transition: transform 0.3s;
                     transform: rotate(${isExpanded ? '180deg' : '0deg'});
                 ">▼</div>
@@ -123,16 +123,16 @@ function renderWallet(wallet) {
             border: 2px solid #333;
             border-top: none;
             border-radius: 0 0 12px 12px;
-            padding: 12px;
+            padding: 14px;
             margin-top: -2px;
         ">
             ${renderCoinList(wallet)}
             
             <div style="
-                margin-top: 12px;
-                padding-top: 12px;
+                margin-top: 14px;
+                padding-top: 14px;
                 border-top: 1px solid #333;
-                font-size: 10px;
+                font-size: 13px;
                 color: #666;
                 text-align: center;
             ">
@@ -175,34 +175,34 @@ function renderCoinList(wallet) {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 8px 0;
+                padding: 10px 0;
                 border-bottom: 1px solid #222;
                 opacity: ${hasBalance ? '1' : '0.5'};
             ">
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="
-                        width: 28px;
-                        height: 28px;
+                        width: 36px;
+                        height: 36px;
                         background: ${coin.color}22;
-                        border: 1px solid ${coin.color};
+                        border: 2px solid ${coin.color};
                         border-radius: 50%;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: 14px;
+                        font-size: 18px;
                         color: ${coin.color};
                     ">${coin.icon}</div>
                     <div>
-                        <div style="font-size: 12px; color: #eee;">${coin.symbol}</div>
-                        <div style="font-size: 9px; color: #666;">${minigameName}</div>
+                        <div style="font-size: 16px; color: #eee; font-weight: bold;">${coin.symbol}</div>
+                        <div style="font-size: 12px; color: #666;">${minigameName}</div>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 13px; color: ${coin.color};">
+                    <div style="font-size: 17px; color: ${coin.color}; font-weight: bold;">
                         ${formatBalance(balance, coin.decimals)}
                     </div>
                     ${price > 0 ? `
-                        <div style="font-size: 9px; color: ${change >= 0 ? '#0f0' : '#f00'};">
+                        <div style="font-size: 12px; color: ${change >= 0 ? '#0f0' : '#f00'};">
                             $${price.toLocaleString(undefined, {maximumFractionDigits: 2})}
                             (${change >= 0 ? '+' : ''}${change.toFixed(1)}%)
                         </div>
@@ -258,12 +258,12 @@ export function showRewardAnimation(coinId, amount) {
     `;
     
     popup.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 10px;">${coin.icon}</div>
-        <div style="font-size: 14px; color: #888;">EARNED</div>
-        <div style="font-size: 32px; color: ${coin.color}; font-weight: bold; margin: 10px 0;">
+        <div style="font-size: 56px; margin-bottom: 12px;">${coin.icon}</div>
+        <div style="font-size: 18px; color: #888;">EARNED</div>
+        <div style="font-size: 38px; color: ${coin.color}; font-weight: bold; margin: 12px 0;">
             +${formatBalance(amount, coin.decimals)} ${coin.symbol}
         </div>
-        <div style="font-size: 12px; color: #666;">${coin.name}</div>
+        <div style="font-size: 16px; color: #666;">${coin.name}</div>
     `;
     
     // Add animation keyframes

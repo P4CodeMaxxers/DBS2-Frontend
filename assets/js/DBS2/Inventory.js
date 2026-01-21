@@ -186,7 +186,6 @@ const Inventory = {
         for (const [minigame, scrap] of Object.entries(CODE_SCRAPS)) {
             if (foundAt.includes(minigame) || 
                 foundAt.includes(minigame.replace('_', '')) ||
-                foundAt.includes('shop_purchase') || // Handle purchased code scraps
                 itemName.includes(minigame) ||
                 itemName.includes(minigame.replace('_', ' ')) ||
                 itemName.includes(scrap.name.toLowerCase())) {
@@ -252,8 +251,8 @@ const Inventory = {
                 position: fixed;
                 bottom: 80px;
                 right: 20px;
-                width: 50px;
-                height: 50px;
+                width: 60px;
+                height: 60px;
                 background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                 border: 2px solid #0a5;
                 border-radius: 10px;
@@ -262,7 +261,7 @@ const Inventory = {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: bold;
                 color: #0a5;
                 font-family: 'Courier New', monospace;
@@ -281,8 +280,8 @@ const Inventory = {
                 right: -5px;
                 background: #a00;
                 color: white;
-                font-size: 11px;
-                padding: 2px 6px;
+                font-size: 13px;
+                padding: 3px 8px;
                 border-radius: 10px;
                 font-weight: bold;
             }
@@ -294,9 +293,9 @@ const Inventory = {
                 background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
                 border: 2px solid #0a5;
                 border-radius: 10px;
-                padding: 20px;
+                padding: 24px;
                 z-index: 9999;
-                min-width: 450px;
+                min-width: 500px;
                 max-width: 95vw;
                 box-shadow: 0 0 30px rgba(0, 100, 50, 0.4);
                 font-family: 'Courier New', monospace;
@@ -312,21 +311,21 @@ const Inventory = {
             }
             #inventory-panel h2 {
                 color: #0a5;
-                margin: 0 0 5px 0;
+                margin: 0 0 8px 0;
                 text-align: center;
-                font-size: 18px;
+                font-size: 22px;
                 letter-spacing: 2px;
             }
             .inventory-subtitle {
                 color: #666;
-                font-size: 11px;
+                font-size: 14px;
                 text-align: center;
                 margin-bottom: 15px;
             }
             .inventory-grid {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
+                gap: 10px;
                 margin-bottom: 15px;
             }
             .inventory-slot {
@@ -354,7 +353,7 @@ const Inventory = {
                 opacity: 0.5;
             }
             .inventory-slot .slot-icon {
-                font-size: 10px;
+                font-size: 13px;
                 color: #0a5;
                 font-weight: bold;
             }
@@ -384,7 +383,7 @@ const Inventory = {
                 letter-spacing: 1px;
             }
             .inventory-progress-icons {
-                font-size: 11px;
+                font-size: 14px;
                 letter-spacing: 3px;
                 color: #0a5;
                 font-weight: bold;
@@ -404,7 +403,7 @@ const Inventory = {
             }
             .inventory-story-hint p {
                 color: #a80;
-                font-size: 11px;
+                font-size: 14px;
                 margin: 0;
                 line-height: 1.5;
             }
@@ -473,7 +472,7 @@ const Inventory = {
             .item-modal-content .story-fragment {
                 color: #a80;
                 font-style: italic;
-                font-size: 11px;
+                font-size: 14px;
                 background: rgba(80, 60, 0, 0.2);
                 padding: 12px;
                 border-radius: 4px;
@@ -483,7 +482,7 @@ const Inventory = {
             }
             .item-modal-content .hint {
                 color: #088;
-                font-size: 11px;
+                font-size: 14px;
             }
             .item-modal-content button {
                 margin-top: 15px;
@@ -511,29 +510,29 @@ const Inventory = {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }
             .wallet-title {
                 color: #f7931a;
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
             }
             .wallet-total {
                 color: #0f0;
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
             }
             .wallet-coins {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                margin-bottom: 10px;
+                gap: 10px;
+                margin-bottom: 12px;
             }
             .wallet-coin {
                 background: rgba(0, 40, 20, 0.4);
                 border: 1px solid #052;
                 border-radius: 6px;
-                padding: 8px;
+                padding: 10px;
                 text-align: center;
                 cursor: pointer;
                 transition: all 0.2s;
@@ -547,20 +546,21 @@ const Inventory = {
                 background: rgba(100, 80, 20, 0.4);
             }
             .wallet-coin-icon {
-                font-size: 18px;
+                font-size: 24px;
                 display: block;
             }
             .wallet-coin-balance {
                 color: #fff;
-                font-size: 11px;
-                margin-top: 3px;
+                font-size: 15px;
+                font-weight: bold;
+                margin-top: 4px;
             }
             .wallet-coin-usd {
                 color: #888;
-                font-size: 9px;
+                font-size: 12px;
             }
             .wallet-coin-change {
-                font-size: 9px;
+                font-size: 12px;
             }
             .wallet-coin-change.up { color: #0f0; }
             .wallet-coin-change.down { color: #f66; }
@@ -568,13 +568,14 @@ const Inventory = {
                 background: rgba(100, 80, 20, 0.2);
                 border: 1px solid #640;
                 border-radius: 6px;
-                padding: 10px;
-                margin-top: 10px;
+                padding: 12px;
+                margin-top: 12px;
             }
             .convert-title {
                 color: #f7931a;
-                font-size: 11px;
-                margin-bottom: 8px;
+                font-size: 15px;
+                font-weight: bold;
+                margin-bottom: 10px;
                 text-align: center;
             }
             .convert-select, .convert-input {
@@ -582,22 +583,23 @@ const Inventory = {
                 background: #111;
                 border: 1px solid #333;
                 color: #fff;
-                padding: 6px 8px;
+                padding: 8px 10px;
                 border-radius: 4px;
                 font-family: 'Courier New', monospace;
-                font-size: 11px;
-                margin-bottom: 6px;
+                font-size: 14px;
+                margin-bottom: 8px;
             }
             .convert-btn {
                 width: 100%;
                 background: #640;
                 color: #fa0;
                 border: 1px solid #a80;
-                padding: 8px;
+                padding: 10px;
                 border-radius: 4px;
                 cursor: pointer;
                 font-family: 'Courier New', monospace;
-                font-size: 11px;
+                font-size: 14px;
+                font-weight: bold;
                 transition: all 0.2s;
             }
             .convert-btn:hover {
@@ -610,10 +612,10 @@ const Inventory = {
                 cursor: not-allowed;
             }
             .convert-result {
-                margin-top: 8px;
-                font-size: 10px;
+                margin-top: 10px;
+                font-size: 14px;
                 text-align: center;
-                min-height: 16px;
+                min-height: 18px;
             }
             .convert-result.success { color: #0f0; }
             .convert-result.error { color: #f66; }
@@ -670,7 +672,7 @@ const Inventory = {
                         <option value="">Select coin...</option>
                     </select>
                     <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="0.0001" min="0">
-                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertCoins()">TRADE (5% fee)</button>
+                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertToSats()">CONVERT (5% fee)</button>
                     <div id="convert-result" class="convert-result"></div>
                 </div>
             </div>
@@ -856,8 +858,7 @@ const Inventory = {
         const coinsEl = document.getElementById('wallet-coins');
         const totalEl = document.getElementById('wallet-total');
         const convertSection = document.getElementById('wallet-convert');
-        const fromCoinSelect = document.getElementById('convert-from-coin');
-        const toCoinSelect = document.getElementById('convert-to-coin');
+        const convertSelect = document.getElementById('convert-coin');
         
         if (!coinsEl || !this.walletData) return;
         
@@ -870,8 +871,7 @@ const Inventory = {
         
         let html = '';
         let hasConvertibleCoins = false;
-        let fromOptions = '<option value="">From...</option>';
-        let toOptions = '<option value="">To...</option>';
+        let selectOptions = '<option value="">Select coin...</option>';
         
         for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
             const balance = wallet[coinId] || 0;
@@ -894,11 +894,10 @@ const Inventory = {
                 </div>
             `;
             
-            // Add to select options if has balance (any coin, including satoshis)
-            if (balance > 0) {
+            // Add to select if has balance and not satoshis
+            if (balance > 0 && coinId !== 'satoshis') {
                 hasConvertibleCoins = true;
-                fromOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
-                toOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+                selectOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
             }
         }
         
@@ -908,11 +907,8 @@ const Inventory = {
         if (convertSection) {
             convertSection.style.display = hasConvertibleCoins ? 'block' : 'none';
         }
-        if (fromCoinSelect) {
-            fromCoinSelect.innerHTML = fromOptions;
-        }
-        if (toCoinSelect) {
-            toCoinSelect.innerHTML = toOptions;
+        if (convertSelect) {
+            convertSelect.innerHTML = selectOptions;
         }
     },
 
@@ -932,41 +928,33 @@ const Inventory = {
         });
         event.currentTarget?.classList.add('selected');
         
-        // Populate convert fields
-        const fromSelect = document.getElementById('convert-from-coin');
-        const amountInput = document.getElementById('convert-amount');
-        
-        if (fromSelect) {
-            fromSelect.value = coinId;
-        }
-        if (amountInput && this.walletData?.raw_balances) {
-            amountInput.value = this.walletData.raw_balances[coinId] || '';
+        // If not satoshis, populate convert fields
+        if (coinId !== 'satoshis') {
+            const select = document.getElementById('convert-coin');
+            const amountInput = document.getElementById('convert-amount');
+            
+            if (select) {
+                select.value = coinId;
+            }
+            if (amountInput && this.walletData?.raw_balances) {
+                amountInput.value = this.walletData.raw_balances[coinId] || '';
+            }
         }
     },
 
-    async convertCoins() {
-        const fromCoinSelect = document.getElementById('convert-from-coin');
-        const toCoinSelect = document.getElementById('convert-to-coin');
+    async convertToSats() {
+        const coinSelect = document.getElementById('convert-coin');
         const amountInput = document.getElementById('convert-amount');
         const resultDiv = document.getElementById('convert-result');
         const btn = document.getElementById('convert-btn');
         
-        const fromCoin = fromCoinSelect?.value;
-        const toCoin = toCoinSelect?.value;
+        const coinId = coinSelect?.value;
         const amount = parseFloat(amountInput?.value || 0);
         
-        if (!fromCoin || !toCoin) {
+        if (!coinId) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Select both source and destination coins';
-            }
-            return;
-        }
-        
-        if (fromCoin === toCoin) {
-            if (resultDiv) {
-                resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Cannot convert to the same coin';
+                resultDiv.textContent = 'Select a coin to convert';
             }
             return;
         }
@@ -980,7 +968,7 @@ const Inventory = {
         }
         
         // Check balance
-        const balance = this.walletData?.raw_balances?.[fromCoin] || 0;
+        const balance = this.walletData?.raw_balances?.[coinId] || 0;
         if (amount > balance) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
@@ -992,7 +980,7 @@ const Inventory = {
         // Disable button
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Trading...';
+            btn.textContent = 'Converting...';
         }
         if (resultDiv) {
             resultDiv.className = 'convert-result';
@@ -1000,16 +988,12 @@ const Inventory = {
         }
         
         try {
-            const result = await convertCoin(fromCoin, toCoin, amount);
+            const result = await convertCoin(coinId, 'satoshis', amount);
             
             if (result && result.success) {
-                const fromConfig = this.COIN_CONFIG[fromCoin];
-                const toConfig = this.COIN_CONFIG[toCoin];
-                const formattedAmount = this.formatBalance(result.to_amount || 0, toConfig.decimals);
-                
                 if (resultDiv) {
                     resultDiv.className = 'convert-result success';
-                    resultDiv.textContent = `✓ Traded ${this.formatBalance(amount, fromConfig.decimals)} ${fromConfig.symbol} → ${formattedAmount} ${toConfig.symbol}`;
+                    resultDiv.textContent = `✓ Converted to ${result.to_amount.toLocaleString()} sats`;
                 }
                 
                 // Refresh wallet
@@ -1017,23 +1001,22 @@ const Inventory = {
                 
                 // Clear inputs
                 if (amountInput) amountInput.value = '';
-                if (fromCoinSelect) fromCoinSelect.value = '';
-                if (toCoinSelect) toCoinSelect.value = '';
+                if (coinSelect) coinSelect.value = '';
                 
             } else {
-                throw new Error(result?.error || 'Trade failed');
+                throw new Error(result?.error || 'Conversion failed');
             }
             
         } catch (e) {
-            console.error('[Inventory] Trade error:', e);
+            console.error('[Inventory] Convert error:', e);
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = e.message || 'Trade failed';
+                resultDiv.textContent = e.message || 'Conversion failed';
             }
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.textContent = 'TRADE (5% fee)';
+                btn.textContent = 'CONVERT (5% fee)';
             }
         }
     }
