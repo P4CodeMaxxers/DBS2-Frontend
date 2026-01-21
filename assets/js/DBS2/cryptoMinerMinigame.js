@@ -1,7 +1,7 @@
 // cryptoMinerMinigame.js - Rewards SATOSHIS
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { rewardMinigame, completeMinigame, isMinigameCompleted, getCoinPrice } from './StatsManager.js';
+import { rewardMinigame, completeMinigame, isMinigameCompleted, addInventoryItem, getCoinPrice } from './StatsManager.js';
 import Prompt from './Prompt.js';
 
 const MINIGAME_NAME = 'crypto_miner';
@@ -99,7 +99,7 @@ function cryptoMinerMinigame() {
                     A <span style="color: #0f0;">hash</span> is a scrambled fingerprint of data. 
                     Any input produces a unique, fixed-length output:
                 </p>
-                <div style="background: #000; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 12px;">
+                <div style="background: #000; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 15px;">
                     <div>"hello" → <span style="color: #f7931a;">2cf24dba5fb0a30e...</span></div>
                     <div>"hello!" → <span style="color: #f7931a;">9b71d224bd62f378...</span></div>
                 </div>
@@ -227,36 +227,36 @@ function cryptoMinerMinigame() {
                     <span id="coin-name" style="color: ${currentCoin?.color || '#f7931a'}; font-weight: bold; margin-left: 10px;">${currentCoin?.name || 'Bitcoin'}</span>
                 </div>
                 <div style="text-align: right;">
-                    <div style="color: #888; font-size: 12px;">Price: $<span id="coin-price">${coinPrice.toLocaleString()}</span></div>
-                    <div style="font-size: 12px;"><span id="coin-change" style="color: ${coinChange24h >= 0 ? '#0f0' : '#f00'};">${coinChange24h >= 0 ? '+' : ''}${coinChange24h.toFixed(2)}%</span> (24h)</div>
+                    <div style="color: #888; font-size: 15px;">Price: $<span id="coin-price">${coinPrice.toLocaleString()}</span></div>
+                    <div style="font-size: 15px;"><span id="coin-change" style="color: ${coinChange24h >= 0 ? '#0f0' : '#f00'};">${coinChange24h >= 0 ? '+' : ''}${coinChange24h.toFixed(2)}%</span> (24h)</div>
                 </div>
             </div>
             
             <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Current Hash:</div>
-                <div id="hash-display" style="font-family: monospace; font-size: 14px; color: #0f0; word-break: break-all;">Press SPACE to mine...</div>
-                <div id="hash-result" style="margin-top: 10px; font-size: 13px; color: #888;"></div>
+                <div style="color: #888; font-size: 15px; margin-bottom: 5px;">Current Hash:</div>
+                <div id="hash-display" style="font-family: monospace; font-size: 17px; color: #0f0; word-break: break-all;">Press SPACE to mine...</div>
+                <div id="hash-result" style="margin-top: 10px; font-size: 16px; color: #888;"></div>
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="color: #888; font-size: 11px;">Block Progress</div>
+                    <div style="color: #888; font-size: 17px;">Block Progress</div>
                     <div style="font-size: 18px; color: #f7931a;"><span id="valid-count">0</span>/${hashesPerBlock}</div>
                     <div style="background: #333; height: 6px; border-radius: 3px; margin-top: 5px;">
                         <div id="block-progress" style="background: #f7931a; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
                     </div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="color: #888; font-size: 11px;">Blocks Mined</div>
+                    <div style="color: #888; font-size: 17px;">Blocks Mined</div>
                     <div style="font-size: 18px; color: #0f0;"><span id="current-block">1</span>/${totalBlocks}</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
-                    <div style="color: #888; font-size: 11px;">Est. ${COIN_SYMBOL}</div>
+                    <div style="color: #888; font-size: 17px;">Est. ${COIN_SYMBOL}</div>
                     <div style="font-size: 18px; color: #f7931a;"><span id="est-reward">0</span></div>
                 </div>
             </div>
             
-            <div style="display: flex; justify-content: space-between; color: #666; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; color: #666; font-size: 17px;">
                 <span>Attempts: <span id="total-attempts">0</span></span>
                 <span>Hash Rate: <span id="hash-rate">0</span>/sec</span>
                 <span>Difficulty: "${targetPrefix}..."</span>
@@ -286,46 +286,13 @@ function cryptoMinerMinigame() {
         }
         if (boostEl) boostEl.textContent = `${boostMultiplier.toFixed(2)}x`;
     }
-    let failedAttempts = 0;
-
+    
     function generateHash() {
         const chars = '0123456789abcdef';
         let hash = '';
-        
-        // Increase chance of valid hash after failures
-        // Base chance ~1/256 for "00", we boost it significantly
-        let guaranteeValid = false;
-        
-        if (failedAttempts >= 20) {
-            guaranteeValid = true; // Guarantee after 20 fails
-        } else if (failedAttempts >= 15) {
-            guaranteeValid = Math.random() < 0.5; // 50% chance
-        } else if (failedAttempts >= 10) {
-            guaranteeValid = Math.random() < 0.25; // 25% chance
-        } else if (failedAttempts >= 5) {
-            guaranteeValid = Math.random() < 0.1; // 10% chance
+        for (let i = 0; i < 64; i++) {
+            hash += chars[Math.floor(Math.random() * chars.length)];
         }
-        
-        if (guaranteeValid) {
-            // Start with the target prefix (assumes targetPrefix is accessible)
-            hash = targetPrefix;
-            for (let i = targetPrefix.length; i < 64; i++) {
-                hash += chars[Math.floor(Math.random() * chars.length)];
-            }
-            failedAttempts = 0; // Reset on success
-        } else {
-            for (let i = 0; i < 64; i++) {
-                hash += chars[Math.floor(Math.random() * chars.length)];
-            }
-            
-            // Track if this was a failure
-            if (!hash.startsWith(targetPrefix)) {
-                failedAttempts++;
-            } else {
-                failedAttempts = 0;
-            }
-        }
-        
         return hash;
     }
     
@@ -429,6 +396,14 @@ function cryptoMinerMinigame() {
         try {
             await rewardMinigame(MINIGAME_NAME, satoshiReward);
             await completeMinigame(MINIGAME_NAME);
+            
+            if (isFirstCompletion) {
+                await addInventoryItem({
+                    name: 'Code Scrap: Crypto Miner',
+                    found_at: MINIGAME_NAME,
+                    timestamp: new Date().toISOString()
+                });
+            }
         } catch (e) {
             console.log('Could not save progress:', e);
         }
@@ -455,12 +430,12 @@ function cryptoMinerMinigame() {
             <p style="color: #888; margin-bottom: 20px;">You successfully mined ${totalBlocks} blocks!</p>
             
             <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="font-size: 14px; color: #888;">${COIN_NAME} Earned</div>
+                <div style="font-size: 17px; color: #888;">${COIN_NAME} Earned</div>
                 <div style="font-size: 32px; color: #f7931a; font-weight: bold;">${satoshiReward} ${COIN_SYMBOL}</div>
-                ${isFirstCompletion ? '<div style="color: #0f0; font-size: 12px;">+250 first completion bonus!</div>' : ''}
+                ${isFirstCompletion ? '<div style="color: #0f0; font-size: 15px;">+250 first completion bonus!</div>' : ''}
             </div>
             
-            <div style="background: rgba(0,255,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 13px; color: #aaa;">
+            <div style="background: rgba(0,255,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 16px; color: #aaa;">
                 <strong style="color: #0f0;">📚 What you learned:</strong><br>
                 • Miners guess random numbers (nonces) to find valid hashes<br>
                 • Valid hashes must start with zeros (difficulty)<br>
@@ -468,6 +443,14 @@ function cryptoMinerMinigame() {
             </div>
         `;
         
+        if (isFirstCompletion) {
+            html += `
+                <div style="background: rgba(247,147,26,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f7931a;">
+                    <div style="font-size: 17px; color: #f7931a;">🧩 CODE SCRAP FOUND!</div>
+                    <div style="font-size: 15px; color: #888; margin-top: 5px;">Added to inventory</div>
+                </div>
+            `;
+        }
         
         html += `<button id="close-complete" style="
             background: linear-gradient(135deg, #0f0 0%, #050 100%);

@@ -1,4 +1,4 @@
-import { rewardMinigame, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun, getCoinPrice } from './StatsManager.js';
+import { addInventoryItem, rewardMinigame, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun, getCoinPrice } from './StatsManager.js';
 import { showRewardAnimation } from './WalletDisplay.js';
 
 // Coin config for this minigame
@@ -388,8 +388,8 @@ function renderIntroScene() {
     },
   });
   rewardInfo.innerHTML = `
-    <div style="font-size: 12px; color: #888;">Earn <span style="color: ${COIN_COLOR}; font-weight: bold;">${COIN_SYMBOL}</span> (Solana) for successful runs!</div>
-    <div style="font-size: 11px; color: #666; margin-top: 4px;">Rewards boosted by real market performance</div>
+    <div style="font-size: 15px; color: #888;">Earn <span style="color: ${COIN_COLOR}; font-weight: bold;">${COIN_SYMBOL}</span> (Solana) for successful runs!</div>
+    <div style="font-size: 17px; color: #666; margin-top: 4px;">Rewards boosted by real market performance</div>
   `;
 
   const startBtn = createPrimaryButton("Start Ash Trail Challenge", () => {
@@ -1230,6 +1230,11 @@ async function awardCryptoForScore(score) {
       
       try {
         await completeMinigame('ash_trail');
+        await addInventoryItem({
+          name: 'Code Scrap: Ash Trail',
+          found_at: 'ash_trail',
+          timestamp: new Date().toISOString()
+        });
         isFirstCompletion = false;
       } catch (e) {}
     }
@@ -1458,7 +1463,7 @@ function renderResultsScene(score) {
     rewardDiv.innerHTML = `
       <div style="font-size: 28px; margin-bottom: 5px;">${COIN_ICON}</div>
       <div style="font-size: 20px; font-weight: bold; color: ${COIN_COLOR};">+${lastReward.toFixed(3)} ${COIN_SYMBOL}</div>
-      <div style="font-size: 10px; color: #888; margin-top: 4px;">Solana</div>
+      <div style="font-size: 13px; color: #888; margin-top: 4px;">Solana</div>
     `;
     left.appendChild(scoreLabel);
     left.appendChild(scoreValue);

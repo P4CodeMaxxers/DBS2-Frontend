@@ -1,7 +1,7 @@
 // InfiniteUserMinigame.js - Rewards ETHEREUM (ETH)
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { rewardMinigame, isMinigameCompleted, completeMinigame } from './StatsManager.js';
+import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
 import { javaURI, pythonURI, fetchOptions } from '../api/config.js';
 import Prompt from './Prompt.js';
 
@@ -122,7 +122,7 @@ export default async function infiniteUserMinigame() {
     
     let closeBtn = document.createElement("button");
     closeBtn.innerText = "EXIT";
-    closeBtn.style.cssText = `background: #600; color: #ccc; border: 1px solid #800; padding: 6px 15px; cursor: pointer; font-size: 12px; font-family: "Courier New", monospace;`;
+    closeBtn.style.cssText = `background: #600; color: #ccc; border: 1px solid #800; padding: 6px 15px; cursor: pointer; font-size: 15px; font-family: "Courier New", monospace;`;
     closeBtn.onclick = closeMinigame;
     
     header.appendChild(title);
@@ -131,21 +131,21 @@ export default async function infiniteUserMinigame() {
     
     // Coin indicator
     let coinNote = document.createElement("div");
-    coinNote.style.cssText = `color: #627eea; font-size: 10px; margin-bottom: 10px; padding: 5px; background: rgba(98,126,234,0.1); border-radius: 3px;`;
+    coinNote.style.cssText = `color: #627eea; font-size: 13px; margin-bottom: 10px; padding: 5px; background: rgba(98,126,234,0.1); border-radius: 3px;`;
     coinNote.innerHTML = `Rewards: <strong>${COIN_NAME} (${COIN_SYMBOL})</strong>`;
     quizWindow.appendChild(coinNote);
     
     let globalNote = document.createElement("div");
-    globalNote.style.cssText = `color: #a80; font-size: 10px; margin-bottom: 10px; padding: 5px; background: rgba(170, 136, 0, 0.1); border-radius: 3px;`;
+    globalNote.style.cssText = `color: #a80; font-size: 13px; margin-bottom: 10px; padding: 5px; background: rgba(170, 136, 0, 0.1); border-radius: 3px;`;
     globalNote.textContent = "GLOBAL SYSTEM - Passwords shared between all users";
     quizWindow.appendChild(globalNote);
     
     let messageDiv = document.createElement("div");
-    messageDiv.style.cssText = `color: #627eea; font-size: 14px; margin: 15px 0;`;
+    messageDiv.style.cssText = `color: #627eea; font-size: 17px; margin: 15px 0;`;
     messageDiv.innerHTML = `
-        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">Decode the password:</div>
+        <div style="font-size: 15px; color: #888; margin-bottom: 10px;">Decode the password:</div>
         <div style="font-size: 20px; letter-spacing: 3px; color: #627eea;">${convertToAlphaNumeric(selectedPassword)}</div>
-        <div style="font-size: 10px; color: #666; margin-top: 5px;">Hint: a=1, b=2, c=3...</div>
+        <div style="font-size: 13px; color: #666; margin-top: 5px;">Hint: a=1, b=2, c=3...</div>
     `;
     quizWindow.appendChild(messageDiv);
     
@@ -165,7 +165,7 @@ export default async function infiniteUserMinigame() {
     quizWindow.appendChild(typebox);
     
     let instructions = document.createElement("div");
-    instructions.style.cssText = `color: #666; font-size: 11px; margin-bottom: 10px;`;
+    instructions.style.cssText = `color: #666; font-size: 17px; margin-bottom: 10px;`;
     instructions.textContent = "Type the decoded password and press Enter.";
     quizWindow.appendChild(instructions);
     
@@ -174,7 +174,7 @@ export default async function infiniteUserMinigame() {
     
     let autoCompleteBtn = document.createElement("button");
     autoCompleteBtn.textContent = "[DEV] Auto-Complete";
-    autoCompleteBtn.style.cssText = `background: #333; color: #666; border: 1px solid #444; padding: 5px 10px; cursor: pointer; font-size: 10px; font-family: "Courier New", monospace;`;
+    autoCompleteBtn.style.cssText = `background: #333; color: #666; border: 1px solid #444; padding: 5px 10px; cursor: pointer; font-size: 13px; font-family: "Courier New", monospace;`;
     autoCompleteBtn.onclick = () => {
         if (!creatingNew) {
             typebox.innerText = ">" + selectedPassword;
@@ -193,7 +193,7 @@ export default async function infiniteUserMinigame() {
     };
     
     let pwCount = document.createElement("div");
-    pwCount.style.cssText = `color: #444; font-size: 10px;`;
+    pwCount.style.cssText = `color: #444; font-size: 13px;`;
     pwCount.textContent = `Global passwords: ${passwords.length}/${MAX_PASSWORDS}`;
     
     bottomBar.appendChild(autoCompleteBtn);
@@ -241,21 +241,29 @@ export default async function infiniteUserMinigame() {
         if (isFirstCompletion) {
             try {
                 await completeMinigame(MINIGAME_NAME);
+                await addInventoryItem({
+                    name: 'Code Scrap: Infinite User',
+                    found_at: MINIGAME_NAME,
+                    timestamp: new Date().toISOString()
+                });
             } catch (e) {}
         }
         
         if (isFirstCompletion) {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #627eea;">PASSWORD UPDATED (First Time)</div>
-                <div style="font-size: 12px; margin-top: 10px; color: #888;">First completion bonus earned!</div>
-                <div style="font-size: 14px; margin-top: 10px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
+                <div style="font-size: 16px; color: #627eea;">CODE FRAGMENT RECOVERED</div>
+                <div style="font-size: 15px; margin-top: 10px; color: #888;">Found the password list behind the keyboard.</div>
+                <div style="margin-top: 15px;">
+                    <img src="${baseurl}/images/DBS2/codescrapPassword.png" style="max-width: 70px; border: 1px solid #627eea; border-radius: 4px;" onerror="this.style.display='none'">
+                </div>
+                <div style="font-size: 17px; margin-top: 10px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
             `;
         } else {
             messageDiv.innerHTML = `
                 <div style="font-size: 16px; color: #627eea;">PASSWORD UPDATED</div>
-                <div style="font-size: 12px; margin-top: 10px; color: #888;">"${newPassword}" added to the global system.</div>
-                <div style="font-size: 11px; margin-top: 5px; color: #a80;">Other players may now have to decrypt your password!</div>
-                <div style="font-size: 14px; margin-top: 15px; color: #627eea;">+${displayReward} ${COIN_NAME}</div>
+                <div style="font-size: 15px; margin-top: 10px; color: #888;">"${newPassword}" added to the global system.</div>
+                <div style="font-size: 17px; margin-top: 5px; color: #a80;">Other players may now have to decrypt your password!</div>
+                <div style="font-size: 17px; margin-top: 15px; color: #627eea;">+${displayReward} ${COIN_NAME}</div>
             `;
         }
         
@@ -328,8 +336,8 @@ export default async function infiniteUserMinigame() {
                 if (input === selectedPassword) {
                     messageDiv.innerHTML = `
                         <div style="color: #627eea; font-size: 16px;">ACCESS GRANTED</div>
-                        <div style="color: #888; font-size: 12px; margin-top: 10px;">Now create a replacement password for the global system.</div>
-                        <div style="color: #a80; font-size: 10px; margin-top: 5px;">Your password will be shared with other players!</div>
+                        <div style="color: #888; font-size: 15px; margin-top: 10px;">Now create a replacement password for the global system.</div>
+                        <div style="color: #a80; font-size: 13px; margin-top: 5px;">Your password will be shared with other players!</div>
                     `;
                     typebox.innerText = ">";
                     creatingNew = true;
