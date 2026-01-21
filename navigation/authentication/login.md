@@ -159,6 +159,12 @@ show_reading_time: false
             const data = await response.json();
             console.log("Login successful! Response:", data);
 
+            // Store the token in localStorage
+            if (data.token) {
+                localStorage.setItem('jwt_token', data.token);
+                console.log("Token stored in localStorage");
+            }
+
             // Redirect to profile on success
             window.location.href = '{{site.baseurl}}/profile';
 
