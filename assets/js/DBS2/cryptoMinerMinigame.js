@@ -46,6 +46,7 @@ function cryptoMinerMinigame() {
     let coinRotationInterval = null;
     let lastAttemptTime = Date.now();
     let recentAttempts = [];
+    let unsuccessfulAttempts = [];
     
     // Create overlay
     const overlay = document.createElement('div');
@@ -300,12 +301,13 @@ function cryptoMinerMinigame() {
         const now = Date.now();
         recentAttempts = recentAttempts.filter(t => now - t < 1000);
         recentAttempts.push(now);
+        unsuccessfulAttempts.push(now);
         
         totalAttempts++;
         const hash = generateHash();
         currentHash = hash;
         
-        const isValid = hash.startsWith(targetPrefix);
+        const isValid = hash.startsWith(targetPrefix) || unsuccessfulAttempts.length > 16;
         
         const hashDisplay = document.getElementById('hash-display');
         const hashResult = document.getElementById('hash-result');
@@ -324,6 +326,7 @@ function cryptoMinerMinigame() {
             if (isValid) {
                 hashResult.innerHTML = `<span style="color: #0f0;">✓ VALID HASH! Starts with "${targetPrefix}"</span>`;
                 validHashes++;
+                unsuccessfulAttempts = [];
                 updateBlockProgress();
             } else {
                 hashResult.innerHTML = `<span style="color: #f66;">✗ Invalid - doesn't start with "${targetPrefix}"</span>`;
