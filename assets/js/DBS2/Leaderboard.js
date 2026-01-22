@@ -3,7 +3,7 @@
  * Displays a pixel-themed leaderboard with data from backend API
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
-import { pythonURI } from '../api/config.js';
+import { pythonURI, getFetchOptions } from '../api/config.js';
 
 class Leaderboard {
     constructor(apiBase = null) {
@@ -36,11 +36,7 @@ class Leaderboard {
      */
     async fetchCurrentPlayer() {
         try {
-            const response = await fetch(`${this.apiBase}/player`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' }
-            });
+            const response = await fetch(`${this.apiBase}/player`, getFetchOptions());
             
             if (response.ok) {
                 const data = await response.json();
@@ -66,11 +62,7 @@ class Leaderboard {
             const url = `${this.apiBase}/leaderboard?limit=${limit}`;
             console.log('[Leaderboard] Fetching from:', url);
             
-            const response = await fetch(url, {
-                method: 'GET',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' }
-            });
+            const response = await fetch(url, getFetchOptions());
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
