@@ -176,7 +176,7 @@ show_reading_time: false
 
             // Redirect to home on success
             console.log("Redirecting now...");
-            window.location.href = '{{site.baseurl}}/DBS2';
+            window.location.href = 'https://p4codemaxxers.github.io/DBS2-Frontend/DBS2';
 
         } catch (error) {
             console.error("=== LOGIN ERROR ===");
