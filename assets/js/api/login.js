@@ -1,4 +1,4 @@
-import { baseurl, pythonURI, fetchOptions } from './config.js';
+import { baseurl, pythonURI, fetchOptions, getHeaders } from './config.js';
 
 console.log("login.js loaded");
 
@@ -60,12 +60,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // REMOVED the duplicate login form handler that was causing the error
     // The login page (login.md) has its own inline handlers (pythonLogin and signup)
 });
-
 function getCredentials(baseurl) {
     const URL = pythonURI + '/api/id';
     return fetch(URL, {
-        ...fetchOptions,
-        credentials: 'include'
+        method: 'GET',
+        mode: 'cors',
+        cache: 'default',
+        credentials: 'include',
+        headers: getHeaders() // Import and use getHeaders from config.js
     })
     .then(response => {
         if (!response.ok) {
