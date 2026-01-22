@@ -97,7 +97,20 @@ class Leaderboard {
                 console.warn('[Leaderboard] Failed to fetch current player:', response.status, response.statusText);
                 // If 401, log token status for debugging
                 if (response.status === 401) {
-                    const token = getJWTToken();
+                    let token = null;
+                    try {
+                        token = localStorage.getItem('jwt_token');
+                        if (!token) {
+                            const name = 'jwt_python_flask';
+                            const value = `; ${document.cookie}`;
+                            const parts = value.split(`; ${name}=`);
+                            if (parts.length === 2) {
+                                token = parts.pop().split(';').shift();
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore
+                    }
                     console.warn('[Leaderboard] 401 Unauthorized - Token available:', !!token);
                 }
             }
