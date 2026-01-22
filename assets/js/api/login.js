@@ -74,10 +74,11 @@ function getCredentials(baseurl) {
 
     return fetch(URL, {
         method: 'GET',
+    
         mode: 'cors',
         headers: {
             ...getHeaders(),
-            "Authorization": `Bearer ${token}`
+            "Authorization": `Bearer ${token}`,
         }
     })
     .then(response => {

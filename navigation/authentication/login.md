@@ -133,10 +133,10 @@ show_reading_time: false
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: "include",
                 mode: "cors",
                 body: JSON.stringify(loginData)
             });
+
 
             console.log("Response status:", response.status);
             console.log("Response headers:", [...response.headers.entries()]);
@@ -163,7 +163,7 @@ show_reading_time: false
 
             // Store the token in localStorage
             if (data.token) {
-                localStorage.setItem('jwt_token', data.token);
+                localStorage.setItem('token', data.token);
                 console.log("Token stored in localStorage");
                 console.log("Verify storage:", localStorage.getItem('jwt_token'));
             } else {
@@ -228,7 +228,6 @@ show_reading_time: false
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: "include",
                 mode: "cors",
                 body: JSON.stringify(signupData)
             });
