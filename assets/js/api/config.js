@@ -1,3 +1,8 @@
+/**
+ * config.js - API Configuration
+ * Uses cookies for JWT authentication (not localStorage)
+ */
+
 export const baseurl = "/DBS2-Frontend";
 
 // Flask backend URI
@@ -13,43 +18,69 @@ console.log('[Config] Backend pythonURI:', pythonURI);
 
 export var javaURI = pythonURI;
 
-// Function to get headers with token
+/**
+ * Get headers for API requests
+ * No longer includes Authorization header - cookies handle auth
+ */
 export function getHeaders() {
-    const token = localStorage.getItem('jwt_token');
-    const headers = {
+    return {
         'Content-Type': 'application/json',
         'X-Origin': 'client'
     };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
 }
 
+/**
+ * Standard fetch options with credentials for cookie-based auth
+ * credentials: 'include' ensures cookies are sent with cross-origin requests
+ */
 export const fetchOptions = {
     method: 'GET',
     mode: 'cors',
     cache: 'default',
-    credentials: 'include',
+    credentials: 'include',  // IMPORTANT: This sends cookies with requests
     headers: {
         'Content-Type': 'application/json',
         'X-Origin': 'client'
     }
 };
 
-// User Login Function
+/**
+ * Get fetch options for authenticated requests
+ * @param {string} method - HTTP method (GET, POST, PUT, DELETE)
+ * @param {object} body - Request body (optional)
+ * @returns {object} Fetch options with credentials
+ */
+export function getAuthFetchOptions(method = 'GET', body = null) {
+    const options = {
+        method: method,
+        mode: 'cors',
+        cache: 'default',
+        credentials: 'include',  // Send cookies with request
+        headers: getHeaders()
+    };
+
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+
+    return options;
+}
+
+/**
+ * User Login Function (legacy support)
+ */
 export function login(options) {
     const requestOptions = {
         ...fetchOptions,
         method: options.method || 'POST',
-        headers: getHeaders(), // Use the function to get headers with token
+        credentials: 'include',
+        headers: getHeaders(),
         body: options.method === 'POST' ? JSON.stringify(options.body) : undefined
     };
 
     document.getElementById(options.message).textContent = "";
 
     console.log('[Login] Attempting to fetch:', options.URL);
-    console.log('[Login] Request options:', requestOptions);
 
     fetch(options.URL, requestOptions)
         .then(response => {
@@ -59,17 +90,12 @@ export function login(options) {
                 document.getElementById(options.message).textContent = errorMsg;
                 return;
             }
+            // Cookie is automatically set by the response
             options.callback();
         })
         .catch(error => {
-            console.error('[Login] Fetch error details:', {
-                error: error.message,
-                url: options.URL,
-                type: error.name,
-                stack: error.stack
-            });
-            const errorMsg = `CORS or service error: ${error.message}. URL: ${options.URL}`;
-            console.log('Possible CORS or Service Down error: ' + error);
+            console.error('[Login] Fetch error:', error);
+            const errorMsg = `Connection error: ${error.message}`;
             document.getElementById(options.message).textContent = errorMsg;
         });
 }

@@ -1,3 +1,8 @@
+/**
+ * login.js - Authentication handler
+ * Uses cookies for JWT authentication (not localStorage)
+ */
+
 import { baseurl, pythonURI, fetchOptions, getHeaders } from './config.js';
 
 console.log("login.js loaded");
@@ -8,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             console.log("Credentials data:", data);
             const loginArea = document.getElementById('loginArea');
+            if (!loginArea) return;
+            
             if (data) {
                 loginArea.innerHTML = `
                     <div class="dropdown">
@@ -22,21 +29,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                     : ''
                             }
                             <a href="${baseurl}/profile">Profile</a>
-                            <a href="${baseurl}/logout">Logout</a>
+                            <a href="#" id="logoutLink">Logout</a>
                         </div>
                     </div>
                 `;
 
                 const dropdownButton = loginArea.querySelector('.dropbtn');
                 const dropdownContent = loginArea.querySelector('.dropdown-content');
+                const logoutLink = loginArea.querySelector('#logoutLink');
 
                 dropdownButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    if (dropdownContent.classList.contains('hidden')) {
-                        dropdownContent.classList.remove('hidden');
-                    } else {
-                        dropdownContent.classList.add('hidden');
-                    }
+                    dropdownContent.classList.toggle('hidden');
                 });
 
                 document.addEventListener('click', (event) => {
@@ -44,6 +48,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         dropdownContent.classList.add('hidden');
                     }
                 });
+
+                // Handle logout
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', async (event) => {
+                        event.preventDefault();
+                        await handleLogout();
+                        window.location.href = `${baseurl}/login`;
+                    });
+                }
             } else {
                 loginArea.innerHTML = `<a href="${baseurl}/login">Login</a>`;
             }
@@ -56,35 +69,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 loginArea.innerHTML = `<a href="${baseurl}/login">Login</a>`;
             }
         });
-
-    // REMOVED the duplicate login form handler that was causing the error
-    // The login page (login.md) has its own inline handlers (pythonLogin and signup)
 });
 
+/**
+ * Get current user credentials from the backend
+ * Uses cookies for authentication (credentials: 'include')
+ */
 function getCredentials(baseurl) {
-    const token = localStorage.getItem("token");
-
-    // User is not logged in yet — this is NORMAL
-    if (!token) {
-        console.log("No token found, user not logged in");
-        return Promise.resolve(null);
-    }
-
     const URL = pythonURI + '/api/id';
 
     return fetch(URL, {
         method: 'GET',
-    
         mode: 'cors',
-        headers: {
-            ...getHeaders(),
-            "Authorization": `Bearer ${token}`,
-        }
+        credentials: 'include',  // Send cookies with request
+        headers: getHeaders()
     })
     .then(response => {
         if (response.status === 401) {
-            console.log("Token invalid or expired");
-            localStorage.removeItem("token");
+            console.log("Not authenticated or session expired");
             return null;
         }
 
@@ -100,3 +102,60 @@ function getCredentials(baseurl) {
         return null;
     });
 }
+
+/**
+ * Handle user logout
+ * Clears the JWT cookie by calling the backend DELETE endpoint
+ */
+async function handleLogout() {
+    try {
+        await fetch(pythonURI + '/api/authenticate', {
+            method: 'DELETE',
+            mode: 'cors',
+            credentials: 'include',  // Include cookies so backend can invalidate
+            headers: getHeaders()
+        });
+        console.log("Logged out successfully");
+    } catch (e) {
+        console.error('Logout failed:', e);
+    }
+}
+
+/**
+ * Check if user is logged in
+ * @returns {Promise<boolean>}
+ */
+export async function isLoggedIn() {
+    try {
+        const response = await fetch(pythonURI + '/api/id', {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+            headers: getHeaders()
+        });
+        return response.ok;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Get current user data
+ * @returns {Promise<object|null>}
+ */
+export async function getCurrentUser() {
+    try {
+        const response = await fetch(pythonURI + '/api/id', {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+            headers: getHeaders()
+        });
+        if (!response.ok) return null;
+        return response.json();
+    } catch (e) {
+        return null;
+    }
+}
+
+export { handleLogout, getCredentials };

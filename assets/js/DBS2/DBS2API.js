@@ -1,22 +1,20 @@
 /**
  * DBS2API.js - Multi-coin wallet support
- * Handles all backend communication for DBS2 game
+ * Uses cookies for JWT authentication (not localStorage)
  */
-import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
+import { pythonURI, getHeaders } from './config.js';
 
+/**
+ * Get fetch options for authenticated requests
+ * Uses credentials: 'include' to send cookies automatically
+ */
 function getAuthFetchOptions(method = 'GET', body = null) {
-    const token = localStorage.getItem("token");
-
-    const headers = {
-        ...getHeaders(),
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-    };
-
     const options = {
         method: method,
         mode: 'cors',
         cache: 'default',
-        headers
+        credentials: 'include',  // IMPORTANT: Sends cookies with request
+        headers: getHeaders()
     };
 
     if (body) {
@@ -47,6 +45,26 @@ const MINIGAME_COINS = {
 
 const DBS2API = {
     baseUrl: `${pythonURI}/api/dbs2`,
+    
+    // ============ AUTHENTICATION CHECK ============
+    async isLoggedIn() {
+        try {
+            const res = await fetch(`${pythonURI}/api/id`, getAuthFetchOptions());
+            return res.ok;
+        } catch (e) {
+            return false;
+        }
+    },
+    
+    async getCurrentUser() {
+        try {
+            const res = await fetch(`${pythonURI}/api/id`, getAuthFetchOptions());
+            if (!res.ok) return null;
+            return res.json();
+        } catch (e) {
+            return null;
+        }
+    },
     
     // ============ PLAYER DATA ============
     async getPlayer() {
@@ -114,7 +132,12 @@ const DBS2API = {
     // ============ PRICES ============
     async getPrices() {
         try {
-            const res = await fetch(`${this.baseUrl}/prices`);
+            // Prices endpoint doesn't require auth
+            const res = await fetch(`${this.baseUrl}/prices`, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include'
+            });
             if (!res.ok) return { prices: {} };
             return res.json();
         } catch (e) {
@@ -195,7 +218,6 @@ const DBS2API = {
     },
     
     async addInventoryItem(item) {
-        // Handle both object and string input
         const name = typeof item === 'string' ? item : item.name;
         const foundAt = typeof item === 'string' ? 'unknown' : (item.found_at || 'unknown');
         
@@ -241,8 +263,7 @@ const DBS2API = {
                 return {};
             }
             const data = await res.json();
-            const scores = data && typeof data === 'object' ? (data.scores || {}) : {};
-            return scores;
+            return data && typeof data === 'object' ? (data.scores || {}) : {};
         } catch (e) {
             console.log('[DBS2API] getScores error:', e);
             return {};
@@ -288,7 +309,12 @@ const DBS2API = {
     
     // ============ LEADERBOARD ============
     async getLeaderboard(limit = 10) {
-        const res = await fetch(`${this.baseUrl}/leaderboard?limit=${limit}`);
+        // Leaderboard doesn't require auth
+        const res = await fetch(`${this.baseUrl}/leaderboard?limit=${limit}`, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include'
+        });
         const data = await res.json();
         return data.leaderboard || [];
     },
@@ -308,7 +334,11 @@ const DBS2API = {
     
     // ============ BITCOIN BOOST ============
     async getBitcoinBoost() {
-        const res = await fetch(`${this.baseUrl}/bitcoin-boost`);
+        const res = await fetch(`${this.baseUrl}/bitcoin-boost`, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include'
+        });
         return res.json();
     },
     
@@ -338,11 +368,13 @@ const DBS2API = {
                                (player.minigames_completed && Object.values(player.minigames_completed).some(v => v));
             return hasProgress;
         } catch (e) {
+            // Fallback to localStorage for intro tracking only (not auth)
             return localStorage.getItem('dbs2_intro_seen') === 'true';
         }
     },
     
     async markIntroSeen() {
+        // Use localStorage only for UI preference, not auth
         localStorage.setItem('dbs2_intro_seen', 'true');
     },
     
@@ -358,6 +390,13 @@ const DBS2API = {
     // ============ INITIALIZATION ============
     async init() {
         try {
+            // Check if logged in first
+            const loggedIn = await this.isLoggedIn();
+            if (!loggedIn) {
+                console.log('[DBS2API] Not logged in');
+                return null;
+            }
+            
             const player = await this.getPlayer();
             window.playerCrypto = player.crypto;
             window.playerBalance = player.crypto;
@@ -367,7 +406,7 @@ const DBS2API = {
             console.log('[DBS2API] Initialized:', player);
             return player;
         } catch (e) {
-            console.log('[DBS2API] Not logged in or error:', e);
+            console.log('[DBS2API] Init error:', e);
             return null;
         }
     }
