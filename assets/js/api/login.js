@@ -60,29 +60,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // REMOVED the duplicate login form handler that was causing the error
     // The login page (login.md) has its own inline handlers (pythonLogin and signup)
 });
+
 function getCredentials(baseurl) {
+    const token = localStorage.getItem("token");
+
+    // User is not logged in yet — this is NORMAL
+    if (!token) {
+        console.log("No token found, user not logged in");
+        return Promise.resolve(null);
+    }
+
     const URL = pythonURI + '/api/id';
+
     return fetch(URL, {
         method: 'GET',
         mode: 'cors',
-        cache: 'default',
-        credentials: 'include',
-        headers: getHeaders() // Import and use getHeaders from config.js
+        headers: {
+            ...getHeaders(),
+            "Authorization": `Bearer ${token}`
+        }
     })
     .then(response => {
-        if (!response.ok) {
-            console.warn("HTTP status code: " + response.status);
+        if (response.status === 401) {
+            console.log("Token invalid or expired");
+            localStorage.removeItem("token");
             return null;
         }
+
+        if (!response.ok) {
+            console.warn("HTTP status code:", response.status);
+            return null;
+        }
+
         return response.json();
     })
-    .then(data => {
-        if (data === null) return null;
-        console.log("User data:", data);
-        return data;
-    })
     .catch(err => {
-        console.error("Fetch error: ", err);
+        console.error("Fetch error:", err);
         return null;
     });
 }
