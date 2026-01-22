@@ -157,15 +157,26 @@ show_reading_time: false
             }
 
             const data = await response.json();
-            console.log("Login successful! Response:", data);
+            console.log("=== LOGIN SUCCESSFUL ===");
+            console.log("Full response:", data);
+            console.log("Token in response?", data.token ? "YES" : "NO");
+            console.log("Token value:", data.token);
 
             // Store the token in localStorage
             if (data.token) {
                 localStorage.setItem('jwt_token', data.token);
                 console.log("Token stored in localStorage");
+                console.log("Verify storage:", localStorage.getItem('jwt_token'));
+            } else {
+                console.error("NO TOKEN IN RESPONSE!");
             }
 
+            // Wait 2 seconds so we can see the Network request
+            console.log("Waiting 2 seconds before redirect...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             // Redirect to profile on success
+            console.log("Redirecting now...");
             window.location.href = '{{site.baseurl}}/profile';
 
         } catch (error) {
