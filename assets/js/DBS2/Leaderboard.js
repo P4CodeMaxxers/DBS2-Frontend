@@ -3,7 +3,7 @@
  * Displays a pixel-themed leaderboard with data from backend API
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
-import { pythonURI, getFetchOptions } from '../api/config.js';
+import { pythonURI } from '../api/config.js';
 
 class Leaderboard {
     constructor(apiBase = null) {
@@ -36,7 +36,53 @@ class Leaderboard {
      */
     async fetchCurrentPlayer() {
         try {
-            const response = await fetch(`${this.apiBase}/player`, getFetchOptions());
+            // Use DBS2API if available (it handles authentication properly)
+            if (window.DBS2API && window.DBS2API.getPlayer) {
+                try {
+                    const data = await window.DBS2API.getPlayer();
+                    this.currentPlayerData = {
+                        name: data.user_info?.name || data.user?.name || 'You',
+                        uid: data.user_info?.uid || data.user?.uid || '',
+                        crypto: data.crypto || 0
+                    };
+                    console.log('[Leaderboard] Current player:', this.currentPlayerData);
+                    return this.currentPlayerData;
+                } catch (apiError) {
+                    // If DBS2API.getPlayer() fails, try direct fetch as fallback
+                    console.log('[Leaderboard] DBS2API.getPlayer() failed, trying direct fetch:', apiError.message);
+                }
+            }
+            
+            // Fallback to direct fetch if DBS2API not available or failed
+            // Get token from localStorage or cookie
+            let token = null;
+            try {
+                token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    const name = 'jwt_python_flask';
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) {
+                        token = parts.pop().split(';').shift();
+                    }
+                }
+            } catch (e) {
+                console.warn('[Leaderboard] Could not get token:', e);
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Origin': 'client'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const response = await fetch(`${this.apiBase}/player`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: headers
+            });
             
             if (response.ok) {
                 const data = await response.json();
@@ -47,6 +93,13 @@ class Leaderboard {
                 };
                 console.log('[Leaderboard] Current player:', this.currentPlayerData);
                 return this.currentPlayerData;
+            } else {
+                console.warn('[Leaderboard] Failed to fetch current player:', response.status, response.statusText);
+                // If 401, log token status for debugging
+                if (response.status === 401) {
+                    const token = getJWTToken();
+                    console.warn('[Leaderboard] 401 Unauthorized - Token available:', !!token);
+                }
             }
         } catch (error) {
             console.log('[Leaderboard] Could not fetch current player (not logged in?):', error.message);
@@ -62,7 +115,35 @@ class Leaderboard {
             const url = `${this.apiBase}/leaderboard?limit=${limit}`;
             console.log('[Leaderboard] Fetching from:', url);
             
-            const response = await fetch(url, getFetchOptions());
+            // Get token from localStorage or cookie
+            let token = null;
+            try {
+                token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    const name = 'jwt_python_flask';
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) {
+                        token = parts.pop().split(';').shift();
+                    }
+                }
+            } catch (e) {
+                console.warn('[Leaderboard] Could not get token:', e);
+            }
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Origin': 'client'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: headers
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -101,6 +182,18 @@ class Leaderboard {
         const existing = document.getElementById('leaderboard-container');
         if (existing) {
             existing.remove();
+        }
+
+        // Wait a bit for DBS2API to initialize if it's not ready yet
+        let retries = 0;
+        while (!window.DBS2API && retries < 10) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        // Give DBS2API.init() a moment to complete if it's still initializing
+        if (window.DBS2API) {
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
 
         // Fetch both leaderboard and current player data
