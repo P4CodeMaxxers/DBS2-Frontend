@@ -2,7 +2,22 @@
  * DBS2API.js - Multi-coin wallet support
  * Handles all backend communication for DBS2 game
  */
-import { pythonURI, fetchOptions } from '../api/config.js';
+import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
+
+// Helper to create fetch options with auth headers
+function getAuthFetchOptions(method = 'GET', body = null) {
+    const options = {
+        method: method,
+        mode: 'cors',
+        cache: 'default',
+        credentials: 'include',
+        headers: getHeaders()
+    };
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+    return options;
+}
 
 // Coin configuration - must match backend
 const SUPPORTED_COINS = {
@@ -28,24 +43,20 @@ const DBS2API = {
     
     // ============ PLAYER DATA ============
     async getPlayer() {
-        const res = await fetch(`${this.baseUrl}/player`, fetchOptions);
+        const res = await fetch(`${this.baseUrl}/player`, getAuthFetchOptions());
         if (!res.ok) throw new Error('Failed to get player');
         return res.json();
     },
     
     async updatePlayer(data) {
-        const res = await fetch(`${this.baseUrl}/player`, {
-            ...fetchOptions,
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+        const res = await fetch(`${this.baseUrl}/player`, getAuthFetchOptions('PUT', data));
         return res.json();
     },
     
     // ============ WALLET ============
     async getWallet() {
         try {
-            const res = await fetch(`${this.baseUrl}/wallet`, fetchOptions);
+            const res = await fetch(`${this.baseUrl}/wallet`, getAuthFetchOptions());
             if (!res.ok) {
                 console.log('[DBS2API] getWallet failed:', res.status);
                 return { wallet: {}, raw_balances: {}, total_usd: 0 };
@@ -59,11 +70,7 @@ const DBS2API = {
     
     async addToWallet(coin, amount) {
         try {
-            const res = await fetch(`${this.baseUrl}/wallet/add`, {
-                ...fetchOptions,
-                method: 'POST',
-                body: JSON.stringify({ coin: coin, amount: amount })
-            });
+            const res = await fetch(`${this.baseUrl}/wallet/add`, getAuthFetchOptions('POST', { coin: coin, amount: amount }));
             if (!res.ok) {
                 console.log('[DBS2API] addToWallet failed:', res.status);
                 return { success: false };
@@ -79,15 +86,11 @@ const DBS2API = {
     
     async convertCoin(fromCoin, toCoin, amount) {
         try {
-            const res = await fetch(`${this.baseUrl}/wallet/convert`, {
-                ...fetchOptions,
-                method: 'POST',
-                body: JSON.stringify({
-                    from_coin: fromCoin,
-                    to_coin: toCoin,
-                    amount: amount
-                })
-            });
+            const res = await fetch(`${this.baseUrl}/wallet/convert`, getAuthFetchOptions('POST', {
+                from_coin: fromCoin,
+                to_coin: toCoin,
+                amount: amount
+            }));
             if (!res.ok) {
                 const err = await res.json();
                 return { success: false, error: err.error || 'Conversion failed' };
@@ -116,11 +119,7 @@ const DBS2API = {
     // ============ MINIGAME REWARDS ============
     async rewardMinigame(minigame, amount) {
         try {
-            const res = await fetch(`${this.baseUrl}/minigame/reward`, {
-                ...fetchOptions,
-                method: 'POST',
-                body: JSON.stringify({ minigame: minigame, amount: amount })
-            });
+            const res = await fetch(`${this.baseUrl}/minigame/reward`, getAuthFetchOptions('POST', { minigame: minigame, amount: amount }));
             if (!res.ok) {
                 console.log('[DBS2API] rewardMinigame failed:', res.status);
                 return { success: false };
@@ -145,7 +144,7 @@ const DBS2API = {
     // ============ CRYPTO (Legacy - maps to satoshis) ============
     async getCrypto() {
         try {
-            const res = await fetch(`${this.baseUrl}/crypto`, fetchOptions);
+            const res = await fetch(`${this.baseUrl}/crypto`, getAuthFetchOptions());
             if (!res.ok) {
                 console.log('[DBS2API] getCrypto failed:', res.status);
                 return { crypto: 0 };
@@ -161,11 +160,7 @@ const DBS2API = {
     },
     
     async setCrypto(amount) {
-        const res = await fetch(`${this.baseUrl}/crypto`, {
-            ...fetchOptions,
-            method: 'PUT',
-            body: JSON.stringify({ crypto: amount })
-        });
+        const res = await fetch(`${this.baseUrl}/crypto`, getAuthFetchOptions('PUT', { crypto: amount }));
         const data = await res.json();
         this.updateCryptoUI(data.crypto);
         this.refreshLeaderboard();
@@ -173,11 +168,7 @@ const DBS2API = {
     },
     
     async addCrypto(amount) {
-        const res = await fetch(`${this.baseUrl}/crypto`, {
-            ...fetchOptions,
-            method: 'PUT',
-            body: JSON.stringify({ add: amount })
-        });
+        const res = await fetch(`${this.baseUrl}/crypto`, getAuthFetchOptions('PUT', { add: amount }));
         const data = await res.json();
         
         // Update window variables for backward compatibility
@@ -191,7 +182,7 @@ const DBS2API = {
     
     // ============ INVENTORY ============
     async getInventory() {
-        const res = await fetch(`${this.baseUrl}/inventory`, fetchOptions);
+        const res = await fetch(`${this.baseUrl}/inventory`, getAuthFetchOptions());
         const data = await res.json();
         return { inventory: data.inventory || [] };
     },
@@ -201,21 +192,13 @@ const DBS2API = {
         const name = typeof item === 'string' ? item : item.name;
         const foundAt = typeof item === 'string' ? 'unknown' : (item.found_at || 'unknown');
         
-        const res = await fetch(`${this.baseUrl}/inventory`, {
-            ...fetchOptions,
-            method: 'POST',
-            body: JSON.stringify({ name: name, found_at: foundAt })
-        });
+        const res = await fetch(`${this.baseUrl}/inventory`, getAuthFetchOptions('POST', { name: name, found_at: foundAt }));
         const data = await res.json();
         return { inventory: data.inventory || [] };
     },
     
     async removeInventoryItem(index) {
-        const res = await fetch(`${this.baseUrl}/inventory`, {
-            ...fetchOptions,
-            method: 'DELETE',
-            body: JSON.stringify({ index: index })
-        });
+        const res = await fetch(`${this.baseUrl}/inventory`, getAuthFetchOptions('DELETE', { index: index }));
         const data = await res.json();
         return { inventory: data.inventory || [] };
     },
@@ -223,17 +206,12 @@ const DBS2API = {
     // ============ SHOP ============
     async purchaseShopItem(itemId, item) {
         try {
-            // Backend endpoint will be: POST /api/dbs2/shop/purchase
-            const res = await fetch(`${this.baseUrl}/shop/purchase`, {
-                ...fetchOptions,
-                method: 'POST',
-                body: JSON.stringify({
-                    item_id: itemId,
-                    item_type: item.type,
-                    price_coin: item.price.coin,
-                    price_amount: item.price.amount
-                })
-            });
+            const res = await fetch(`${this.baseUrl}/shop/purchase`, getAuthFetchOptions('POST', {
+                item_id: itemId,
+                item_type: item.type,
+                price_coin: item.price.coin,
+                price_amount: item.price.amount
+            }));
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 return { success: false, error: err.error || 'Purchase failed' };
@@ -250,7 +228,7 @@ const DBS2API = {
     // ============ SCORES ============
     async getScores() {
         try {
-            const res = await fetch(`${this.baseUrl}/scores`, fetchOptions);
+            const res = await fetch(`${this.baseUrl}/scores`, getAuthFetchOptions());
             if (!res.ok) {
                 console.log('[DBS2API] getScores failed:', res.status);
                 return {};
@@ -270,11 +248,7 @@ const DBS2API = {
 
     async submitScore(game, score) {
         try {
-            const res = await fetch(`${this.baseUrl}/scores`, {
-                ...fetchOptions,
-                method: 'PUT',
-                body: JSON.stringify({ game: game, score: score })
-            });
+            const res = await fetch(`${this.baseUrl}/scores`, getAuthFetchOptions('PUT', { game: game, score: score }));
             if (!res.ok) {
                 console.log('[DBS2API] submitScore failed:', res.status);
                 return { scores: {} };
@@ -290,7 +264,7 @@ const DBS2API = {
     
     // ============ MINIGAMES ============
     async getMinigameStatus() {
-        const res = await fetch(`${this.baseUrl}/minigames`, fetchOptions);
+        const res = await fetch(`${this.baseUrl}/minigames`, getAuthFetchOptions());
         const data = await res.json();
         return { minigames_completed: data.minigames_completed || data || {} };
     },
@@ -299,11 +273,7 @@ const DBS2API = {
         const payload = {};
         payload[gameName] = true;
         
-        const res = await fetch(`${this.baseUrl}/minigames`, {
-            ...fetchOptions,
-            method: 'PUT',
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch(`${this.baseUrl}/minigames`, getAuthFetchOptions('PUT', payload));
         const data = await res.json();
         this.refreshLeaderboard();
         return { minigames_completed: data.minigames_completed || data || {} };
