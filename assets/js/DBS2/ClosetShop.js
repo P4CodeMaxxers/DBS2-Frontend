@@ -488,29 +488,60 @@ async function handlePurchase(itemId) {
  * Show a message to the user
  */
 function showMessage(message, type = 'info') {
+    // Remove any existing messages first
+    const existing = document.getElementById('closet-shop-message');
+    if (existing) existing.remove();
+    
     const msgDiv = document.createElement('div');
+    msgDiv.id = 'closet-shop-message';
     msgDiv.style.cssText = `
         position: fixed;
-        top: 20px;
+        top: 50%;
         left: 50%;
-        transform: translateX(-50%);
-        background: ${type === 'success' ? 'rgba(0, 200, 0, 0.9)' : type === 'error' ? 'rgba(200, 0, 0, 0.9)' : 'rgba(0, 100, 200, 0.9)'};
+        transform: translate(-50%, -50%);
+        background: ${type === 'success' ? 'rgba(0, 200, 0, 0.95)' : type === 'error' ? 'rgba(200, 0, 0, 0.95)' : 'rgba(0, 100, 200, 0.95)'};
         color: white;
-        padding: 15px 30px;
-        border-radius: 8px;
+        padding: 20px 40px;
+        border-radius: 10px;
         z-index: 20000;
         font-family: 'Courier New', monospace;
-        font-size: 14px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        font-size: 16px;
+        font-weight: bold;
+        box-shadow: 0 6px 30px rgba(0,0,0,0.7);
+        border: 2px solid ${type === 'success' ? 'rgba(0, 255, 0, 0.5)' : type === 'error' ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 150, 255, 0.5)'};
+        text-align: center;
+        min-width: 300px;
+        max-width: 500px;
+        animation: messageSlideIn 0.3s ease-out;
     `;
     msgDiv.textContent = message;
     document.body.appendChild(msgDiv);
     
+    // Add animation keyframes if not already present
+    if (!document.getElementById('closet-shop-message-animations')) {
+        const style = document.createElement('style');
+        style.id = 'closet-shop-message-animations';
+        style.textContent = `
+            @keyframes messageSlideIn {
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -60%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
     setTimeout(() => {
-        msgDiv.style.transition = 'opacity 0.3s';
+        msgDiv.style.transition = 'opacity 0.3s, transform 0.3s';
         msgDiv.style.opacity = '0';
+        msgDiv.style.transform = 'translate(-50%, -40%)';
         setTimeout(() => msgDiv.remove(), 300);
-    }, 2000);
+    }, 3000);
 }
 
 /**
