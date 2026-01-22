@@ -56,7 +56,7 @@ show_reading_time: false
     <div class="login-card">
         <h1 id="pythonTitle">User Login</h1>
         <hr>
-        <form id="pythonForm" onsubmit="pythonLogin(event); return false;">
+        <form id="pythonForm">
             <div class="form-group">
                 <input type="text" id="uid" placeholder="GitHub ID" required>
             </div>
@@ -74,7 +74,7 @@ show_reading_time: false
     <div class="signup-card">
         <h1 id="signupTitle">Sign Up</h1>
         <hr>
-        <form id="signupForm" onsubmit="signup(event); return false;">
+        <form id="signupForm">
             <div class="form-group">
                 <input type="text" id="name" placeholder="Name" required>
             </div>
@@ -105,10 +105,10 @@ show_reading_time: false
 </div>
 
 <script type="module">
-    import { pythonURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, getHeaders } from '{{site.baseurl}}/assets/js/api/config.js';
 
-    // Login
-    window.pythonLogin = async function (event) {
+    // Login Form Handler
+    document.getElementById('pythonForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         
         const messageEl = document.getElementById("message");
@@ -133,8 +133,8 @@ show_reading_time: false
                 headers: {
                     "Content-Type": "application/json"
                 },
-                credentials: "include", // This is critical for cookies
-                mode: "cors", // Explicitly set CORS mode
+                credentials: "include",
+                mode: "cors",
                 body: JSON.stringify(loginData)
             });
 
@@ -142,7 +142,6 @@ show_reading_time: false
             console.log("Response headers:", [...response.headers.entries()]);
 
             if (!response.ok) {
-                // Try to get error details from response
                 let errorMessage = `Authentication failed (${response.status})`;
                 try {
                     const errorData = await response.json();
@@ -175,9 +174,9 @@ show_reading_time: false
             console.log("Waiting 2 seconds before redirect...");
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Redirect to profile on success
+            // Redirect to home on success
             console.log("Redirecting now...");
-            window.location.href = '{{site.baseurl}}/profile';
+            window.location.href = '{{site.baseurl}}/';
 
         } catch (error) {
             console.error("=== LOGIN ERROR ===");
@@ -187,7 +186,6 @@ show_reading_time: false
             
             messageEl.style.color = "red";
             
-            // More helpful error messages
             if (error.message.includes("Failed to fetch")) {
                 messageEl.textContent = "Cannot connect to server. Check if backend is running and CORS is configured.";
             } else if (error.message.includes("401")) {
@@ -198,10 +196,10 @@ show_reading_time: false
             
             loginButton.disabled = false;
         }
-    }
+    });
 
-    // Signup
-    window.signup = async function (event) {
+    // Signup Form Handler
+    document.getElementById('signupForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         
         const signupButton = document.querySelector(".signup-card button");
@@ -277,5 +275,5 @@ show_reading_time: false
         } finally {
             signupButton.disabled = false;
         }
-    }
+    });
 </script>
