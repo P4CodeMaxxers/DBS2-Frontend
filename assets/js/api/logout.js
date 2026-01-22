@@ -20,7 +20,6 @@ export async function handleLogout() {
         await fetch(javaURI + '/my/logout', {
             ...fetchOptions,
             method: 'POST',
-            credentials: 'include'
         });
     } catch (e) {
         // log error but continue
