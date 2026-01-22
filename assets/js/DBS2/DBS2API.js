@@ -4,18 +4,25 @@
  */
 import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
 
-// Helper to create fetch options with auth headers
 function getAuthFetchOptions(method = 'GET', body = null) {
+    const token = localStorage.getItem("token");
+
+    const headers = {
+        ...getHeaders(),
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
     const options = {
         method: method,
         mode: 'cors',
         cache: 'default',
-        credentials: 'include',
-        headers: getHeaders()
+        headers
     };
+
     if (body) {
         options.body = JSON.stringify(body);
     }
+
     return options;
 }
 
