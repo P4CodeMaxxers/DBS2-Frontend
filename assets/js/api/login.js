@@ -1,14 +1,14 @@
-import { baseurl, pythonURI, fetchOptions } from './config.js';
+import { baseurl, pythonURI, fetchOptions, getHeaders } from './config.js';
 
 console.log("login.js loaded");
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Base URL:", baseurl); // Debugging line
-    getCredentials(baseurl) // Call the function to get credentials
+    console.log("Base URL:", baseurl);
+    getCredentials(baseurl)
         .then(data => {
-            console.log("Credentials data:", data); // Debugging line
+            console.log("Credentials data:", data);
             const loginArea = document.getElementById('loginArea');
-            if (data) { // Update the login area based on the data
+            if (data) {
                 loginArea.innerHTML = `
                     <div class="dropdown">
                         <button class="dropbtn">${data.name}</button>
@@ -27,12 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
 
-                // Add click event listener for dropdown toggle
                 const dropdownButton = loginArea.querySelector('.dropbtn');
                 const dropdownContent = loginArea.querySelector('.dropdown-content');
 
                 dropdownButton.addEventListener('click', (event) => {
-                    event.preventDefault(); // Prevent redirection
+                    event.preventDefault();
                     if (dropdownContent.classList.contains('hidden')) {
                         dropdownContent.classList.remove('hidden');
                     } else {
@@ -40,91 +39,64 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
 
-                // Add event listener to hide dropdown when clicking outside
                 document.addEventListener('click', (event) => {
                     if (!dropdownButton.contains(event.target) && !dropdownContent.contains(event.target)) {
-                        dropdownContent.classList.add('hidden'); // Hide dropdown
+                        dropdownContent.classList.add('hidden');
                     }
                 });
             } else {
-                // User is not authenticated, then "Login" link is shown
                 loginArea.innerHTML = `<a href="${baseurl}/login">Login</a>`;
             }
-            // Set loginArea opacity to 1
             loginArea.style.opacity = "1";
         })
         .catch(err => {
             console.error("Error fetching credentials: ", err);
-            // Show login link on error
             const loginArea = document.getElementById('loginArea');
             if (loginArea) {
                 loginArea.innerHTML = `<a href="${baseurl}/login">Login</a>`;
             }
         });
 
-    // Add login form handler
-    const loginForm = document.querySelector('form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
+    // REMOVED the duplicate login form handler that was causing the error
+    // The login page (login.md) has its own inline handlers (pythonLogin and signup)
 });
 
-// New function for handling login form submission
-async function handleLogin(event) {
-    event.preventDefault();
-    
-    const username = event.target.querySelector('input[name="uid"]').value;
-    const password = event.target.querySelector('input[name="password"]').value;
-    
-    try {
-        const response = await fetch(pythonURI + '/api/authenticate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                uid: username,
-                password: password
-            })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Login successful:', data);
-            window.location.href = baseurl; // Redirect to home
-        } else {
-            const error = await response.json();
-            console.error('Login failed:', error);
-            alert('Invalid username or password');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to connect to server. CORS error - check backend configuration.');
-    }
-}
-
 function getCredentials(baseurl) {
+    const token = localStorage.getItem("token");
+
+    // User is not logged in yet — this is NORMAL
+    if (!token) {
+        console.log("No token found, user not logged in");
+        return Promise.resolve(null);
+    }
+
     const URL = pythonURI + '/api/id';
+
     return fetch(URL, {
-        ...fetchOptions,
-        credentials: 'include' // Add this to include cookies
+        method: 'GET',
+    
+        mode: 'cors',
+        headers: {
+            ...getHeaders(),
+            "Authorization": `Bearer ${token}`,
+        }
     })
     .then(response => {
-        if (!response.ok) {
-            console.warn("HTTP status code: " + response.status);
+        if (response.status === 401) {
+            console.log("Token invalid or expired");
+            localStorage.removeItem("token");
             return null;
         }
+
+        if (!response.ok) {
+            console.warn("HTTP status code:", response.status);
+            return null;
+        }
+
         return response.json();
     })
-    .then(data => {
-        if (data === null) return null;
-        console.log("User data:", data);
-        return data;
-    })
     .catch(err => {
-        console.error("Fetch error: ", err);
-        // Return null instead of throwing to handle the error gracefully
+        console.error("Fetch error:", err);
         return null;
     });
 }

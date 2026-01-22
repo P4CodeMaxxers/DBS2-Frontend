@@ -171,6 +171,20 @@ class GameLevelBasement {
       stationary: true
     };
 
+    const sprite_data_closet = {
+      id: 'Closet',
+      greeting: 'Browse and purchase items from the closet shop!',
+      src: `${this.path}/images/DBS2/closet.png`,
+      SCALE_FACTOR: 8,
+      ANIMATION_RATE: 0,
+      pixels: { height: 1439, width: 1338 },
+      INIT_POSITION: { x: width * 8 / 21, y: height * 0.45 },
+      orientation: { rows: 1, columns: 1 },
+      down: { row: 0, start: 0, columns: 1 },
+      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      stationary: true
+    };
+
     // All objects in the basement level
     this.objects = [
       { class: Background, data: image_data_basement },
@@ -182,6 +196,7 @@ class GameLevelBasement {
       { class: Npc, data: sprite_data_cards },   // Cards - launches Crypto Checker (RIGHT BESIDE soda can)
       { class: Npc, data: sprite_data_shell2 },
       { class: Npc, data: sprite_data_bookshelf },
+      { class: Npc, data: sprite_data_closet },
     ];
   }
 }

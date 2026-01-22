@@ -381,6 +381,56 @@ export async function hasItem(item) {
     return inventory.includes(item);
 }
 
+// ==================== SHOP FUNCTIONS ====================
+
+/**
+ * Purchase an item from the shop
+ * @param {string} itemId - Shop item ID
+ * @param {Object} item - Item data
+ * @returns {Promise<Object>} Purchase result
+ */
+export async function purchaseShopItem(itemId, item) {
+    try {
+        if (DBS2API && DBS2API.purchaseShopItem) {
+            const result = await DBS2API.purchaseShopItem(itemId, item);
+            
+            // If purchase successful and it's a code scrap, add to inventory
+            if (result.success && item.type === 'code_scrap') {
+                // Map code scrap IDs to inventory names
+                const inventoryNameMap = {
+                    'code_scrap_crypto_miner': 'Code Scrap: Crypto Miner',
+                    'code_scrap_laundry': 'Code Scrap: Laundry',
+                    'code_scrap_whackarat': 'Code Scrap: Whack-a-Rat',
+                    'code_scrap_ash_trail': 'Code Scrap: Ash Trail',
+                    'code_scrap_infinite_user': 'Code Scrap: Infinite User'
+                };
+                
+                const inventoryName = inventoryNameMap[itemId] || item.name;
+                try {
+                    await addInventoryItem({
+                        name: inventoryName,
+                        found_at: 'shop_purchase',
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.log('[Shop] Could not add to inventory:', e);
+                }
+            }
+            
+            return result;
+        }
+    } catch (e) {
+        console.log('[Shop] API purchase failed:', e);
+    }
+    
+    // Fallback: For now, return error until backend is ready
+    // This allows the UI to work but won't actually purchase
+    return { 
+        success: false, 
+        error: 'Shop backend not available yet. Purchase functionality coming soon!' 
+    };
+}
+
 // ==================== SCORE FUNCTIONS ====================
 
 /**
@@ -601,6 +651,8 @@ export default {
     addInventoryItem,
     removeInventoryItem,
     hasItem,
+    // Shop
+    purchaseShopItem,
     // Scores
     getScores,
     updateScore,

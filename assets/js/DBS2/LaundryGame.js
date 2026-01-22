@@ -1,7 +1,7 @@
 // LaundryGame.js - Rewards CARDANO (ADA)
 // Change: Replace updateCrypto() with rewardMinigame()
 
-import { isMinigameCompleted, completeMinigame, rewardMinigame } from './StatsManager.js';
+import { isMinigameCompleted, completeMinigame, addInventoryItem, rewardMinigame } from './StatsManager.js';
 
 const MINIGAME_NAME = 'laundry';
 const COIN_NAME = 'Cardano';
@@ -68,7 +68,7 @@ export async function showLaundryMinigame(onComplete) {
         border: 1px solid #800;
         padding: 8px 15px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 15px;
         font-family: 'Courier New', monospace;
         z-index: 10;
     `;
@@ -95,7 +95,7 @@ export async function showLaundryMinigame(onComplete) {
     coinIndicator.style.cssText = `
         text-align: center;
         color: #0033ad;
-        font-size: 12px;
+        font-size: 15px;
         margin-bottom: 10px;
         padding: 5px;
         background: rgba(0,51,173,0.1);
@@ -108,7 +108,7 @@ export async function showLaundryMinigame(onComplete) {
     instructions.style.cssText = `
         text-align: center;
         color: #888;
-        font-size: 12px;
+        font-size: 15px;
         margin-bottom: 15px;
         padding: 10px;
         background: rgba(0, 0, 0, 0.6);
@@ -152,7 +152,7 @@ export async function showLaundryMinigame(onComplete) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 15px;
             color: #fff;
             text-align: center;
             transition: all 0.2s;
@@ -222,7 +222,7 @@ export async function showLaundryMinigame(onComplete) {
 
         const label = document.createElement('div');
         label.textContent = zoneInfo.label;
-        label.style.cssText = `color: #aaa; font-size: 12px; text-align: center;`;
+        label.style.cssText = `color: #aaa; font-size: 15px; text-align: center;`;
         zone.appendChild(label);
 
         dropZones.push(zone);
@@ -234,7 +234,7 @@ export async function showLaundryMinigame(onComplete) {
     laundryItemsArea.style.cssText = `
         display: none;
         position: absolute;
-        bottom: 10px;
+        bottom: 60px;
         left: 10px;
         right: 10px;
         background: rgba(0, 0, 0, 0.7);
@@ -245,7 +245,7 @@ export async function showLaundryMinigame(onComplete) {
     
     const laundryTitle = document.createElement('div');
     laundryTitle.textContent = 'Dirty Laundry - Drag to Machine';
-    laundryTitle.style.cssText = `color: #888; font-size: 11px; margin-bottom: 8px; text-align: center;`;
+    laundryTitle.style.cssText = `color: #888; font-size: 17px; margin-bottom: 8px; text-align: center;`;
     laundryItemsArea.appendChild(laundryTitle);
     
     const laundryGrid = document.createElement('div');
@@ -313,13 +313,14 @@ export async function showLaundryMinigame(onComplete) {
     startBtn.style.cssText = `
         margin-top: 15px;
         padding: 12px 25px;
-        font-size: 14px;
+        font-size: 17px;
         background: #666;
         color: #888;
         border: none;
         border-radius: 8px;
         cursor: not-allowed;
         font-family: 'Courier New', monospace;
+        position: relative;
         z-index: 100;
     `;
 
@@ -363,13 +364,18 @@ export async function showLaundryMinigame(onComplete) {
     
     const rewardAmount = isFirstCompletion ? 35 : 20;
     paperDiscovery.innerHTML = `
-        <div style="font-size: 36px; margin-bottom: 10px;">✅</div>
+        <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
         <div style="color: #0033ad; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-            ${isFirstCompletion ? 'LAUNDRY COMPLETE! (First Time)' : 'LAUNDRY DONE!'}
+            ${isFirstCompletion ? 'CODE FRAGMENT FOUND!' : 'LAUNDRY DONE!'}
         </div>
-        <div style="color: #888; font-size: 12px; margin-bottom: 15px;">
-            ${isFirstCompletion ? 'The machine hums perfectly. First completion bonus earned!' : 'The machine hums along. Another load complete.'}
+        <div style="color: #888; font-size: 15px; margin-bottom: 15px;">
+            ${isFirstCompletion ? 'Found a soggy piece of paper stuck to a sock. The ink is smeared but still readable.' : 'The machine hums along. Another load complete.'}
         </div>
+        ${isFirstCompletion ? `
+        <div style="background: rgba(0,51,173,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+            <img src="${baseurl}/images/DBS2/codescrapLaundry.png" style="max-width: 80px; border: 1px solid #0033ad; border-radius: 4px;" onerror="this.style.display='none'">
+        </div>
+        ` : ''}
         <div style="color: #0033ad; font-size: 18px; font-weight: bold; margin-bottom: 15px;">
             +${rewardAmount} ${COIN_NAME} (${COIN_SYMBOL})
         </div>
@@ -381,7 +387,7 @@ export async function showLaundryMinigame(onComplete) {
             border-radius: 8px;
             cursor: pointer;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 17px;
         ">CONTINUE</button>
     `;
     machineArea.appendChild(paperDiscovery);
@@ -588,6 +594,13 @@ export async function showLaundryMinigame(onComplete) {
             if (isFirstCompletion) {
                 await completeMinigame(MINIGAME_NAME);
                 console.log('✅ Minigame marked complete');
+                
+                await addInventoryItem({
+                    name: 'Code Scrap: Laundry',
+                    found_at: MINIGAME_NAME,
+                    timestamp: new Date().toISOString()
+                });
+                console.log('✅ Code scrap added to inventory');
             }
             
             // Refresh leaderboard

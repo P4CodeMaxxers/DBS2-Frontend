@@ -3,18 +3,28 @@ export const baseurl = "/DBS2-Frontend";
 // Flask backend URI
 export var pythonURI;
 if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-    pythonURI = "http://localhost:8403";  // Same URI for localhost or 127.0.0.1
+    pythonURI = "http://localhost:8403";
 } else {
-    // Use full URL for deployed backend
     pythonURI = "https://dbs2.opencodingsociety.com";
 }
 
-// Debug: Log the backend URI being used
 console.log('[Config] Frontend hostname:', location.hostname);
 console.log('[Config] Backend pythonURI:', pythonURI);
 
-// Keep javaURI pointing to Flask (for any legacy code that uses it)
 export var javaURI = pythonURI;
+
+// Function to get headers with token
+export function getHeaders() {
+    const token = localStorage.getItem('jwt_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Origin': 'client'
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
 
 export const fetchOptions = {
     method: 'GET',
@@ -24,7 +34,7 @@ export const fetchOptions = {
     headers: {
         'Content-Type': 'application/json',
         'X-Origin': 'client'
-    },
+    }
 };
 
 // User Login Function
@@ -32,13 +42,12 @@ export function login(options) {
     const requestOptions = {
         ...fetchOptions,
         method: options.method || 'POST',
+        headers: getHeaders(), // Use the function to get headers with token
         body: options.method === 'POST' ? JSON.stringify(options.body) : undefined
     };
 
-    // Clear the message area
     document.getElementById(options.message).textContent = "";
 
-    // Debug: Log the URL being called
     console.log('[Login] Attempting to fetch:', options.URL);
     console.log('[Login] Request options:', requestOptions);
 

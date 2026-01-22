@@ -56,7 +56,7 @@ show_reading_time: false
     <div class="login-card">
         <h1 id="pythonTitle">User Login</h1>
         <hr>
-        <form id="pythonForm" onsubmit="pythonLogin(); return false;">
+        <form id="pythonForm">
             <div class="form-group">
                 <input type="text" id="uid" placeholder="GitHub ID" required>
             </div>
@@ -74,7 +74,7 @@ show_reading_time: false
     <div class="signup-card">
         <h1 id="signupTitle">Sign Up</h1>
         <hr>
-        <form id="signupForm" onsubmit="signup(); return false;">
+        <form id="signupForm">
             <div class="form-group">
                 <input type="text" id="name" placeholder="Name" required>
             </div>
@@ -105,46 +105,108 @@ show_reading_time: false
 </div>
 
 <script type="module">
-    import { login, pythonURI, fetchOptions } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, getHeaders } from '{{site.baseurl}}/assets/js/api/config.js';
 
-    // Login - Flask only
-    window.pythonLogin = function () {
-        const options = {
-            URL: `${pythonURI}/api/authenticate`,
-            callback: onLoginSuccess,
-            message: "message",
-            method: "POST",
-            cache: "no-cache",
-            body: {
-                uid: document.getElementById("uid").value,
-                password: document.getElementById("password").value,
-            }
+    // Login Form Handler
+    document.getElementById('pythonForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const messageEl = document.getElementById("message");
+        const loginButton = document.querySelector(".login-card button");
+        
+        messageEl.textContent = "";
+        loginButton.disabled = true;
+
+        const loginData = {
+            uid: document.getElementById("uid").value,
+            password: document.getElementById("password").value,
         };
-        login(options);
-    }
 
-    // On successful login, redirect to profile
-    function onLoginSuccess() {
-        const URL = `${pythonURI}/api/id`;
-        fetch(URL, fetchOptions)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Flask server response: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                window.location.href = '{{site.baseurl}}/profile';
-            })
-            .catch(error => {
-                document.getElementById("message").textContent = `Error: ${error.message}`;
+        console.log("=== LOGIN ATTEMPT ===");
+        console.log("Backend URI:", pythonURI);
+        console.log("Login endpoint:", `${pythonURI}/api/authenticate`);
+        console.log("Username:", loginData.uid);
+
+        try {
+            const response = await fetch(`${pythonURI}/api/authenticate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                mode: "cors",
+                body: JSON.stringify(loginData)
             });
-    }
 
-    // Signup - Flask only
-    window.signup = function () {
+
+            console.log("Response status:", response.status);
+            console.log("Response headers:", [...response.headers.entries()]);
+
+            if (!response.ok) {
+                let errorMessage = `Authentication failed (${response.status})`;
+                try {
+                    const errorData = await response.json();
+                    console.log("Error data:", errorData);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.log("Error text:", errorText);
+                    if (errorText) errorMessage = errorText;
+                }
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            console.log("=== LOGIN SUCCESSFUL ===");
+            console.log("Full response:", data);
+            console.log("Token in response?", data.token ? "YES" : "NO");
+            console.log("Token value:", data.token);
+
+            // Store the token in localStorage
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                console.log("Token stored in localStorage");
+                console.log("Verify storage:", localStorage.getItem('jwt_token'));
+            } else {
+                console.error("NO TOKEN IN RESPONSE!");
+            }
+
+            // Wait 2 seconds so we can see the Network request
+            console.log("Waiting 2 seconds before redirect...");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Redirect to home on success
+            console.log("Redirecting now...");
+            window.location.href = 'https://p4codemaxxers.github.io/DBS2-Frontend/DBS2';
+
+        } catch (error) {
+            console.error("=== LOGIN ERROR ===");
+            console.error("Error type:", error.name);
+            console.error("Error message:", error.message);
+            console.error("Full error:", error);
+            
+            messageEl.style.color = "red";
+            
+            if (error.message.includes("Failed to fetch")) {
+                messageEl.textContent = "Cannot connect to server. Check if backend is running and CORS is configured.";
+            } else if (error.message.includes("401")) {
+                messageEl.textContent = "Invalid username or password. Please check your credentials.";
+            } else {
+                messageEl.textContent = error.message;
+            }
+            
+            loginButton.disabled = false;
+        }
+    });
+
+    // Signup Form Handler
+    document.getElementById('signupForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
         const signupButton = document.querySelector(".signup-card button");
+        const messageEl = document.getElementById("signupMessage");
+        
         signupButton.disabled = true;
+        messageEl.textContent = "";
 
         const signupData = {
             name: document.getElementById("name").value,
@@ -154,30 +216,63 @@ show_reading_time: false
             kasm_server_needed: document.getElementById("kasmNeeded").checked,
         };
 
-        fetch(`${pythonURI}/api/user`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify(signupData)
-        })
-        .then(response => {
+        console.log("=== SIGNUP ATTEMPT ===");
+        console.log("Backend URI:", pythonURI);
+        console.log("Signup endpoint:", `${pythonURI}/api/user`);
+        console.log("Username:", signupData.uid);
+        console.log("Email:", signupData.email);
+
+        try {
+            const response = await fetch(`${pythonURI}/api/user`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                mode: "cors",
+                body: JSON.stringify(signupData)
+            });
+
+            console.log("Response status:", response.status);
+            console.log("Response headers:", [...response.headers.entries()]);
+
             if (!response.ok) {
-                throw new Error(`Signup failed: ${response.status}`);
+                let errorMessage = `Signup failed (${response.status})`;
+                try {
+                    const errorData = await response.json();
+                    console.log("Error data:", errorData);
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.log("Error text:", errorText);
+                    if (errorText) errorMessage = errorText;
+                }
+                throw new Error(errorMessage);
             }
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById("signupMessage").style.color = "green";
-            document.getElementById("signupMessage").textContent = "Signup successful! You can now log in.";
+
+            const data = await response.json();
+            console.log("Signup successful! Response:", data);
+            
+            messageEl.style.color = "green";
+            messageEl.textContent = "Signup successful! You can now log in with your credentials.";
+            
+            // Clear form
+            document.getElementById("signupForm").reset();
+
+        } catch (error) {
+            console.error("=== SIGNUP ERROR ===");
+            console.error("Error type:", error.name);
+            console.error("Error message:", error.message);
+            console.error("Full error:", error);
+            
+            messageEl.style.color = "red";
+            
+            if (error.message.includes("Failed to fetch")) {
+                messageEl.textContent = "Cannot connect to server. Check if backend is running and CORS is configured.";
+            } else {
+                messageEl.textContent = error.message;
+            }
+        } finally {
             signupButton.disabled = false;
-        })
-        .catch(error => {
-            console.error("Signup Error:", error);
-            document.getElementById("signupMessage").style.color = "red";
-            document.getElementById("signupMessage").textContent = `Signup Error: ${error.message}`;
-            signupButton.disabled = false;
-        });
-    }
+        }
+    });
 </script>

@@ -251,8 +251,8 @@ const Inventory = {
                 position: fixed;
                 bottom: 80px;
                 right: 20px;
-                width: 50px;
-                height: 50px;
+                width: 60px;
+                height: 60px;
                 background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
                 border: 2px solid #0a5;
                 border-radius: 10px;
@@ -261,7 +261,7 @@ const Inventory = {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: bold;
                 color: #0a5;
                 font-family: 'Courier New', monospace;
@@ -280,8 +280,8 @@ const Inventory = {
                 right: -5px;
                 background: #a00;
                 color: white;
-                font-size: 11px;
-                padding: 2px 6px;
+                font-size: 13px;
+                padding: 3px 8px;
                 border-radius: 10px;
                 font-weight: bold;
             }
@@ -293,9 +293,9 @@ const Inventory = {
                 background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
                 border: 2px solid #0a5;
                 border-radius: 10px;
-                padding: 20px;
+                padding: 24px;
                 z-index: 9999;
-                min-width: 450px;
+                min-width: 500px;
                 max-width: 95vw;
                 box-shadow: 0 0 30px rgba(0, 100, 50, 0.4);
                 font-family: 'Courier New', monospace;
@@ -311,21 +311,21 @@ const Inventory = {
             }
             #inventory-panel h2 {
                 color: #0a5;
-                margin: 0 0 5px 0;
+                margin: 0 0 8px 0;
                 text-align: center;
-                font-size: 18px;
+                font-size: 22px;
                 letter-spacing: 2px;
             }
             .inventory-subtitle {
                 color: #666;
-                font-size: 11px;
+                font-size: 14px;
                 text-align: center;
                 margin-bottom: 15px;
             }
             .inventory-grid {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
+                gap: 10px;
                 margin-bottom: 15px;
             }
             .inventory-slot {
@@ -353,7 +353,7 @@ const Inventory = {
                 opacity: 0.5;
             }
             .inventory-slot .slot-icon {
-                font-size: 10px;
+                font-size: 13px;
                 color: #0a5;
                 font-weight: bold;
             }
@@ -383,7 +383,7 @@ const Inventory = {
                 letter-spacing: 1px;
             }
             .inventory-progress-icons {
-                font-size: 11px;
+                font-size: 14px;
                 letter-spacing: 3px;
                 color: #0a5;
                 font-weight: bold;
@@ -403,7 +403,7 @@ const Inventory = {
             }
             .inventory-story-hint p {
                 color: #a80;
-                font-size: 11px;
+                font-size: 14px;
                 margin: 0;
                 line-height: 1.5;
             }
@@ -472,7 +472,7 @@ const Inventory = {
             .item-modal-content .story-fragment {
                 color: #a80;
                 font-style: italic;
-                font-size: 11px;
+                font-size: 14px;
                 background: rgba(80, 60, 0, 0.2);
                 padding: 12px;
                 border-radius: 4px;
@@ -482,7 +482,7 @@ const Inventory = {
             }
             .item-modal-content .hint {
                 color: #088;
-                font-size: 11px;
+                font-size: 14px;
             }
             .item-modal-content button {
                 margin-top: 15px;
@@ -510,29 +510,29 @@ const Inventory = {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }
             .wallet-title {
                 color: #f7931a;
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
             }
             .wallet-total {
                 color: #0f0;
-                font-size: 14px;
+                font-size: 18px;
                 font-weight: bold;
             }
             .wallet-coins {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                margin-bottom: 10px;
+                gap: 10px;
+                margin-bottom: 12px;
             }
             .wallet-coin {
                 background: rgba(0, 40, 20, 0.4);
                 border: 1px solid #052;
                 border-radius: 6px;
-                padding: 8px;
+                padding: 10px;
                 text-align: center;
                 cursor: pointer;
                 transition: all 0.2s;
@@ -546,20 +546,21 @@ const Inventory = {
                 background: rgba(100, 80, 20, 0.4);
             }
             .wallet-coin-icon {
-                font-size: 18px;
+                font-size: 24px;
                 display: block;
             }
             .wallet-coin-balance {
                 color: #fff;
-                font-size: 11px;
-                margin-top: 3px;
+                font-size: 15px;
+                font-weight: bold;
+                margin-top: 4px;
             }
             .wallet-coin-usd {
                 color: #888;
-                font-size: 9px;
+                font-size: 12px;
             }
             .wallet-coin-change {
-                font-size: 9px;
+                font-size: 12px;
             }
             .wallet-coin-change.up { color: #0f0; }
             .wallet-coin-change.down { color: #f66; }
@@ -567,13 +568,14 @@ const Inventory = {
                 background: rgba(100, 80, 20, 0.2);
                 border: 1px solid #640;
                 border-radius: 6px;
-                padding: 10px;
-                margin-top: 10px;
+                padding: 12px;
+                margin-top: 12px;
             }
             .convert-title {
                 color: #f7931a;
-                font-size: 11px;
-                margin-bottom: 8px;
+                font-size: 15px;
+                font-weight: bold;
+                margin-bottom: 10px;
                 text-align: center;
             }
             .convert-select, .convert-input {
@@ -581,22 +583,23 @@ const Inventory = {
                 background: #111;
                 border: 1px solid #333;
                 color: #fff;
-                padding: 6px 8px;
+                padding: 8px 10px;
                 border-radius: 4px;
                 font-family: 'Courier New', monospace;
-                font-size: 11px;
-                margin-bottom: 6px;
+                font-size: 14px;
+                margin-bottom: 8px;
             }
             .convert-btn {
                 width: 100%;
                 background: #640;
                 color: #fa0;
                 border: 1px solid #a80;
-                padding: 8px;
+                padding: 10px;
                 border-radius: 4px;
                 cursor: pointer;
                 font-family: 'Courier New', monospace;
-                font-size: 11px;
+                font-size: 14px;
+                font-weight: bold;
                 transition: all 0.2s;
             }
             .convert-btn:hover {
@@ -609,10 +612,10 @@ const Inventory = {
                 cursor: not-allowed;
             }
             .convert-result {
-                margin-top: 8px;
-                font-size: 10px;
+                margin-top: 10px;
+                font-size: 14px;
                 text-align: center;
-                min-height: 16px;
+                min-height: 18px;
             }
             .convert-result.success { color: #0f0; }
             .convert-result.error { color: #f66; }
