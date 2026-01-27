@@ -143,6 +143,24 @@ class GameLevelBasement {
       stationary: true
     };
 
+    /* ----------------------
+       TRADING TERMINAL (NPC) - Launches Buy or Hold
+       Positioned near the computers
+    ------------------------*/
+    const sprite_data_trading_terminal = {
+      id: 'TradingTerminal',
+      greeting: 'Test your trading skills! Can you beat the market?',
+      src: `${this.path}/images/DBS2/terminal.png`, // You'll need to add this image
+      SCALE_FACTOR: 8,
+      ANIMATION_RATE: 0,
+      pixels: { height: 600, width: 600 }, // Adjust based on your actual image
+      INIT_POSITION: { x: width * 1 / 12 + width * 0.30, y: height * 0.62 }, // Positioned to the right of Cards
+      orientation: { rows: 1, columns: 1 },
+      down: { row: 0, start: 0, columns: 1 },
+      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      stationary: true
+    };
+
     const sprite_data_shell2 = {
       id: 'laundry',
       greeting: 'Fix the laundry machine!',
@@ -194,6 +212,7 @@ class GameLevelBasement {
       { class: Npc, data: sprite_data_ishowgreen },
       { class: Npc, data: sprite_data_sodacan }, // Monster can - launches Whackarat
       { class: Npc, data: sprite_data_cards },   // Cards - launches Crypto Checker (RIGHT BESIDE soda can)
+      { class: Npc, data: sprite_data_trading_terminal }, 
       { class: Npc, data: sprite_data_shell2 },
       { class: Npc, data: sprite_data_bookshelf },
       { class: Npc, data: sprite_data_closet },

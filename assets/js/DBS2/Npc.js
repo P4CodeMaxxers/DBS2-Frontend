@@ -117,6 +117,10 @@ class Npc extends Character {
                             console.log('✅ Cards interaction detected!');
                             this.launchCryptoChecker();
                             return;
+                        case 'TradingTerminal':  
+                            console.log('✅ Trading Terminal interaction detected!');
+                            this.launchBuyOrHold();
+                            return;
 
                         case 'Closet':
                             if (window.ClosetShop && window.ClosetShop.show) {
@@ -293,5 +297,22 @@ class Npc extends Character {
         }
     }
 }
+
+launchBuyOrHold(); {
+        try {
+            console.log('🎮 Starting Buy or Hold minigame...');
+            
+            if (window.BuyOrHold && window.BuyOrHold.show) {
+                window.BuyOrHold.show();
+            } else {
+                console.error('BuyOrHold not loaded');
+                alert('Buy or Hold minigame not available.');
+            }
+        } catch (error) {
+            console.error('❌ Error launching Buy or Hold:', error);
+            alert('Error starting minigame: ' + error.message);
+        }
+    }
+
 
 export default Npc;

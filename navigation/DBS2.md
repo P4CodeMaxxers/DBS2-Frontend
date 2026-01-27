@@ -15,6 +15,9 @@ permalink: /DBS2
 <!-- IMPORTANT: Load laundry minigame FIRST as a regular script (not module) -->
 <script src="{{ site.baseurl }}/assets/js/DBS2/LaundryGame.js" type="module"></script>
 
+<!-- Load Buy or Hold minigame -->
+<script src="{{ site.baseurl }}/assets/js/DBS2/BuyOrHoldGame.js"></script>
+
 <!-- FIX 1: Set baseurl immediately before any modules load to prevent race conditions -->
 <script>
   (function() {
