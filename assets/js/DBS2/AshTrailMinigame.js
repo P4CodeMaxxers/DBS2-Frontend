@@ -94,34 +94,40 @@ function buildCrossPath() {
   return pts;
 }
 
-// Book + path data
+// Book + path data - Each represents a different AMM routing scenario
 const BOOKS = [
   {
     id: "defi_grimoire",
-    title: "DeFi Grimoire",
+    title: "Direct Swap Route",
     difficulty: 1,
     rating: "3/10",
     requiredScore: 60,
-    description: "A gentle warm‐up. The trail wiggles a bit, but you can mostly cruise and get used to how the game feels.",
+    description: "A simple direct swap through a single liquidity pool (SOL → USDC). Low slippage, straightforward execution. Perfect for beginners learning AMM basics.",
     path: buildWavePath(),
+    routingExample: "SOL → USDC",
+    poolType: "Single Pool",
   },
   {
     id: "lost_ledger",
-    title: "Lost Ledger",
+    title: "Multi-Hop Routing",
     difficulty: 2,
     rating: "6/10",
     requiredScore: 60,
-    description: "Now it starts to fight back. The path crosses over itself and turns more often, so you actually have to focus.",
+    description: "Optimized routing through multiple liquidity pools (SOL → USDC → ETH). Finding the optimal path minimizes slippage and maximizes your output tokens.",
     path: buildCrossPath(),
+    routingExample: "SOL → USDC → ETH",
+    poolType: "Two-Hop Route",
   },
   {
     id: "proof_of_burn",
-    title: "Proof‐of‐Burn Almanac",
+    title: "Complex Multi-Pool Optimization",
     difficulty: 3,
     rating: "9.5/10",
     requiredScore: 60,
-    description: "Full try‐hard mode. Long, curvy, and easy to lose track of. If you zone out for half a second, your score will show it.",
+    description: "Advanced routing through multiple pools with varying liquidity (SOL → USDC → ETH → BTC). Requires understanding price impact, slippage, and optimal pathfinding.",
     path: buildHeartPath(),
+    routingExample: "SOL → USDC → ETH → BTC",
+    poolType: "Multi-Hop Optimization",
   },
 ];
 
@@ -245,7 +251,7 @@ function closeOverlay() {
 
 function createHeader() {
   const title = createEl("div", {
-    textContent: `${COIN_ICON} Ash Trail Memory — Burnt Book Recovery`,
+    textContent: `${COIN_ICON} Ash Trail Memory — AMM Routing Recovery`,
     style: {
       fontSize: "18px",
       fontWeight: "600",
@@ -255,7 +261,7 @@ function createHeader() {
   });
 
   const subtitle = createEl("div", {
-    textContent: "Trace the ash trail to recover the burned pages.",
+    textContent: "Trace optimal liquidity pool routes to recover the burned DeFi routing guides.",
     style: {
       fontSize: "12px",
       color: "#9ca3af",
@@ -350,7 +356,7 @@ function renderIntroScene() {
   });
 
   const introTitle = createEl("h2", {
-    textContent: "IShowGreen's Burnt Library",
+    textContent: "IShowGreen's Burnt DeFi Routing Manual",
     style: {
       margin: "0",
       fontSize: "22px",
@@ -359,7 +365,7 @@ function renderIntroScene() {
   });
 
   const introText = createEl("p", {
-    textContent: "IShowGreen's backup pages burned in a candle accident. Trace the ash trails to recover the code.",
+    textContent: "IShowGreen's liquidity pool routing guides burned in a candle accident. These pages contain critical knowledge about AMM routing, slippage optimization, and multi-hop swaps.",
     style: {
       margin: "4px 0 0",
       fontSize: "14px",
@@ -369,7 +375,7 @@ function renderIntroScene() {
   });
 
   const flavor = createEl("p", {
-    textContent: "Memorize the glowing paths, then walk them from memory. Restore enough books and maybe he'll finally let you leave the basement.",
+    textContent: "Each ash trail represents an optimal routing path through liquidity pools. Memorize the route, then trace it from memory. Master these paths and you'll understand how to minimize slippage and maximize your token swaps in DeFi.",
     style: {
       margin: "6px 0 0",
       fontSize: "13px",
@@ -522,7 +528,7 @@ function renderBookSelectScene() {
   });
 
   const subtitle = createEl("p", {
-    textContent: "Each book is a different route. Start with the chill one and work your way up to the sweaty 9.5/10 run.",
+    textContent: "Each book represents a different AMM routing scenario. Start with simple direct swaps, then master multi-hop optimization. Your routing efficiency determines your slippage savings.",
     style: {
       margin: "4px 0 0",
       fontSize: "12px",
@@ -692,7 +698,7 @@ function renderBookDetailScene(book) {
   const meta = createEl("div", {
     style: { fontSize: "12px", color: "#9ca3af" },
   });
-  meta.innerHTML = `Difficulty: ${book.rating || "—/10"} · Required: ${book.requiredScore}% · Est. Reward: <span style="color: ${COIN_COLOR};">${estReward} ${COIN_SYMBOL}</span>`;
+  meta.innerHTML = `Difficulty: ${book.rating || "—/10"} · Required: ${book.requiredScore}% · Route: <span style="color: ${COIN_COLOR};">${book.routingExample || "N/A"}</span> · Est. Reward: <span style="color: ${COIN_COLOR};">${estReward} ${COIN_SYMBOL}</span>`;
   
   const desc = createEl("p", {
     textContent: book.description,
@@ -704,16 +710,28 @@ function renderBookDetailScene(book) {
     },
   });
 
+  const routingInfo = createEl("div", {
+    style: {
+      margin: "6px 0 0",
+      padding: "8px",
+      background: `${COIN_COLOR}15`,
+      borderRadius: "6px",
+      border: `1px solid ${COIN_COLOR}33`,
+    },
+  });
+  routingInfo.innerHTML = `<div style="font-size: 11px; color: ${COIN_COLOR};">📊 ${book.poolType || "Routing Path"}</div><div style="font-size: 10px; color: #888; margin-top: 2px;">This route represents: ${book.routingExample || "Token swap path"}</div>`;
+
   heading.appendChild(t);
   heading.appendChild(meta);
   heading.appendChild(desc);
+  heading.appendChild(routingInfo);
 
   const warn = createEl("p", {
-    textContent: "You'll see the burning pages trace the path once. After that, the trail disappears and you must walk it from memory.",
+    textContent: "You'll see the optimal routing path traced once. After that, the trail disappears and you must navigate it from memory. Your accuracy determines your slippage savings.",
     style: {
       fontSize: "12px",
       color: "#f97316",
-      margin: "0",
+      margin: "8px 0 0",
     },
   });
 
@@ -792,7 +810,7 @@ function renderPreviewScene() {
   });
 
   const text = createEl("p", {
-    textContent: "Watch closely. The burning pages will trace the correct path once. When the glow fades, it's your turn.",
+    textContent: `Watch closely. The optimal routing path (${currentBook.routingExample || "token swap route"}) will trace through the liquidity pools once. This represents the most efficient way to swap tokens while minimizing slippage. When the glow fades, navigate it from memory.`,
     style: {
       fontSize: "13px",
       color: "#e5e7eb",
@@ -802,7 +820,7 @@ function renderPreviewScene() {
   });
 
   const hint = createEl("p", {
-    textContent: "Tip: count the turns, landmarks, and pattern shape. Imagine how you'll walk it with W/A/S/D.",
+    textContent: "Tip: Each segment represents a hop through a liquidity pool. Memorize the sequence - in real DeFi, following the optimal route saves you tokens through reduced slippage. Use W/A/S/D or Arrow Keys to navigate.",
     style: {
       fontSize: "12px",
       color: "#9ca3af",
@@ -997,7 +1015,7 @@ function renderRunScene() {
   });
 
   const desc = createEl("p", {
-    textContent: "Use W/A/S/D or Arrow Keys to follow the invisible path. Ash particles will flicker when you're roughly over the right tiles.",
+    textContent: `Use W/A/S/D or Arrow Keys to follow the optimal routing path (${currentBook?.routingExample || "token swap route"}). Ash particles will flicker when you're on the correct route - this represents finding the right liquidity pools. Your accuracy determines how much slippage you avoid.`,
     style: {
       fontSize: "13px",
       color: "#e5e7eb",
@@ -1204,9 +1222,22 @@ async function finishRun() {
     if (currentBook?.id && Array.isArray(playerPath) && playerPath.length) {
       const stride = Math.max(1, Math.floor(playerPath.length / 350));
       const trace = playerPath.filter((_, i) => i % stride === 0).map(p => ({ x: p.x, y: p.y }));
-      await submitAshTrailRun(currentBook.id, score, trace);
+      console.log('[AshTrail] Submitting run:', { bookId: currentBook.id, score, traceLength: trace.length });
+      const result = await submitAshTrailRun(currentBook.id, score, trace);
+      if (result && result.success) {
+        console.log('[AshTrail] Run submitted successfully:', result.run?.id);
+      } else {
+        console.warn('[AshTrail] Run submission failed:', result?.error || 'Unknown error');
+      }
+    } else {
+      console.warn('[AshTrail] Cannot submit run - missing book or path:', { 
+        hasBook: !!currentBook?.id, 
+        hasPath: Array.isArray(playerPath) && playerPath.length > 0 
+      });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[AshTrail] Error submitting run:', e);
+  }
   
   try {
     lastReward = await awardCryptoForScore(score);
@@ -1332,23 +1363,26 @@ function distancePointToSegment(p, a, b) {
 }
 
 function reactionForScore(score) {
+  const routingExample = currentBook?.routingExample || "the route";
+  const slippageEstimate = Math.max(0, (100 - score) / 10).toFixed(1);
+  
   if (score < 50) {
     return {
-      label: "Not enough pages collected",
-      text: 'IShowGreen squints at the half‐burnt pages: "The rat burns down and tape? That doesn\'t even make sense. Try again."',
+      label: "Inefficient Routing",
+      text: `IShowGreen studies your path: "This routing is inefficient. You're losing approximately ${slippageEstimate}% to slippage by deviating from the optimal path through ${routingExample}. In real DeFi, this would cost you significantly more tokens. Try again and follow the pools more precisely."`,
       tone: "error",
     };
   }
   if (score < 80) {
     return {
-      label: "Somewhat collected",
-      text: 'IShowGreen mutters: "The rat escapes and the house burns down? You\'re close, but I\'m missing way too many details."',
+      label: "Acceptable Routing",
+      text: `IShowGreen nods: "Not bad, but you could optimize further. Your route through ${routingExample} had some detours that increased slippage by about ${slippageEstimate}%. You got the tokens, but professional traders would find a better path. Still, functional routing."`,
       tone: "warn",
     };
   }
   return {
-    label: "Enough collected",
-    text: 'IShowGreen actually smiles: "Impressive. I can finally read my precious possession again. Maybe there\'s hope for you."',
+    label: "Optimal Routing",
+    text: `IShowGreen actually smiles: "Excellent! You've mastered the optimal routing path for ${routingExample}. Your efficiency minimizes slippage and maximizes output tokens. This is exactly how you should route swaps in real DeFi protocols. Well done."`,
     tone: "success",
   };
 }
@@ -1398,7 +1432,7 @@ function renderResultsScene(score) {
   });
 
   const scoreLabel = createEl("div", {
-    textContent: "Path Alignment",
+    textContent: "Routing Efficiency",
     style: {
       fontSize: "13px",
       color: "#9ca3af",
@@ -1448,6 +1482,25 @@ function renderResultsScene(score) {
     },
   });
 
+  // Routing efficiency metrics
+  const routingExample = currentBook?.routingExample || "the route";
+  const slippageEstimate = Math.max(0, (100 - score) / 10).toFixed(1);
+  const efficiencyMetrics = createEl("div", {
+    style: {
+      marginTop: "15px",
+      padding: "12px",
+      background: "rgba(0,255,163,0.08)",
+      borderRadius: "8px",
+      border: "1px solid rgba(0,255,163,0.2)",
+    },
+  });
+  efficiencyMetrics.innerHTML = `
+    <div style="font-size: 11px; color: #888; margin-bottom: 6px;">ROUTING METRICS</div>
+    <div style="font-size: 12px; color: #e5e7eb; margin-bottom: 4px;">Route: <span style="color: ${COIN_COLOR};">${routingExample}</span></div>
+    <div style="font-size: 12px; color: #e5e7eb;">Estimated Slippage: <span style="color: ${score >= 80 ? '#0f0' : score >= 50 ? '#ffa500' : '#f00'};">${slippageEstimate}%</span></div>
+    <div style="font-size: 11px; color: #666; margin-top: 6px;">Higher efficiency = Lower slippage = More tokens received</div>
+  `;
+
   // Reward display
   if (lastReward > 0) {
     const rewardDiv = createEl("div", {
@@ -1463,18 +1516,20 @@ function renderResultsScene(score) {
     rewardDiv.innerHTML = `
       <div style="font-size: 28px; margin-bottom: 5px;">${COIN_ICON}</div>
       <div style="font-size: 20px; font-weight: bold; color: ${COIN_COLOR};">+${lastReward.toFixed(3)} ${COIN_SYMBOL}</div>
-      <div style="font-size: 13px; color: #888; margin-top: 4px;">Solana</div>
+      <div style="font-size: 13px; color: #888; margin-top: 4px;">Solana - Earned through efficient routing</div>
     `;
     left.appendChild(scoreLabel);
     left.appendChild(scoreValue);
     left.appendChild(badge);
     left.appendChild(reactionText);
+    left.appendChild(efficiencyMetrics);
     left.appendChild(rewardDiv);
   } else {
     left.appendChild(scoreLabel);
     left.appendChild(scoreValue);
     left.appendChild(badge);
     left.appendChild(reactionText);
+    left.appendChild(efficiencyMetrics);
   }
 
   // Page wrap
