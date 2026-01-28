@@ -4,6 +4,7 @@
  */
 
 import { getWallet, getAllPrices, convertCoin, getPrices } from './StatsManager.js';
+
 // Coin definitions with styling
 const COINS = [
     { id: 'satoshis', symbol: 'SATS', name: 'Satoshis', color: '#f7931a', icon: '₿', decimals: 0 },
@@ -17,10 +18,10 @@ const COINS = [
 // Which minigame rewards which coin
 export const MINIGAME_REWARDS = {
     'crypto_miner': { coin: 'satoshis', name: 'Crypto Miner' },
-    'laundry': { coin: 'cardano', name: 'Laundry Repair' },
-    'ash_trail': { coin: 'solana', name: 'Ash Trail' },
-    'infinite_user': { coin: 'ethereum', name: 'Infinite User' },
-    'whackarat': { coin: 'dogecoin', name: 'Whack-a-Rat' }
+    'laundry': { coin: 'cardano', name: 'Transaction Validator' },
+    'ash_trail': { coin: 'solana', name: 'Blockchain Verifier' },
+    'infinite_user': { coin: 'ethereum', name: 'Authentication' },
+    'cryptochecker': { coin: 'dogecoin', name: 'Crypto Checker' }
 };
 
 let walletPanel = null;
@@ -125,6 +126,8 @@ function renderWallet(wallet) {
             border-radius: 0 0 12px 12px;
             padding: 14px;
             margin-top: -2px;
+            max-height: 60vh;
+            overflow-y: auto;
         ">
             ${renderCoinList(wallet)}
             

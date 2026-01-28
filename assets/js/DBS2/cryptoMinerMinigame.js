@@ -39,14 +39,21 @@ function cryptoMinerMinigame() {
     let validHashes = 0;
     let totalAttempts = 0;
     let blocksCompleted = 0;
-    const hashesPerBlock = 12;
+    let attemptsSinceLastValid = 0; // Track failures for guaranteed hash
+    
+    // Block requirements: 4 hashes for block 1, 6 for block 2, 8 for block 3
+    const hashesPerBlockArray = [4, 6, 8];
     const totalBlocks = 3;
+    
+    // Get current hashes needed for this block
+    function getHashesPerBlock() {
+        return hashesPerBlockArray[Math.min(blocksCompleted, hashesPerBlockArray.length - 1)];
+    }
     
     // Timing
     let coinRotationInterval = null;
     let lastAttemptTime = Date.now();
     let recentAttempts = [];
-    let unsuccessfulAttempts = [];
     
     // Create overlay
     const overlay = document.createElement('div');
@@ -83,8 +90,14 @@ function cryptoMinerMinigame() {
         
         intro.innerHTML = `
             <h2 style="color: #f7931a; text-align: center; margin-bottom: 20px;">
-                ⛏️ HOW CRYPTO MINING WORKS
+                ⛏️ THE GREEN MACHINE: MINING MODULE
             </h2>
+            
+            <div style="background: rgba(0,100,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0a5;">
+                <p style="margin: 0; line-height: 1.6; color: #0f0; font-style: italic;">
+                    "To mine ethically, you must first understand HOW mining works. This terminal will teach you." - IShowGreen
+                </p>
+            </div>
             
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="color: #0f0; margin: 0 0 10px 0;">What is Mining?</h3>
@@ -120,7 +133,7 @@ function cryptoMinerMinigame() {
                     Press <span style="color: #0f0; font-weight: bold;">SPACE</span> to generate hashes. 
                     Find hashes starting with zeros to mine blocks!
                     <br><br>
-                    💰 <strong>Earn ${COIN_NAME}</strong> based on blocks mined!
+                    💰 <strong>Earn ${COIN_NAME}</strong> to buy code scraps at the Closet!
                 </p>
             </div>
             
@@ -135,7 +148,7 @@ function cryptoMinerMinigame() {
                 cursor: pointer;
                 font-family: 'Courier New', monospace;
                 font-weight: bold;
-            ">START MINING</button>
+            ">START LEARNING</button>
         `;
         
         overlay.appendChild(intro);
@@ -242,7 +255,7 @@ function cryptoMinerMinigame() {
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; text-align: center;">
                     <div style="color: #888; font-size: 17px;">Block Progress</div>
-                    <div style="font-size: 18px; color: #f7931a;"><span id="valid-count">0</span>/${hashesPerBlock}</div>
+                    <div style="font-size: 18px; color: #f7931a;"><span id="valid-count">0</span>/<span id="hashes-needed">${hashesPerBlockArray[0]}</span></div>
                     <div style="background: #333; height: 6px; border-radius: 3px; margin-top: 5px;">
                         <div id="block-progress" style="background: #f7931a; height: 100%; border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
                     </div>
@@ -288,11 +301,20 @@ function cryptoMinerMinigame() {
         if (boostEl) boostEl.textContent = `${boostMultiplier.toFixed(2)}x`;
     }
     
-    function generateHash() {
+    function generateHash(forceValid = false) {
         const chars = '0123456789abcdef';
         let hash = '';
-        for (let i = 0; i < 64; i++) {
-            hash += chars[Math.floor(Math.random() * chars.length)];
+        
+        if (forceValid) {
+            // Force a valid hash by starting with the target prefix
+            hash = targetPrefix;
+            for (let i = targetPrefix.length; i < 64; i++) {
+                hash += chars[Math.floor(Math.random() * chars.length)];
+            }
+        } else {
+            for (let i = 0; i < 64; i++) {
+                hash += chars[Math.floor(Math.random() * chars.length)];
+            }
         }
         return hash;
     }
@@ -301,13 +323,18 @@ function cryptoMinerMinigame() {
         const now = Date.now();
         recentAttempts = recentAttempts.filter(t => now - t < 1000);
         recentAttempts.push(now);
-        unsuccessfulAttempts.push(now);
         
         totalAttempts++;
-        const hash = generateHash();
+        attemptsSinceLastValid++;
+        
+        // Guarantee a valid hash after 20-40 failed attempts
+        const guaranteeThreshold = 20 + Math.floor(Math.random() * 21); // 20-40
+        const forceValid = attemptsSinceLastValid >= guaranteeThreshold;
+        
+        const hash = generateHash(forceValid);
         currentHash = hash;
         
-        const isValid = hash.startsWith(targetPrefix) || unsuccessfulAttempts.length > 16;
+        const isValid = hash.startsWith(targetPrefix);
         
         const hashDisplay = document.getElementById('hash-display');
         const hashResult = document.getElementById('hash-result');
@@ -326,7 +353,7 @@ function cryptoMinerMinigame() {
             if (isValid) {
                 hashResult.innerHTML = `<span style="color: #0f0;">✓ VALID HASH! Starts with "${targetPrefix}"</span>`;
                 validHashes++;
-                unsuccessfulAttempts = [];
+                attemptsSinceLastValid = 0; // Reset counter on valid hash
                 updateBlockProgress();
             } else {
                 hashResult.innerHTML = `<span style="color: #f66;">✗ Invalid - doesn't start with "${targetPrefix}"</span>`;
@@ -343,12 +370,17 @@ function cryptoMinerMinigame() {
         const progressEl = document.getElementById('block-progress');
         const validEl = document.getElementById('valid-count');
         const blockEl = document.getElementById('current-block');
+        const neededEl = document.getElementById('hashes-needed');
         
-        const progress = (validHashes % hashesPerBlock) / hashesPerBlock * 100;
-        if (progressEl) progressEl.style.width = `${progress}%`;
-        if (validEl) validEl.textContent = validHashes % hashesPerBlock || (validHashes > 0 ? hashesPerBlock : 0);
+        const currentHashesPerBlock = getHashesPerBlock();
+        const hashesInCurrentBlock = validHashes - getTotalHashesForCompletedBlocks();
+        const progress = (hashesInCurrentBlock / currentHashesPerBlock) * 100;
         
-        if (validHashes > 0 && validHashes % hashesPerBlock === 0) {
+        if (progressEl) progressEl.style.width = `${Math.min(100, progress)}%`;
+        if (validEl) validEl.textContent = hashesInCurrentBlock;
+        if (neededEl) neededEl.textContent = currentHashesPerBlock;
+        
+        if (hashesInCurrentBlock >= currentHashesPerBlock) {
             blocksCompleted++;
             
             if (blocksCompleted >= totalBlocks) {
@@ -363,10 +395,20 @@ function cryptoMinerMinigame() {
         updateEstReward();
     }
     
+    function getTotalHashesForCompletedBlocks() {
+        let total = 0;
+        for (let i = 0; i < blocksCompleted; i++) {
+            total += hashesPerBlockArray[i];
+        }
+        return total;
+    }
+    
     function updateEstReward() {
         const rewardEl = document.getElementById('est-reward');
         if (rewardEl) {
-            const baseReward = blocksCompleted * 100 + Math.floor((validHashes % hashesPerBlock) * 8);
+            const currentHashesPerBlock = getHashesPerBlock();
+            const hashesInCurrentBlock = validHashes - getTotalHashesForCompletedBlocks();
+            const baseReward = blocksCompleted * 100 + Math.floor(hashesInCurrentBlock * (100 / currentHashesPerBlock));
             const boostedReward = Math.floor(baseReward * boostMultiplier);
             rewardEl.textContent = boostedReward;
         }
@@ -400,13 +442,7 @@ function cryptoMinerMinigame() {
             await rewardMinigame(MINIGAME_NAME, satoshiReward);
             await completeMinigame(MINIGAME_NAME);
             
-            if (isFirstCompletion) {
-                await addInventoryItem({
-                    name: 'Code Scrap: Crypto Miner',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
-            }
+            // Code scraps are now purchased from the Closet Shop, not earned here
         } catch (e) {
             console.log('Could not save progress:', e);
         }
@@ -449,8 +485,8 @@ function cryptoMinerMinigame() {
         if (isFirstCompletion) {
             html += `
                 <div style="background: rgba(247,147,26,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f7931a;">
-                    <div style="font-size: 17px; color: #f7931a;">🧩 CODE SCRAP FOUND!</div>
-                    <div style="font-size: 15px; color: #888; margin-top: 5px;">Added to inventory</div>
+                    <div style="font-size: 17px; color: #f7931a;">💡 TIP: Visit the Closet to buy Code Scraps!</div>
+                    <div style="font-size: 15px; color: #888; margin-top: 5px;">Use your SATS to help build The Green Machine</div>
                 </div>
             `;
         }

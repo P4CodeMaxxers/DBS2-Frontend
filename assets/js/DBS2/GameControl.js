@@ -40,17 +40,6 @@ const GameControl = {
         // Initialize inventory UI
         try { Inventory.init(); } catch (e) { console.error('Inventory init failed', e); }
         
-        // Initialize closet shop (no separate button needed - accessed via game object)
-        // Load asynchronously without blocking
-        import('./ClosetShop.js').then(module => {
-            const ClosetShop = module.default || module;
-            if (ClosetShop && ClosetShop.initClosetShop) {
-                ClosetShop.initClosetShop();
-            }
-        }).catch(e => { 
-            console.error('ClosetShop init failed', e); 
-        });
-        
         // Initialize win condition listeners
         this.initWinConditionListeners();
         
@@ -68,23 +57,47 @@ const GameControl = {
     
     // Check backend for player progress to determine if intro should show
     async checkPlayerProgress() {
+        // Get current username for per-user intro tracking
+        let username = 'guest';
+        try {
+            const userEl = document.querySelector('.nav-link[href*="profile"], .navbar-text, [class*="user"]');
+            if (userEl) username = userEl.textContent.trim().toLowerCase().replace(/\s+/g, '_');
+        } catch(e) {}
+        
+        // Check localStorage for this specific user
+        const introKey = `dbs2_intro_seen_${username}`;
+        const introSeen = localStorage.getItem(introKey) === 'true';
+        
+        if (introSeen) {
+            this.playerHasProgress = true;
+            this.introCheckDone = true;
+            console.log('[GameControl] Intro already seen for user:', username);
+            return;
+        }
+        
+        // Store the key name for later use when marking intro as seen
+        this.introSeenKey = introKey;
+        
+        // Then try to check backend for additional progress indicators
         try {
             if (window.DBS2API && window.DBS2API.getPlayer) {
                 const player = await window.DBS2API.getPlayer();
-                // Player has progress if they have crypto, inventory items, or completed minigames
-                const hasCrypto = player.crypto && player.crypto > 0;
-                const hasInventory = player.inventory && player.inventory.length > 0;
-                const hasCompletedMinigames = player.minigames_completed && 
-                    Object.values(player.minigames_completed).some(v => v === true);
-                
-                this.playerHasProgress = hasCrypto || hasInventory || hasCompletedMinigames;
-                console.log('[GameControl] Player progress check:', { hasCrypto, hasInventory, hasCompletedMinigames, hasProgress: this.playerHasProgress });
+                if (player) {
+                    const hasCrypto = player.crypto && player.crypto > 0;
+                    const hasInventory = player.inventory && player.inventory.length > 0;
+                    const hasCompletedMinigames = player.minigames_completed && 
+                        Object.values(player.minigames_completed).some(v => v === true);
+                    const hasWallet = (player.wallet_btc || 0) > 0 || (player.wallet_eth || 0) > 0 || 
+                        (player.wallet_sol || 0) > 0 || (player.wallet_ada || 0) > 0 || (player.wallet_doge || 0) > 0;
+                    
+                    this.playerHasProgress = hasCrypto || hasInventory || hasCompletedMinigames || hasWallet;
+                    console.log('[GameControl] Player progress check:', { hasCrypto, hasInventory, hasCompletedMinigames, hasWallet, hasProgress: this.playerHasProgress });
+                }
             }
         } catch (e) {
-            console.log('[GameControl] Could not check player progress:', e);
-            // Fallback - assume no progress (show intro)
-            this.playerHasProgress = false;
+            console.log('[GameControl] Could not check player progress from backend:', e);
         }
+        
         this.introCheckDone = true;
     },
     
@@ -164,7 +177,7 @@ const GameControl = {
             // Controls message - shows for returning players
             if (this.playerHasProgress && this.currentPass === 10) {
                 try { 
-                    Prompt.showDialoguePopup('Controls', 'WASD to move. E to interact with objects and NPCs. Find the 5 code pages or earn 500 crypto to escape.'); 
+                    Prompt.showDialoguePopup('Welcome Back', 'WASD to move. E to interact. Continue collecting code scraps to build The Green Machine!'); 
                 } catch(e){ console.warn('Prompt not available', e); }
             }
         }
@@ -173,11 +186,18 @@ const GameControl = {
     },
 
     playIntroSequence: function() {
+        // Mark intro as seen for this user
+        try {
+            const key = this.introSeenKey || 'dbs2_intro_seen_guest';
+            localStorage.setItem(key, 'true');
+        } catch(e) {}
+        
         const dialogues = [
-            { speaker: '???', text: 'You wake up in a basement. The door is locked.', duration: 3500 },
-            { speaker: 'IShowGreen', text: 'Good. You are awake. I need your help.', duration: 3500 },
-            { speaker: 'IShowGreen', text: 'I wrote a program called The Green Machine. Every line by hand. On paper.', duration: 4000 },
-            { speaker: 'IShowGreen', text: 'I lost the pages. Five of them. One in the wash. One burned. One the rats took. The others... somewhere in here.', duration: 5000 },
+            { speaker: '???', text: 'You find yourself in a basement. A figure emerges from the shadows.', duration: 3500 },
+            { speaker: 'IShowGreen', text: 'Finally. Someone who can help. I am IShowGreen.', duration: 3500 },
+            { speaker: 'IShowGreen', text: 'I want to mine cryptocurrency. But I need to do it RIGHT. Effectively. Ethically.', duration: 4500 },
+            { speaker: 'IShowGreen', text: 'I wrote the blueprints for a green mining program. Five code fragments, scattered around this basement.', duration: 5000 },
+            { speaker: 'IShowGreen', text: 'Complete my challenges. Learn about blockchain, security, and crypto. Then help me build The Green Machine.', duration: 5500 },
         ];
         
         let index = 0;
@@ -198,7 +218,7 @@ const GameControl = {
             } else {
                 // Show final controls message with close button
                 try {
-                    Prompt.showDialoguePopup('IShowGreen', 'Find all five pages and bring them to me. Or earn 500 crypto and buy your way out. WASD to move. E to interact.');
+                    Prompt.showDialoguePopup('IShowGreen', 'Play minigames to earn crypto and learn. Then visit the CLOSET to buy code scraps. WASD to move. E to interact.');
                 } catch(e) {
                     console.warn('Could not show controls', e);
                 }
@@ -231,20 +251,20 @@ const GameControl = {
         let title, subtitle, hint;
         
         if (winType === 'crypto') {
-            title = 'BOUGHT YOUR FREEDOM';
-            subtitle = 'You paid 500 crypto. IShowGreen unlocks the door. You climb the stairs and leave.';
-            hint = '';
+            title = 'CRYPTO MASTER';
+            subtitle = 'You earned 500+ crypto! You\'ve mastered the basics of blockchain technology. The Green Machine awaits...';
+            hint = '<p style="color: #0a5; margin-top: 30px; font-style: italic;">Keep collecting code scraps to complete The Green Machine!</p>';
         } else if (winType === 'scraps') {
-            title = 'THE PAGES RETURNED';
-            subtitle = 'You gave IShowGreen his five pages. He can rebuild The Green Machine. He lets you go.';
-            hint = '<p style="color: #640; margin-top: 30px; font-style: italic;">There was another choice. What if you had kept them?</p>';
+            title = 'THE GREEN MACHINE COMPLETE';
+            subtitle = 'You gave IShowGreen all five code fragments. Together, you built The Green Machine - ethical, efficient cryptocurrency mining for a better future.';
+            hint = '<p style="color: #0a5; margin-top: 30px; font-style: italic;">Congratulations! You\'ve learned the fundamentals of blockchain and helped create something revolutionary.</p>';
         } else if (winType === 'alternate') {
-            title = 'STOLEN';
-            subtitle = 'You kept the pages. The Green Machine belongs to you now. IShowGreen can only watch as you walk out with his lifes work.';
-            hint = '<p style="color: #640; margin-top: 30px; font-style: italic;">The full alternate ending is coming soon.</p>';
+            title = 'A DIFFERENT PATH';
+            subtitle = 'You kept the code fragments for yourself. The Green Machine could have changed crypto mining forever... but now it will never be built.';
+            hint = '<p style="color: #640; margin-top: 30px; font-style: italic;">Was this the right choice? Play again to see the other ending.</p>';
         } else {
-            title = 'ESCAPED';
-            subtitle = 'You found a way out.';
+            title = 'JOURNEY COMPLETE';
+            subtitle = 'You\'ve learned the fundamentals of cryptocurrency and blockchain technology.';
             hint = '';
         }
         
@@ -274,7 +294,7 @@ const GameControl = {
             if (!this.scrapWinTriggered) {
                 // Don't auto-trigger - player must present to IShowGreen
                 try {
-                    Prompt.showDialoguePopup('System', 'All five pages found. Bring them to IShowGreen.');
+                    Prompt.showDialoguePopup('System', 'All five code fragments collected! Talk to IShowGreen to build The Green Machine.');
                 } catch(e) {}
             }
         });

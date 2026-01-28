@@ -1,5 +1,5 @@
 // LaundryGame.js - Rewards CARDANO (ADA)
-// Change: Replace updateCrypto() with rewardMinigame()
+// Theme: Transaction Validation - cleaning and verifying blockchain transactions
 
 import { isMinigameCompleted, completeMinigame, addInventoryItem, rewardMinigame } from './StatsManager.js';
 
@@ -21,6 +21,93 @@ export async function showLaundryMinigame(onComplete) {
         console.log('[Laundry] Could not check completion status:', e);
     }
     
+    // Show intro screen first
+    const introOverlay = document.createElement('div');
+    introOverlay.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    
+    const intro = document.createElement('div');
+    intro.style.cssText = `
+        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+        border: 2px solid #0033ad;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 600px;
+        color: #eee;
+        text-align: left;
+        max-height: 80vh;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+    `;
+    
+    intro.innerHTML = `
+        <h2 style="color: #0033ad; text-align: center; margin-bottom: 20px;">
+            🧺 THE GREEN MACHINE: TRANSACTION MODULE
+        </h2>
+        
+        <div style="background: rgba(0,51,173,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0033ad;">
+            <p style="margin: 0; line-height: 1.6; color: #0033ad; font-style: italic;">
+                "Every transaction must be clean and verified. No shortcuts. That's ethical crypto." - IShowGreen
+            </p>
+        </div>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">Transaction Validation</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                Before a transaction joins the blockchain, it must be <span style="color: #0033ad;">validated</span>. 
+                This means checking signatures, verifying funds exist, and ensuring the transaction follows all rules.
+            </p>
+        </div>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">The Metaphor</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                Think of transactions like laundry - they need to be <span style="color: #0033ad;">cleaned</span> (validated) 
+                before they're ready. The machine must work properly to process them correctly.
+            </p>
+        </div>
+        
+        <div style="background: rgba(0,51,173,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #0033ad;">
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">Your Mission</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                1. <strong>Repair the machine</strong> - Drag parts to their correct slots<br>
+                2. <strong>Process the transactions</strong> - Load the laundry items<br><br>
+                💰 <strong>Earn ${COIN_NAME}</strong> to buy the Transaction Ledger scrap!
+            </p>
+        </div>
+        
+        <button id="start-laundry-btn" style="
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #0033ad 0%, #001a57 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        ">START VALIDATION TRAINING</button>
+    `;
+    
+    introOverlay.appendChild(intro);
+    document.body.appendChild(introOverlay);
+    
+    document.getElementById('start-laundry-btn').onclick = () => {
+        introOverlay.remove();
+        startActualLaundryGame(baseurl, isFirstCompletion, onComplete);
+    };
+}
+
+function startActualLaundryGame(baseurl, isFirstCompletion, onComplete) {
     let partsPlaced = 0;
     const totalParts = 4;
     let laundryLoaded = 0;
@@ -81,7 +168,7 @@ export async function showLaundryMinigame(onComplete) {
     };
 
     const title = document.createElement('h1');
-    title.textContent = 'WASHING MACHINE REPAIR';
+    title.textContent = 'TRANSACTION VALIDATOR';
     title.style.cssText = `
         text-align: center;
         color: #0033ad;
@@ -104,7 +191,7 @@ export async function showLaundryMinigame(onComplete) {
     coinIndicator.innerHTML = `Rewards: <strong>${COIN_NAME} (${COIN_SYMBOL})</strong>`;
 
     const instructions = document.createElement('div');
-    instructions.textContent = 'Drag the parts to the correct spots on the machine. Then load the laundry.';
+    instructions.textContent = 'Repair the validator (drag parts), then process transactions (load laundry).';
     instructions.style.cssText = `
         text-align: center;
         color: #888;
@@ -342,7 +429,7 @@ export async function showLaundryMinigame(onComplete) {
     `;
     successMessage.innerHTML = `
         <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
-        <div style="color: #fff; font-size: 18px;">Laundry Complete!</div>
+        <div style="color: #fff; font-size: 18px;">Transactions Validated!</div>
     `;
     machineArea.appendChild(successMessage);
 
@@ -364,16 +451,22 @@ export async function showLaundryMinigame(onComplete) {
     
     const rewardAmount = isFirstCompletion ? 35 : 20;
     paperDiscovery.innerHTML = `
-        <div style="font-size: 36px; margin-bottom: 10px;">📄</div>
+        <div style="font-size: 36px; margin-bottom: 10px;">🧺</div>
         <div style="color: #0033ad; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-            ${isFirstCompletion ? 'CODE FRAGMENT FOUND!' : 'LAUNDRY DONE!'}
+            ${isFirstCompletion ? 'VALIDATION TRAINING COMPLETE!' : 'TRANSACTIONS PROCESSED!'}
         </div>
         <div style="color: #888; font-size: 15px; margin-bottom: 15px;">
-            ${isFirstCompletion ? 'Found a soggy piece of paper stuck to a sock. The ink is smeared but still readable.' : 'The machine hums along. Another load complete.'}
+            ${isFirstCompletion ? 'You understand how transactions are cleaned and verified before joining the blockchain.' : 'Another batch of transactions successfully validated.'}
         </div>
         ${isFirstCompletion ? `
+        <div style="background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0a5;">
+            <strong style="color: #0f0;">📚 What you learned:</strong><br>
+            <span style="color: #ccc; font-size: 14px;">• Transactions must be validated before processing<br>
+            • Each component must work correctly<br>
+            • Clean transactions = trustworthy blockchain</span>
+        </div>
         <div style="background: rgba(0,51,173,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-            <img src="${baseurl}/images/DBS2/codescrapLaundry.png" style="max-width: 80px; border: 1px solid #0033ad; border-radius: 4px;" onerror="this.style.display='none'">
+            <div style="color: #0033ad; font-size: 15px;">💡 Visit the Closet to buy the Transaction Ledger scrap!</div>
         </div>
         ` : ''}
         <div style="color: #0033ad; font-size: 18px; font-weight: bold; margin-bottom: 15px;">
@@ -595,12 +688,8 @@ export async function showLaundryMinigame(onComplete) {
                 await completeMinigame(MINIGAME_NAME);
                 console.log('✅ Minigame marked complete');
                 
-                await addInventoryItem({
-                    name: 'Code Scrap: Laundry',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
-                console.log('✅ Code scrap added to inventory');
+                // Code scraps are now purchased from the Closet Shop
+                console.log('💡 Code scraps available at Closet Shop');
             }
             
             // Refresh leaderboard

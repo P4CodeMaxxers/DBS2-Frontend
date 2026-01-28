@@ -1,5 +1,5 @@
 // InfiniteUserMinigame.js - Rewards ETHEREUM (ETH)
-// Change: Replace updateCrypto() with rewardMinigame()
+// Theme: Wallet Security - authentication and password protection
 
 import { rewardMinigame, isMinigameCompleted, completeMinigame, addInventoryItem } from './StatsManager.js';
 import { javaURI, pythonURI, fetchOptions } from '../api/config.js';
@@ -74,6 +74,94 @@ function convertToAlphaNumeric(str) {
 
 loadPasswordsFromBackend();
 
+function showIntroScreen(onStart) {
+    const introOverlay = document.createElement('div');
+    introOverlay.id = 'infinite-user-intro';
+    introOverlay.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10001;
+    `;
+    
+    const intro = document.createElement('div');
+    intro.style.cssText = `
+        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+        border: 2px solid #627eea;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 600px;
+        color: #eee;
+        text-align: left;
+        max-height: 80vh;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+    `;
+    
+    intro.innerHTML = `
+        <h2 style="color: #627eea; text-align: center; margin-bottom: 20px;">
+            🔐 THE GREEN MACHINE: AUTHENTICATION MODULE
+        </h2>
+        
+        <div style="background: rgba(98,126,234,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #627eea;">
+            <p style="margin: 0; line-height: 1.6; color: #627eea; font-style: italic;">
+                "Your keys, your crypto. Without proper authentication, anyone could steal your funds." - IShowGreen
+            </p>
+        </div>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #627eea; margin: 0 0 10px 0;">Why Authentication Matters</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                In crypto, <span style="color: #627eea;">private keys</span> control everything. If someone gets your password 
+                or private key, they can take all your funds. Strong authentication is essential.
+            </p>
+        </div>
+        
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #627eea; margin: 0 0 10px 0;">The Challenge</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                Passwords are often <span style="color: #627eea;">encoded</span> for security. You'll learn to decode 
+                a simple cipher (a=1, b=2, c=3...) to crack the password. In real crypto, encryption is far more complex!
+            </p>
+        </div>
+        
+        <div style="background: rgba(98,126,234,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #627eea;">
+            <h3 style="color: #627eea; margin: 0 0 10px 0;">Your Mission</h3>
+            <p style="margin: 0; line-height: 1.6; color: #ccc;">
+                1. <strong>Decode the password</strong> using the cipher<br>
+                2. <strong>Type it correctly</strong> to authenticate<br>
+                3. <strong>Create a new password</strong> for extra security<br><br>
+                💰 <strong>Earn ${COIN_NAME}</strong> to buy the Authentication Module scrap!
+            </p>
+        </div>
+        
+        <button id="start-infinite-btn" style="
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #627eea 0%, #3d5ba9 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        ">START AUTHENTICATION TRAINING</button>
+    `;
+    
+    introOverlay.appendChild(intro);
+    document.body.appendChild(introOverlay);
+    
+    document.getElementById('start-infinite-btn').onclick = () => {
+        introOverlay.remove();
+        onStart();
+    };
+}
+
 export default async function infiniteUserMinigame() {
     if (quizzing) return;
     
@@ -89,6 +177,18 @@ export default async function infiniteUserMinigame() {
     quizzing = true;
     window.infiniteUserActive = true;
     window.minigameActive = true;
+    
+    // Show intro first
+    showIntroScreen(() => startActualGame());
+}
+
+function startActualGame() {
+    // Check first completion status
+    let isFirstCompletion = false;
+    isMinigameCompleted(MINIGAME_NAME).then(completed => {
+        isFirstCompletion = !completed;
+        console.log('[InfiniteUser] First completion:', isFirstCompletion);
+    }).catch(() => {});
     
     let creatingNew = false;
     const selectedIndex = Math.floor(Math.random() * passwords.length);
@@ -117,7 +217,7 @@ export default async function infiniteUserMinigame() {
     header.style.cssText = `display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;`;
     
     let title = document.createElement("div");
-    title.textContent = "PASSWORD TERMINAL";
+    title.textContent = "AUTHENTICATION TERMINAL";
     title.style.cssText = `color: #627eea; font-size: 16px; font-weight: bold; letter-spacing: 2px;`;
     
     let closeBtn = document.createElement("button");
@@ -137,15 +237,15 @@ export default async function infiniteUserMinigame() {
     
     let globalNote = document.createElement("div");
     globalNote.style.cssText = `color: #a80; font-size: 13px; margin-bottom: 10px; padding: 5px; background: rgba(170, 136, 0, 0.1); border-radius: 3px;`;
-    globalNote.textContent = "GLOBAL SYSTEM - Passwords shared between all users";
+    globalNote.textContent = "SHARED WALLET - Passwords synchronized across all users";
     quizWindow.appendChild(globalNote);
     
     let messageDiv = document.createElement("div");
     messageDiv.style.cssText = `color: #627eea; font-size: 17px; margin: 15px 0;`;
     messageDiv.innerHTML = `
-        <div style="font-size: 15px; color: #888; margin-bottom: 10px;">Decode the password:</div>
+        <div style="font-size: 15px; color: #888; margin-bottom: 10px;">Decode the wallet password:</div>
         <div style="font-size: 20px; letter-spacing: 3px; color: #627eea;">${convertToAlphaNumeric(selectedPassword)}</div>
-        <div style="font-size: 13px; color: #666; margin-top: 5px;">Hint: a=1, b=2, c=3...</div>
+        <div style="font-size: 13px; color: #666; margin-top: 5px;">Cipher: a=1, b=2, c=3...</div>
     `;
     quizWindow.appendChild(messageDiv);
     
@@ -200,12 +300,6 @@ export default async function infiniteUserMinigame() {
     bottomBar.appendChild(pwCount);
     quizWindow.appendChild(bottomBar);
     
-    let isFirstCompletion = false;
-    try {
-        isFirstCompletion = !(await isMinigameCompleted(MINIGAME_NAME));
-        console.log('[InfiniteUser] First completion:', isFirstCompletion);
-    } catch (e) {}
-    
     function closeMinigame() {
         try { quizWindow.remove(); } catch (e) {}
         quizzing = false;
@@ -241,28 +335,28 @@ export default async function infiniteUserMinigame() {
         if (isFirstCompletion) {
             try {
                 await completeMinigame(MINIGAME_NAME);
-                await addInventoryItem({
-                    name: 'Code Scrap: Infinite User',
-                    found_at: MINIGAME_NAME,
-                    timestamp: new Date().toISOString()
-                });
+                // Code scraps are now purchased from the Closet Shop
             } catch (e) {}
         }
         
         if (isFirstCompletion) {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #627eea;">CODE FRAGMENT RECOVERED</div>
-                <div style="font-size: 15px; margin-top: 10px; color: #888;">Found the password list behind the keyboard.</div>
-                <div style="margin-top: 15px;">
-                    <img src="${baseurl}/images/DBS2/codescrapPassword.png" style="max-width: 70px; border: 1px solid #627eea; border-radius: 4px;" onerror="this.style.display='none'">
+                <div style="font-size: 16px; color: #627eea;">🔐 AUTHENTICATION COMPLETE!</div>
+                <div style="font-size: 15px; margin-top: 10px; color: #888;">You've learned how password encryption protects crypto wallets.</div>
+                <div style="background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px solid #0a5; text-align: left;">
+                    <strong style="color: #0f0;">📚 What you learned:</strong><br>
+                    <span style="color: #ccc; font-size: 13px;">• Passwords are encoded/encrypted for security<br>
+                    • Strong passwords protect your funds<br>
+                    • Never share your private keys</span>
                 </div>
-                <div style="font-size: 17px; margin-top: 10px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
+                <div style="font-size: 17px; color: #627eea;">+${displayReward} ${COIN_SYMBOL}</div>
+                <div style="font-size: 14px; margin-top: 5px; color: #888;">💡 Visit the Closet to buy the Authentication Module scrap!</div>
             `;
         } else {
             messageDiv.innerHTML = `
-                <div style="font-size: 16px; color: #627eea;">PASSWORD UPDATED</div>
-                <div style="font-size: 15px; margin-top: 10px; color: #888;">"${newPassword}" added to the global system.</div>
-                <div style="font-size: 17px; margin-top: 5px; color: #a80;">Other players may now have to decrypt your password!</div>
+                <div style="font-size: 16px; color: #627eea;">WALLET SECURED</div>
+                <div style="font-size: 15px; margin-top: 10px; color: #888;">"${newPassword}" is now active in the shared wallet.</div>
+                <div style="font-size: 17px; margin-top: 5px; color: #a80;">Other users must now crack your password!</div>
                 <div style="font-size: 17px; margin-top: 15px; color: #627eea;">+${displayReward} ${COIN_NAME}</div>
             `;
         }

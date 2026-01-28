@@ -1,6 +1,5 @@
 // cryptochecker.js
 // Crypto Border Control minigame
-// Save this file in: assets/js/DBS2/cryptochecker.js (same directory as Npc.js)
 
 const legitTerms = [
     'Blockchain', 'Bitcoin', 'Ethereum', 'Digital Wallet', 'Cold Wallet', 

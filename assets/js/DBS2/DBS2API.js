@@ -2,7 +2,7 @@
  * DBS2API.js - Multi-coin wallet support
  * Uses cookies for JWT authentication (not localStorage)
  */
-import { pythonURI, getHeaders } from './config.js';
+import { pythonURI, getHeaders } from '../api/config.js'
 
 /**
  * Get fetch options for authenticated requests
