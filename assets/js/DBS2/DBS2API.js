@@ -4,7 +4,18 @@
  * Handles wallet, inventory, scores, and minigame state
  */
 
-import { pythonURI, fetchOptions } from './config.js';
+import { pythonURI, fetchOptions } from '../api/config.js';
+
+// No-cache fetch options to always get fresh data
+const noCacheFetchOptions = {
+    ...fetchOptions,
+    cache: 'no-store',
+    headers: {
+        ...fetchOptions.headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+    }
+};
 
 // Coin configurations
 const COIN_CONFIG = {
@@ -31,7 +42,8 @@ const DBS2API = {
     // ============ PLAYER ============
     async getPlayer() {
         try {
-            const res = await fetch(`${this.baseUrl}/player`, fetchOptions);
+            const cacheBuster = `?_t=${Date.now()}`;
+            const res = await fetch(`${this.baseUrl}/player${cacheBuster}`, noCacheFetchOptions);
             if (!res.ok) return null;
             return await res.json();
         } catch (e) {
@@ -57,12 +69,16 @@ const DBS2API = {
     // ============ WALLET ============
     async getWallet() {
         try {
-            const res = await fetch(`${this.baseUrl}/wallet`, fetchOptions);
+            // Use no-cache AND cache-busting timestamp to ensure fresh data
+            const cacheBuster = `?_t=${Date.now()}`;
+            const res = await fetch(`${this.baseUrl}/wallet${cacheBuster}`, noCacheFetchOptions);
             if (!res.ok) {
                 console.log('[DBS2API] getWallet failed:', res.status);
                 return { wallet: {}, raw_balances: {}, total_usd: 0 };
             }
-            return await res.json();
+            const data = await res.json();
+            console.log('[DBS2API] getWallet fresh data:', data);
+            return data;
         } catch (e) {
             console.log('[DBS2API] getWallet error:', e);
             return { wallet: {}, raw_balances: {}, total_usd: 0 };
@@ -212,9 +228,13 @@ const DBS2API = {
     // ============ INVENTORY ============
     async getInventory() {
         try {
-            const res = await fetch(`${this.baseUrl}/inventory`, fetchOptions);
+            // Use no-cache AND cache-busting timestamp to ensure fresh data
+            const cacheBuster = `?_t=${Date.now()}`;
+            const res = await fetch(`${this.baseUrl}/inventory${cacheBuster}`, noCacheFetchOptions);
             if (!res.ok) return { inventory: [] };
-            return await res.json();
+            const data = await res.json();
+            console.log('[DBS2API] getInventory fresh data:', data);
+            return data;
         } catch (e) {
             console.log('[DBS2API] getInventory error:', e);
             return { inventory: [] };

@@ -5,11 +5,30 @@
 
 import { pythonURI, javaURI } from './config.js';
 
+// Try to import StatsManager for clearing local data
+let clearLocalData = null;
+try {
+    const statsModule = await import('./StatsManager.js');
+    clearLocalData = statsModule.clearLocalData;
+} catch (e) {
+    console.log('[logout] StatsManager not available');
+}
+
 /**
  * Handle user logout
  * Calls the DELETE endpoint which clears the JWT cookie
  */
 export async function handleLogout() {
+    // Clear DBS2 game state first
+    if (clearLocalData) {
+        try {
+            clearLocalData();
+            console.log('[logout] Cleared DBS2 local data');
+        } catch (e) {
+            console.error('[logout] Failed to clear DBS2 data:', e);
+        }
+    }
+    
     // Logout from python backend (clears cookie)
     try {
         await fetch(pythonURI + '/api/authenticate', {
@@ -17,9 +36,9 @@ export async function handleLogout() {
             mode: 'cors',
             credentials: 'include'  // Include cookies so backend can clear them
         });
-        console.log('Logged out from Python backend');
+        console.log('[logout] Logged out from Python backend');
     } catch (e) {
-        console.error('Python logout failed:', e);
+        console.error('[logout] Python logout failed:', e);
     }
 
     // Logout from java backend if applicable
@@ -29,13 +48,16 @@ export async function handleLogout() {
             mode: 'cors',
             credentials: 'include'
         });
-        console.log('Logged out from Java backend');
+        console.log('[logout] Logged out from Java backend');
     } catch (e) {
         // Java backend might not exist, ignore
     }
     
-    // Clear any localStorage items (non-auth related)
+    // Clear any other localStorage items
     localStorage.removeItem('dbs2_intro_seen');
+    
+    // Clear any old format localStorage (migration cleanup)
+    localStorage.removeItem('dbs2_local_state');
 }
 
 /**

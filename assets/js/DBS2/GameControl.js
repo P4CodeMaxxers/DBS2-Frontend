@@ -5,6 +5,16 @@ import Prompt from './Prompt.js';
 import Leaderboard from './Leaderboard.js';
 import AshTrailLeaderboardWidget from './AshTrailLeaderboardWidget.js';
 
+// Import StatsManager for user-specific data initialization
+let initializeStatsManager = null;
+try {
+    const statsModule = await import('./StatsManager.js');
+    initializeStatsManager = statsModule.initializeForUser;
+    console.log('[GameControl] StatsManager loaded');
+} catch (e) {
+    console.log('[GameControl] StatsManager not available:', e);
+}
+
 console.log("GameControl.js loaded!");
 
 
@@ -28,6 +38,16 @@ const GameControl = {
 
     start: function(path) {
         console.log("GameControl.start() called with path:", path);
+        
+        // Initialize StatsManager first to sync user data with backend
+        if (initializeStatsManager) {
+            initializeStatsManager().then(success => {
+                console.log('[GameControl] StatsManager initialized:', success ? 'synced with backend' : 'using local fallback');
+            }).catch(e => {
+                console.log('[GameControl] StatsManager init error:', e);
+            });
+        }
+        
         try {
             console.log("GameControl: Creating GameEnv...");
             GameEnv.create();
