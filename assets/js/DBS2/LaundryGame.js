@@ -1,11 +1,113 @@
 // LaundryGame.js - Rewards CARDANO (ADA)
-// Theme: Transaction Validation - cleaning and verifying blockchain transactions
+// Theme: Transaction Validation - reviewing and validating blockchain transactions
+// Players learn to check balances, verify signatures, and detect double-spends
 
 import { isMinigameCompleted, completeMinigame, addInventoryItem, rewardMinigame } from './StatsManager.js';
 
 const MINIGAME_NAME = 'laundry';
 const COIN_NAME = 'Cardano';
 const COIN_SYMBOL = 'ADA';
+
+// Simulated wallet addresses and balances
+const WALLETS = {
+    'alice_0x7a3b': { name: 'Alice', balance: 150, signature: 'SIG_ALICE_VALID' },
+    'bob_0x9c2f': { name: 'Bob', balance: 75, signature: 'SIG_BOB_VALID' },
+    'carol_0x4e8d': { name: 'Carol', balance: 200, signature: 'SIG_CAROL_VALID' },
+    'dave_0x1f5a': { name: 'Dave', balance: 30, signature: 'SIG_DAVE_VALID' },
+    'eve_0x6b2c': { name: 'Eve', balance: 500, signature: 'SIG_EVE_VALID' },
+    'frank_0x8d4e': { name: 'Frank', balance: 0, signature: 'SIG_FRANK_VALID' }
+};
+
+// Generate transaction scenarios
+function generateTransactions() {
+    const transactions = [
+        // Valid transactions
+        {
+            id: 'TX001',
+            from: 'alice_0x7a3b',
+            to: 'bob_0x9c2f',
+            amount: 50,
+            signature: 'SIG_ALICE_VALID',
+            isValid: true,
+            reason: 'Valid transaction - sufficient funds and correct signature'
+        },
+        {
+            id: 'TX002',
+            from: 'carol_0x4e8d',
+            to: 'dave_0x1f5a',
+            amount: 100,
+            signature: 'SIG_CAROL_VALID',
+            isValid: true,
+            reason: 'Valid transaction - sufficient funds and correct signature'
+        },
+        {
+            id: 'TX003',
+            from: 'eve_0x6b2c',
+            to: 'alice_0x7a3b',
+            amount: 250,
+            signature: 'SIG_EVE_VALID',
+            isValid: true,
+            reason: 'Valid transaction - sufficient funds and correct signature'
+        },
+        // Invalid: Insufficient funds
+        {
+            id: 'TX004',
+            from: 'dave_0x1f5a',
+            to: 'eve_0x6b2c',
+            amount: 100,
+            signature: 'SIG_DAVE_VALID',
+            isValid: false,
+            invalidReason: 'insufficient',
+            reason: 'INVALID - Insufficient funds (Dave has 30 ADA, trying to send 100)'
+        },
+        {
+            id: 'TX005',
+            from: 'frank_0x8d4e',
+            to: 'carol_0x4e8d',
+            amount: 50,
+            signature: 'SIG_FRANK_VALID',
+            isValid: false,
+            invalidReason: 'insufficient',
+            reason: 'INVALID - Insufficient funds (Frank has 0 ADA)'
+        },
+        // Invalid: Bad signature
+        {
+            id: 'TX006',
+            from: 'bob_0x9c2f',
+            to: 'alice_0x7a3b',
+            amount: 25,
+            signature: 'SIG_HACKER_FAKE',
+            isValid: false,
+            invalidReason: 'signature',
+            reason: 'INVALID - Signature does not match sender'
+        },
+        {
+            id: 'TX007',
+            from: 'eve_0x6b2c',
+            to: 'frank_0x8d4e',
+            amount: 100,
+            signature: 'SIG_CORRUPTED',
+            isValid: false,
+            invalidReason: 'signature',
+            reason: 'INVALID - Corrupted/forged signature detected'
+        },
+        // Invalid: Double spend attempt (same sender, total exceeds balance)
+        {
+            id: 'TX008',
+            from: 'alice_0x7a3b',
+            to: 'carol_0x4e8d',
+            amount: 120,
+            signature: 'SIG_ALICE_VALID',
+            isValid: false,
+            invalidReason: 'double_spend',
+            reason: 'INVALID - Double spend attempt (Alice already sent 50, only has 150 total)',
+            requiresPriorTx: 'TX001'
+        }
+    ];
+    
+    // Shuffle and return 6 transactions
+    return transactions.sort(() => Math.random() - 0.5).slice(0, 6);
+}
 
 export async function showLaundryMinigame(onComplete) {
     const baseurl = document.body.getAttribute('data-baseurl') || '';
@@ -40,47 +142,53 @@ export async function showLaundryMinigame(onComplete) {
         border: 2px solid #0033ad;
         border-radius: 15px;
         padding: 30px;
-        max-width: 600px;
+        max-width: 650px;
         color: #eee;
         text-align: left;
-        max-height: 80vh;
+        max-height: 85vh;
         overflow-y: auto;
         font-family: 'Courier New', monospace;
     `;
     
     intro.innerHTML = `
         <h2 style="color: #0033ad; text-align: center; margin-bottom: 20px;">
-            🧺 THE GREEN MACHINE: TRANSACTION MODULE
+            📋 TRANSACTION VALIDATOR
         </h2>
         
         <div style="background: rgba(0,51,173,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0033ad;">
             <p style="margin: 0; line-height: 1.6; color: #0033ad; font-style: italic;">
-                "Every transaction must be clean and verified. No shortcuts. That's ethical crypto." - IShowGreen
+                "Every transaction must be verified before it joins the blockchain. That's how we keep the ledger honest." - IShowGreen
             </p>
         </div>
         
         <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <h3 style="color: #0033ad; margin: 0 0 10px 0;">Transaction Validation</h3>
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">🔍 What is Transaction Validation?</h3>
             <p style="margin: 0; line-height: 1.6; color: #ccc;">
-                Before a transaction joins the blockchain, it must be <span style="color: #0033ad;">validated</span>. 
-                This means checking signatures, verifying funds exist, and ensuring the transaction follows all rules.
+                Before any crypto transaction is added to the blockchain, validators must check:
             </p>
+            <ul style="color: #ccc; margin: 10px 0 0 0; padding-left: 20px;">
+                <li><strong style="color: #4CAF50;">Balance Check</strong> - Does the sender have enough funds?</li>
+                <li><strong style="color: #2196F3;">Signature Verification</strong> - Is the digital signature authentic?</li>
+                <li><strong style="color: #FF9800;">Double-Spend Detection</strong> - Is someone trying to spend the same coins twice?</li>
+            </ul>
         </div>
         
         <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <h3 style="color: #0033ad; margin: 0 0 10px 0;">The Metaphor</h3>
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">🎮 How to Play</h3>
             <p style="margin: 0; line-height: 1.6; color: #ccc;">
-                Think of transactions like laundry - they need to be <span style="color: #0033ad;">cleaned</span> (validated) 
-                before they're ready. The machine must work properly to process them correctly.
+                1. Review each incoming transaction<br>
+                2. Check the sender's balance and signature<br>
+                3. Click <span style="color: #4CAF50; font-weight: bold;">✓ APPROVE</span> for valid transactions<br>
+                4. Click <span style="color: #f44336; font-weight: bold;">✗ REJECT</span> for invalid ones<br>
+                5. Correctly validate all transactions to earn ${COIN_NAME}!
             </p>
         </div>
         
         <div style="background: rgba(0,51,173,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #0033ad;">
-            <h3 style="color: #0033ad; margin: 0 0 10px 0;">Your Mission</h3>
+            <h3 style="color: #0033ad; margin: 0 0 10px 0;">💰 Rewards</h3>
             <p style="margin: 0; line-height: 1.6; color: #ccc;">
-                1. <strong>Repair the machine</strong> - Drag parts to their correct slots<br>
-                2. <strong>Process the transactions</strong> - Load the laundry items<br><br>
-                💰 <strong>Earn ${COIN_NAME}</strong> to buy the Transaction Ledger scrap!
+                Earn <strong style="color: #0033ad;">${COIN_NAME} (${COIN_SYMBOL})</strong> for each correct decision!<br>
+                Use ${COIN_SYMBOL} to buy the <em>Transaction Ledger Code Scrap</em> from the Closet Shop.
             </p>
         </div>
         
@@ -95,7 +203,7 @@ export async function showLaundryMinigame(onComplete) {
             cursor: pointer;
             font-family: 'Courier New', monospace;
             font-weight: bold;
-        ">START VALIDATION TRAINING</button>
+        ">START VALIDATION</button>
     `;
     
     introOverlay.appendChild(intro);
@@ -103,25 +211,25 @@ export async function showLaundryMinigame(onComplete) {
     
     document.getElementById('start-laundry-btn').onclick = () => {
         introOverlay.remove();
-        startActualLaundryGame(baseurl, isFirstCompletion, onComplete);
+        startValidationGame(baseurl, isFirstCompletion, onComplete);
     };
 }
 
-function startActualLaundryGame(baseurl, isFirstCompletion, onComplete) {
-    let partsPlaced = 0;
-    const totalParts = 4;
-    let laundryLoaded = 0;
-    const totalLaundry = 5;
-    let currentDraggedElement = null;
-    let repairComplete = false;
-
+function startValidationGame(baseurl, isFirstCompletion, onComplete) {
+    const transactions = generateTransactions();
+    let currentTxIndex = 0;
+    let correctAnswers = 0;
+    let totalAnswered = 0;
+    let processedTxIds = new Set(); // Track which transactions were approved (for double-spend detection)
+    const rewardPerCorrect = 2; // ADA per correct answer
+    
     const overlay = document.createElement('div');
     overlay.id = 'minigame-overlay';
     overlay.style.cssText = `
         position: fixed;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.85);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -131,605 +239,520 @@ function startActualLaundryGame(baseurl, isFirstCompletion, onComplete) {
     const container = document.createElement('div');
     container.id = 'minigame-container';
     container.style.cssText = `
-        width: 90%;
-        max-width: 900px;
-        height: 80vh;
-        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        width: 95%;
+        max-width: 1000px;
+        height: 90vh;
+        background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 100%);
         border: 2px solid #0033ad;
-        border-radius: 10px;
+        border-radius: 15px;
         padding: 20px;
-        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 50px rgba(0, 51, 173, 0.3);
         position: relative;
         display: flex;
         flex-direction: column;
         font-family: 'Courier New', monospace;
+        overflow: hidden;
     `;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'EXIT';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 10px; right: 10px;
-        background: #600;
-        color: #ccc;
-        border: 1px solid #800;
-        padding: 8px 15px;
-        cursor: pointer;
-        font-size: 15px;
-        font-family: 'Courier New', monospace;
-        z-index: 10;
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #0033ad;
     `;
-    closeBtn.onmouseover = () => closeBtn.style.background = '#800';
-    closeBtn.onmouseout = () => closeBtn.style.background = '#600';
-    closeBtn.onclick = () => {
+    
+    header.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h1 style="color: #0033ad; font-size: 20px; margin: 0; letter-spacing: 2px;">
+                📋 TRANSACTION VALIDATOR
+            </h1>
+            <div style="background: rgba(0,51,173,0.2); padding: 5px 15px; border-radius: 20px; color: #0033ad;">
+                Earning: <strong>${COIN_SYMBOL}</strong>
+            </div>
+        </div>
+        <button id="exit-btn" style="
+            background: #600;
+            color: #ccc;
+            border: 1px solid #800;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            border-radius: 5px;
+        ">EXIT</button>
+    `;
+    
+    container.appendChild(header);
+    
+    // Score/Progress bar
+    const progressBar = document.createElement('div');
+    progressBar.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(0,0,0,0.4);
+        padding: 10px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    `;
+    progressBar.innerHTML = `
+        <div id="progress-text" style="color: #888;">Transaction <span style="color: #0033ad;">1</span> of ${transactions.length}</div>
+        <div id="score-text" style="color: #4CAF50;">Correct: <span id="correct-count">0</span>/${transactions.length}</div>
+        <div id="reward-text" style="color: #0033ad;">Earned: <span id="earned-ada">0</span> ${COIN_SYMBOL}</div>
+    `;
+    container.appendChild(progressBar);
+    
+    // Main game area
+    const gameArea = document.createElement('div');
+    gameArea.style.cssText = `
+        display: flex;
+        gap: 20px;
+        flex: 1;
+        min-height: 0;
+    `;
+    
+    // Left panel - Wallet Balances
+    const walletPanel = document.createElement('div');
+    walletPanel.style.cssText = `
+        width: 250px;
+        background: rgba(0,0,0,0.4);
+        border-radius: 10px;
+        padding: 15px;
+        overflow-y: auto;
+    `;
+    walletPanel.innerHTML = `
+        <h3 style="color: #0033ad; margin: 0 0 15px 0; font-size: 14px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+            💰 WALLET BALANCES
+        </h3>
+        <div id="wallet-list" style="font-size: 12px;">
+            ${Object.entries(WALLETS).map(([addr, data]) => `
+                <div id="wallet-${addr}" style="
+                    background: rgba(50,50,80,0.3);
+                    padding: 8px 10px;
+                    margin-bottom: 8px;
+                    border-radius: 5px;
+                    border-left: 3px solid #0033ad;
+                ">
+                    <div style="color: #aaa; font-weight: bold;">${data.name}</div>
+                    <div style="color: #666; font-size: 10px;">${addr}</div>
+                    <div style="color: #4CAF50; margin-top: 5px;">
+                        Balance: <strong>${data.balance} ADA</strong>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    gameArea.appendChild(walletPanel);
+    
+    // Center panel - Transaction Details
+    const txPanel = document.createElement('div');
+    txPanel.style.cssText = `
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    `;
+    
+    // Transaction card
+    const txCard = document.createElement('div');
+    txCard.id = 'tx-card';
+    txCard.style.cssText = `
+        background: rgba(0,51,173,0.1);
+        border: 2px solid #0033ad;
+        border-radius: 10px;
+        padding: 20px;
+        flex: 1;
+    `;
+    txPanel.appendChild(txCard);
+    
+    // Action buttons
+    const actionBar = document.createElement('div');
+    actionBar.style.cssText = `
+        display: flex;
+        gap: 15px;
+    `;
+    actionBar.innerHTML = `
+        <button id="reject-btn" style="
+            flex: 1;
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #8B0000 0%, #5a0000 100%);
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.2s;
+        ">✗ REJECT</button>
+        <button id="approve-btn" style="
+            flex: 1;
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #1B5E20 0%, #0d3d0d 100%);
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.2s;
+        ">✓ APPROVE</button>
+    `;
+    txPanel.appendChild(actionBar);
+    
+    gameArea.appendChild(txPanel);
+    
+    // Right panel - Tips
+    const tipsPanel = document.createElement('div');
+    tipsPanel.style.cssText = `
+        width: 220px;
+        background: rgba(0,0,0,0.4);
+        border-radius: 10px;
+        padding: 15px;
+        font-size: 12px;
+    `;
+    tipsPanel.innerHTML = `
+        <h3 style="color: #FF9800; margin: 0 0 15px 0; font-size: 14px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+            💡 VALIDATION TIPS
+        </h3>
+        <div style="color: #ccc; line-height: 1.6;">
+            <div style="margin-bottom: 12px; padding: 8px; background: rgba(76,175,80,0.1); border-radius: 5px;">
+                <strong style="color: #4CAF50;">✓ Balance Check</strong><br>
+                <span style="color: #888;">Sender must have enough to cover the transaction amount.</span>
+            </div>
+            <div style="margin-bottom: 12px; padding: 8px; background: rgba(33,150,243,0.1); border-radius: 5px;">
+                <strong style="color: #2196F3;">✓ Signature</strong><br>
+                <span style="color: #888;">Must match the sender's wallet. Look for "SIG_[NAME]_VALID".</span>
+            </div>
+            <div style="padding: 8px; background: rgba(255,152,0,0.1); border-radius: 5px;">
+                <strong style="color: #FF9800;">✓ Double Spend</strong><br>
+                <span style="color: #888;">If you approved a prior TX from same sender, check remaining balance!</span>
+            </div>
+        </div>
+    `;
+    gameArea.appendChild(tipsPanel);
+    
+    container.appendChild(gameArea);
+    
+    // Feedback overlay (hidden initially)
+    const feedbackOverlay = document.createElement('div');
+    feedbackOverlay.id = 'feedback-overlay';
+    feedbackOverlay.style.cssText = `
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+    `;
+    container.appendChild(feedbackOverlay);
+    
+    // Results screen (hidden initially)
+    const resultsScreen = document.createElement('div');
+    resultsScreen.id = 'results-screen';
+    resultsScreen.style.cssText = `
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,10,30,0.95);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+    `;
+    container.appendChild(resultsScreen);
+    
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+    
+    // Event handlers
+    document.getElementById('exit-btn').onclick = () => {
         window.laundryMinigameActive = false;
         window.minigameActive = false;
         document.body.removeChild(overlay);
     };
-
-    const title = document.createElement('h1');
-    title.textContent = 'TRANSACTION VALIDATOR';
-    title.style.cssText = `
-        text-align: center;
-        color: #0033ad;
-        font-size: 20px;
-        margin-bottom: 10px;
-        letter-spacing: 2px;
-    `;
-
-    // Coin indicator
-    const coinIndicator = document.createElement('div');
-    coinIndicator.style.cssText = `
-        text-align: center;
-        color: #0033ad;
-        font-size: 15px;
-        margin-bottom: 10px;
-        padding: 5px;
-        background: rgba(0,51,173,0.1);
-        border-radius: 5px;
-    `;
-    coinIndicator.innerHTML = `Rewards: <strong>${COIN_NAME} (${COIN_SYMBOL})</strong>`;
-
-    const instructions = document.createElement('div');
-    instructions.textContent = 'Repair the validator (drag parts), then process transactions (load laundry).';
-    instructions.style.cssText = `
-        text-align: center;
-        color: #888;
-        font-size: 15px;
-        margin-bottom: 15px;
-        padding: 10px;
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 5px;
-    `;
-
-    const gameArea = document.createElement('div');
-    gameArea.style.cssText = `display: flex; gap: 20px; flex: 1; overflow: hidden;`;
-
-    const partsArea = document.createElement('div');
-    partsArea.style.cssText = `flex: 1; background: rgba(50, 50, 50, 0.9); border-radius: 10px; padding: 15px; overflow-y: auto;`;
-
-    const partsTitle = document.createElement('h2');
-    partsTitle.textContent = 'Spare Parts';
-    partsTitle.style.cssText = `color: #fff; font-size: 18px; margin-bottom: 15px; text-align: center;`;
-
-    const partsContainer = document.createElement('div');
-    partsContainer.style.cssText = `display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;`;
-
-    const partsList = [
-        { name: 'Motor', type: 'motor', sprite: `${baseurl}/images/DBS2/motor.png` },
-        { name: 'Belt', type: 'belt', sprite: `${baseurl}/images/DBS2/belt.png` },
-        { name: 'Pump', type: 'pump', sprite: `${baseurl}/images/DBS2/pump.jpg` },
-        { name: 'Hose', type: 'hose', sprite: `${baseurl}/images/DBS2/hose.png` }
-    ];
-
-    const parts = [];
-    partsList.forEach(partInfo => {
-        const part = document.createElement('div');
-        part.className = 'part';
-        part.textContent = partInfo.name;
-        part.draggable = true;
-        part.dataset.part = partInfo.type;
-        part.style.cssText = `
-            width: 100%;
-            aspect-ratio: 1;
-            background: #4a4a4a;
-            border: 3px solid #666;
-            border-radius: 10px;
-            cursor: grab;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            color: #fff;
-            text-align: center;
-            transition: all 0.2s;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-        `;
-        part.style.backgroundImage = `url('${partInfo.sprite}')`;
-
-        part.onmouseover = () => {
-            if (!part.classList.contains('placed')) {
-                part.style.borderColor = '#0033ad';
-                part.style.transform = 'scale(1.05)';
-            }
-        };
-        part.onmouseout = () => {
-            part.style.borderColor = '#666';
-            part.style.transform = 'scale(1)';
-        };
-
-        parts.push(part);
-        partsContainer.appendChild(part);
-    });
-
-    partsArea.appendChild(partsTitle);
-    partsArea.appendChild(partsContainer);
-
-    const machineArea = document.createElement('div');
-    machineArea.style.cssText = `flex: 1.5; background: rgba(30, 30, 30, 0.9); border-radius: 10px; padding: 20px; position: relative; display: flex; flex-direction: column;`;
-
-    const machineContainer = document.createElement('div');
-    machineContainer.style.cssText = `
-        flex: 1;
-        position: relative;
-        background: #555;
-        border-radius: 10px;
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        transition: transform 0.1s;
-    `;
-    machineContainer.style.backgroundImage = `url('${baseurl}/images/DBS2/broken-washing-machine-jpeg.jpeg')`;
-
-    const zones = [
-        { id: 'zone-motor', accepts: 'motor', label: 'Motor', style: 'top: 20%; left: 15%; width: 25%; height: 20%;' },
-        { id: 'zone-belt', accepts: 'belt', label: 'Belt', style: 'top: 45%; left: 10%; width: 30%; height: 15%;' },
-        { id: 'zone-pump', accepts: 'pump', label: 'Pump', style: 'bottom: 20%; left: 15%; width: 25%; height: 20%;' },
-        { id: 'zone-hose', accepts: 'hose', label: 'Hose', style: 'top: 25%; right: 15%; width: 20%; height: 30%;' }
-    ];
-
-    const dropZones = [];
-    zones.forEach(zoneInfo => {
-        const zone = document.createElement('div');
-        zone.id = zoneInfo.id;
-        zone.dataset.accepts = zoneInfo.accepts;
-        zone.style.cssText = `
-            position: absolute;
-            ${zoneInfo.style}
-            background: rgba(100, 100, 100, 0.3);
-            border: 2px dashed #888;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        `;
-
-        const label = document.createElement('div');
-        label.textContent = zoneInfo.label;
-        label.style.cssText = `color: #aaa; font-size: 15px; text-align: center;`;
-        zone.appendChild(label);
-
-        dropZones.push(zone);
-        machineContainer.appendChild(zone);
-    });
-
-    // Laundry items area
-    const laundryItemsArea = document.createElement('div');
-    laundryItemsArea.style.cssText = `
-        display: none;
-        position: absolute;
-        bottom: 60px;
-        left: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 10px;
-        border-radius: 8px;
-        z-index: 50;
-    `;
     
-    const laundryTitle = document.createElement('div');
-    laundryTitle.textContent = 'Dirty Laundry - Drag to Machine';
-    laundryTitle.style.cssText = `color: #888; font-size: 17px; margin-bottom: 8px; text-align: center;`;
-    laundryItemsArea.appendChild(laundryTitle);
+    document.getElementById('approve-btn').onclick = () => handleDecision(true);
+    document.getElementById('reject-btn').onclick = () => handleDecision(false);
     
-    const laundryGrid = document.createElement('div');
-    laundryGrid.style.cssText = `display: flex; gap: 10px; justify-content: center;`;
+    // Display first transaction
+    displayTransaction(transactions[currentTxIndex]);
     
-    const laundryTypes = ['🧦', '👕', '👖', '🧣', '🩳'];
-    const laundryItems = [];
-    laundryTypes.forEach((emoji, i) => {
-        const item = document.createElement('div');
-        item.className = 'laundry-item';
-        item.textContent = emoji;
-        item.draggable = true;
-        item.dataset.index = i;
-        item.style.cssText = `
-            width: 50px;
-            height: 50px;
-            background: #444;
-            border: 2px solid #666;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: grab;
-            transition: all 0.2s;
-        `;
-        item.onmouseover = () => {
-            if (!item.classList.contains('loaded')) {
-                item.style.borderColor = '#0033ad';
-                item.style.transform = 'scale(1.1)';
-            }
-        };
-        item.onmouseout = () => {
-            item.style.borderColor = '#666';
-            item.style.transform = 'scale(1)';
-        };
-        laundryItems.push(item);
-        laundryGrid.appendChild(item);
-    });
-    laundryItemsArea.appendChild(laundryGrid);
-
-    // Machine door zone
-    const machineDoorZone = document.createElement('div');
-    machineDoorZone.id = 'machine-door';
-    machineDoorZone.style.cssText = `
-        display: none;
-        position: absolute;
-        top: 30%;
-        left: 35%;
-        width: 30%;
-        height: 40%;
-        background: rgba(100, 100, 150, 0.2);
-        border: 3px dashed #88aaff;
-        border-radius: 50%;
-    `;
-
-    machineContainer.appendChild(machineDoorZone);
-    machineArea.appendChild(machineContainer);
-    machineArea.appendChild(laundryItemsArea);
-
-    // Start button
-    const startBtn = document.createElement('button');
-    startBtn.textContent = 'START WASH CYCLE';
-    startBtn.disabled = true;
-    startBtn.style.cssText = `
-        margin-top: 15px;
-        padding: 12px 25px;
-        font-size: 17px;
-        background: #666;
-        color: #888;
-        border: none;
-        border-radius: 8px;
-        cursor: not-allowed;
-        font-family: 'Courier New', monospace;
-        position: relative;
-        z-index: 100;
-    `;
-
-    machineArea.appendChild(startBtn);
-
-    // Success and paper discovery messages
-    const successMessage = document.createElement('div');
-    successMessage.style.cssText = `
-        display: none;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 100, 0, 0.9);
-        padding: 30px;
-        border-radius: 10px;
-        text-align: center;
-        z-index: 100;
-    `;
-    successMessage.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
-        <div style="color: #fff; font-size: 18px;">Transactions Validated!</div>
-    `;
-    machineArea.appendChild(successMessage);
-
-    const paperDiscovery = document.createElement('div');
-    paperDiscovery.style.cssText = `
-        display: none;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
-        border: 2px solid #0033ad;
-        padding: 25px;
-        border-radius: 12px;
-        text-align: center;
-        z-index: 100;
-        max-width: 400px;
-    `;
-    
-    const rewardAmount = isFirstCompletion ? 35 : 20;
-    paperDiscovery.innerHTML = `
-        <div style="font-size: 36px; margin-bottom: 10px;">🧺</div>
-        <div style="color: #0033ad; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-            ${isFirstCompletion ? 'VALIDATION TRAINING COMPLETE!' : 'TRANSACTIONS PROCESSED!'}
-        </div>
-        <div style="color: #888; font-size: 15px; margin-bottom: 15px;">
-            ${isFirstCompletion ? 'You understand how transactions are cleaned and verified before joining the blockchain.' : 'Another batch of transactions successfully validated.'}
-        </div>
-        ${isFirstCompletion ? `
-        <div style="background: rgba(0,255,0,0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0a5;">
-            <strong style="color: #0f0;">📚 What you learned:</strong><br>
-            <span style="color: #ccc; font-size: 14px;">• Transactions must be validated before processing<br>
-            • Each component must work correctly<br>
-            • Clean transactions = trustworthy blockchain</span>
-        </div>
-        <div style="background: rgba(0,51,173,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-            <div style="color: #0033ad; font-size: 15px;">💡 Visit the Closet to buy the Transaction Ledger scrap!</div>
-        </div>
-        ` : ''}
-        <div style="color: #0033ad; font-size: 18px; font-weight: bold; margin-bottom: 15px;">
-            +${rewardAmount} ${COIN_NAME} (${COIN_SYMBOL})
-        </div>
-        <button id="continueBtn" style="
-            background: #0033ad;
-            color: #fff;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 17px;
-        ">CONTINUE</button>
-    `;
-    machineArea.appendChild(paperDiscovery);
-
-    gameArea.appendChild(partsArea);
-    gameArea.appendChild(machineArea);
-
-    container.appendChild(closeBtn);
-    container.appendChild(title);
-    container.appendChild(coinIndicator);
-    container.appendChild(instructions);
-    container.appendChild(gameArea);
-
-    // Drag and drop handlers
-    function handleDragStart(e) {
-        currentDraggedElement = this;
-        this.style.opacity = '0.5';
-        e.dataTransfer.effectAllowed = 'move';
-    }
-
-    function handleDragEnd(e) {
-        this.style.opacity = '1';
-    }
-
-    function handleDragOver(e) {
-        if (e.preventDefault) e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        return false;
-    }
-
-    function handleDragEnter(e) {
-        this.style.borderColor = '#0033ad';
-        this.style.background = 'rgba(0, 51, 173, 0.3)';
-    }
-
-    function handleDragLeave(e) {
-        this.style.borderColor = '#888';
-        this.style.background = 'rgba(100, 100, 100, 0.3)';
-    }
-
-    function handleDrop(e) {
-        if (e.stopPropagation) e.stopPropagation();
-        e.preventDefault();
-
-        this.style.borderColor = '#888';
-        this.style.background = 'rgba(100, 100, 100, 0.3)';
-
-        const accepts = this.dataset.accepts;
-        const dragged = currentDraggedElement.dataset.part;
-
-        if (accepts === dragged && !currentDraggedElement.classList.contains('placed')) {
-            currentDraggedElement.classList.add('placed');
-            currentDraggedElement.style.opacity = '0.3';
-            currentDraggedElement.style.cursor = 'not-allowed';
-            currentDraggedElement.style.pointerEvents = 'none';
-            currentDraggedElement.draggable = false;
-            partsPlaced++;
-
-            const label = this.querySelector('div');
-            if (label) label.style.display = 'none';
-
-            if (partsPlaced === totalParts) {
-                completeRepair();
-            }
-        } else {
-            this.style.background = 'rgba(255, 0, 0, 0.3)';
-            setTimeout(() => {
-                this.style.background = 'rgba(100, 100, 100, 0.3)';
-            }, 500);
-        }
-
-        return false;
-    }
-
-    function handleLaundryDrop(e) {
-        if (e.stopPropagation) e.stopPropagation();
-        e.preventDefault();
-
-        this.style.borderColor = '#88aaff';
-        this.style.background = 'rgba(100, 100, 150, 0.2)';
-        this.style.borderStyle = 'dashed';
-
-        if (currentDraggedElement.classList.contains('laundry-item')) {
-            currentDraggedElement.classList.add('loaded');
-            currentDraggedElement.style.opacity = '0.3';
-            currentDraggedElement.style.cursor = 'not-allowed';
-            currentDraggedElement.style.pointerEvents = 'none';
-            currentDraggedElement.draggable = false;
-            laundryLoaded++;
-
-            this.style.background = 'rgba(68, 255, 68, 0.3)';
-            setTimeout(() => {
-                this.style.background = 'rgba(100, 100, 150, 0.2)';
-            }, 300);
-
-            if (laundryLoaded === totalLaundry) {
-                enableStartButton();
-            }
-        }
-
-        return false;
-    }
-
-    parts.forEach(part => {
-        part.addEventListener('dragstart', handleDragStart);
-        part.addEventListener('dragend', handleDragEnd);
-    });
-
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', handleDragOver);
-        zone.addEventListener('dragenter', handleDragEnter);
-        zone.addEventListener('dragleave', handleDragLeave);
-        zone.addEventListener('drop', handleDrop);
-    });
-
-    laundryItems.forEach(item => {
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
-    });
-
-    machineDoorZone.addEventListener('dragover', handleDragOver);
-    machineDoorZone.addEventListener('dragenter', handleDragEnter);
-    machineDoorZone.addEventListener('dragleave', handleDragLeave);
-    machineDoorZone.addEventListener('drop', handleLaundryDrop);
-
-    function completeRepair() {
-        repairComplete = true;
-        instructions.innerHTML = '✅ Machine repaired! Now drag all the dirty laundry into the washing machine.';
-        instructions.style.background = 'rgba(0, 100, 0, 0.6)';
-        laundryItemsArea.style.display = 'block';
-        machineDoorZone.style.display = 'block';
-        dropZones.forEach(zone => {
-            zone.style.display = 'none';
+    function displayTransaction(tx) {
+        const wallet = WALLETS[tx.from];
+        const toWallet = WALLETS[tx.to];
+        
+        // Highlight relevant wallets
+        document.querySelectorAll('[id^="wallet-"]').forEach(el => {
+            el.style.borderLeftColor = '#0033ad';
+            el.style.background = 'rgba(50,50,80,0.3)';
         });
+        const fromWalletEl = document.getElementById(`wallet-${tx.from}`);
+        const toWalletEl = document.getElementById(`wallet-${tx.to}`);
+        if (fromWalletEl) {
+            fromWalletEl.style.borderLeftColor = '#FF9800';
+            fromWalletEl.style.background = 'rgba(255,152,0,0.15)';
+        }
+        if (toWalletEl) {
+            toWalletEl.style.borderLeftColor = '#4CAF50';
+            toWalletEl.style.background = 'rgba(76,175,80,0.15)';
+        }
+        
+        // Check if this is a potential double-spend
+        let doubleSpendWarning = '';
+        if (tx.requiresPriorTx && processedTxIds.has(tx.requiresPriorTx)) {
+            doubleSpendWarning = `
+                <div style="background: rgba(255,152,0,0.2); border: 1px solid #FF9800; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    <strong style="color: #FF9800;">⚠️ Note:</strong> 
+                    <span style="color: #ccc;">You previously approved a transaction from this sender.</span>
+                </div>
+            `;
+        }
+        
+        txCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #0033ad; margin: 0; font-size: 18px;">
+                    📝 Transaction ${tx.id}
+                </h2>
+                <div style="background: rgba(0,51,173,0.3); padding: 5px 15px; border-radius: 15px; color: #88aaff; font-size: 12px;">
+                    PENDING VALIDATION
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; align-items: center; margin-bottom: 20px;">
+                <!-- From -->
+                <div style="background: rgba(255,152,0,0.1); border: 1px solid #FF9800; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="color: #FF9800; font-size: 12px; margin-bottom: 5px;">FROM</div>
+                    <div style="color: #fff; font-weight: bold; font-size: 16px;">${wallet.name}</div>
+                    <div style="color: #666; font-size: 10px;">${tx.from}</div>
+                    <div style="color: #4CAF50; margin-top: 8px; font-size: 14px;">
+                        Balance: <strong>${wallet.balance} ADA</strong>
+                    </div>
+                </div>
+                
+                <!-- Arrow + Amount -->
+                <div style="text-align: center;">
+                    <div style="color: #0033ad; font-size: 24px; font-weight: bold; margin-bottom: 5px;">
+                        ${tx.amount} ADA
+                    </div>
+                    <div style="color: #0033ad; font-size: 30px;">→</div>
+                </div>
+                
+                <!-- To -->
+                <div style="background: rgba(76,175,80,0.1); border: 1px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="color: #4CAF50; font-size: 12px; margin-bottom: 5px;">TO</div>
+                    <div style="color: #fff; font-weight: bold; font-size: 16px;">${toWallet.name}</div>
+                    <div style="color: #666; font-size: 10px;">${tx.to}</div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="color: #888; font-size: 12px;">DIGITAL SIGNATURE</div>
+                        <div style="color: ${tx.signature.includes('VALID') && tx.signature.includes(wallet.name.toUpperCase()) ? '#4CAF50' : '#f44336'}; font-family: monospace; font-size: 14px; margin-top: 5px;">
+                            ${tx.signature}
+                        </div>
+                    </div>
+                    <div style="color: #888; font-size: 11px; text-align: right;">
+                        Expected: SIG_${wallet.name.toUpperCase()}_VALID
+                    </div>
+                </div>
+            </div>
+            
+            ${doubleSpendWarning}
+        `;
     }
-
-    function enableStartButton() {
-        startBtn.style.background = '#0033ad';
-        startBtn.style.color = 'white';
-        startBtn.style.cursor = 'pointer';
-        startBtn.disabled = false;
-        instructions.innerHTML = '✅ All laundry loaded! Click the button to start the wash cycle.';
-        instructions.style.background = 'rgba(0, 150, 0, 0.7)';
+    
+    function handleDecision(approved) {
+        const tx = transactions[currentTxIndex];
+        const isCorrect = (approved === tx.isValid);
         
-        startBtn.onmouseover = () => startBtn.style.background = '#0044cc';
-        startBtn.onmouseout = () => startBtn.style.background = '#0033ad';
+        totalAnswered++;
+        if (isCorrect) {
+            correctAnswers++;
+            if (approved) {
+                processedTxIds.add(tx.id); // Track approved transactions
+            }
+        }
         
-        startBtn.onclick = () => {
-            if (repairComplete && laundryLoaded === totalLaundry) {
-                laundryItemsArea.style.display = 'none';
-                machineDoorZone.style.display = 'none';
-
-                let animFrame = 0;
-                const washingInterval = setInterval(() => {
-                    animFrame++;
-                    const offset = Math.sin(animFrame * 0.3) * 3;
-                    const rotation = Math.sin(animFrame * 0.3) * 0.5;
-                    machineContainer.style.transform = `translateX(${offset}px) rotate(${rotation}deg)`;
-                }, 50);
-
-                startBtn.textContent = 'Running...';
-                startBtn.disabled = true;
-                startBtn.style.background = '#666';
-                startBtn.style.cursor = 'not-allowed';
-                instructions.innerHTML = '🌊 Washing cycle in progress...';
-                instructions.style.background = 'rgba(0, 100, 200, 0.6)';
-
-                setTimeout(() => {
-                    clearInterval(washingInterval);
-                    machineContainer.style.transform = 'translateX(0) rotate(0)';
-                    successMessage.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        successMessage.style.display = 'none';
-                        paperDiscovery.style.display = 'block';
-                        
-                        const continueBtn = document.getElementById('continueBtn');
-                        if (continueBtn) {
-                            continueBtn.onclick = handleContinue;
-                        }
-                    }, 2000);
-                }, 3000);
+        // Update score display
+        document.getElementById('correct-count').textContent = correctAnswers;
+        document.getElementById('earned-ada').textContent = correctAnswers * rewardPerCorrect;
+        
+        // Show feedback
+        showFeedback(isCorrect, tx, approved);
+    }
+    
+    function showFeedback(isCorrect, tx, userApproved) {
+        feedbackOverlay.style.display = 'flex';
+        
+        const feedbackCard = document.createElement('div');
+        feedbackCard.style.cssText = `
+            background: ${isCorrect ? 'linear-gradient(135deg, #1B5E20 0%, #0d3d0d 100%)' : 'linear-gradient(135deg, #8B0000 0%, #5a0000 100%)'};
+            border: 2px solid ${isCorrect ? '#4CAF50' : '#f44336'};
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            text-align: center;
+        `;
+        
+        feedbackCard.innerHTML = `
+            <div style="font-size: 60px; margin-bottom: 15px;">${isCorrect ? '✓' : '✗'}</div>
+            <h2 style="color: ${isCorrect ? '#4CAF50' : '#f44336'}; margin: 0 0 15px 0;">
+                ${isCorrect ? 'CORRECT!' : 'INCORRECT'}
+            </h2>
+            <p style="color: #ccc; margin: 0 0 15px 0; font-size: 14px;">
+                You ${userApproved ? 'approved' : 'rejected'} this transaction.<br>
+                The correct action was to <strong style="color: ${tx.isValid ? '#4CAF50' : '#f44336'};">${tx.isValid ? 'APPROVE' : 'REJECT'}</strong>.
+            </p>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px;">
+                <div style="color: #888; font-size: 12px; margin-bottom: 5px;">EXPLANATION:</div>
+                <div style="color: #fff; font-size: 13px; line-height: 1.6;">${tx.reason}</div>
+            </div>
+            ${isCorrect ? `<div style="color: #4CAF50; font-size: 16px;">+${rewardPerCorrect} ${COIN_SYMBOL} earned!</div>` : ''}
+            <button id="next-tx-btn" style="
+                margin-top: 20px;
+                padding: 12px 40px;
+                font-size: 16px;
+                background: #0033ad;
+                border: none;
+                border-radius: 8px;
+                color: #fff;
+                cursor: pointer;
+                font-family: 'Courier New', monospace;
+            ">${currentTxIndex < transactions.length - 1 ? 'NEXT TRANSACTION' : 'VIEW RESULTS'}</button>
+        `;
+        
+        feedbackOverlay.innerHTML = '';
+        feedbackOverlay.appendChild(feedbackCard);
+        
+        document.getElementById('next-tx-btn').onclick = () => {
+            feedbackOverlay.style.display = 'none';
+            currentTxIndex++;
+            
+            if (currentTxIndex < transactions.length) {
+                document.getElementById('progress-text').innerHTML = 
+                    `Transaction <span style="color: #0033ad;">${currentTxIndex + 1}</span> of ${transactions.length}`;
+                displayTransaction(transactions[currentTxIndex]);
+            } else {
+                showResults();
             }
         };
     }
-
-    // *** KEY CHANGE: Use rewardMinigame instead of updateCrypto ***
-    async function handleContinue() {
-        const continueBtn = document.getElementById('continueBtn');
-        if (!continueBtn) return;
+    
+    async function showResults() {
+        const totalReward = correctAnswers * rewardPerCorrect;
+        const percentage = Math.round((correctAnswers / transactions.length) * 100);
         
-        continueBtn.textContent = 'Saving...';
-        continueBtn.disabled = true;
-        continueBtn.style.background = '#666';
-        continueBtn.style.cursor = 'wait';
-        
-        try {
-            console.log(`[Laundry] Awarding ${rewardAmount} ${COIN_SYMBOL}...`);
-            
-            // *** Use rewardMinigame for Cardano ***
-            await rewardMinigame(MINIGAME_NAME, rewardAmount);
-            console.log(`✅ ${COIN_NAME} added:`, rewardAmount);
-            
-            if (isFirstCompletion) {
-                await completeMinigame(MINIGAME_NAME);
-                console.log('✅ Minigame marked complete');
+        resultsScreen.style.display = 'flex';
+        resultsScreen.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
+                border: 2px solid #0033ad;
+                border-radius: 15px;
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+            ">
+                <h1 style="color: #0033ad; margin: 0 0 20px 0;">VALIDATION COMPLETE</h1>
                 
-                // Code scraps are now purchased from the Closet Shop
-                console.log('💡 Code scraps available at Closet Shop');
+                <div style="font-size: 80px; margin-bottom: 20px;">
+                    ${percentage >= 80 ? '🏆' : percentage >= 50 ? '📋' : '📝'}
+                </div>
+                
+                <div style="background: rgba(0,51,173,0.2); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <div style="color: #888; font-size: 14px; margin-bottom: 5px;">ACCURACY</div>
+                    <div style="color: #0033ad; font-size: 48px; font-weight: bold;">${percentage}%</div>
+                    <div style="color: #888; font-size: 14px;">${correctAnswers} of ${transactions.length} correct</div>
+                </div>
+                
+                <div style="background: rgba(76,175,80,0.2); padding: 15px; border-radius: 10px; margin-bottom: 25px;">
+                    <div style="color: #4CAF50; font-size: 14px;">REWARDS EARNED</div>
+                    <div style="color: #fff; font-size: 32px; font-weight: bold; margin-top: 5px;">
+                        ${totalReward} ${COIN_SYMBOL}
+                    </div>
+                </div>
+                
+                <p style="color: #888; font-size: 13px; margin-bottom: 25px; line-height: 1.6;">
+                    ${percentage >= 80 
+                        ? "Excellent work! You've mastered transaction validation. The blockchain is safer with validators like you!" 
+                        : percentage >= 50 
+                            ? "Good effort! Keep practicing to catch more invalid transactions." 
+                            : "Keep learning! Remember to always check balances, signatures, and watch for double-spends."}
+                </p>
+                
+                <button id="claim-reward-btn" style="
+                    width: 100%;
+                    padding: 15px;
+                    font-size: 18px;
+                    background: linear-gradient(135deg, #0033ad 0%, #001a57 100%);
+                    border: none;
+                    border-radius: 8px;
+                    color: #fff;
+                    cursor: pointer;
+                    font-family: 'Courier New', monospace;
+                    font-weight: bold;
+                ">CLAIM ${totalReward} ${COIN_SYMBOL}</button>
+            </div>
+        `;
+        
+        document.getElementById('claim-reward-btn').onclick = async () => {
+            const btn = document.getElementById('claim-reward-btn');
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+            btn.style.background = '#666';
+            btn.style.cursor = 'wait';
+            
+            try {
+                console.log(`[Laundry] Awarding ${totalReward} ${COIN_SYMBOL}...`);
+                
+                await rewardMinigame(MINIGAME_NAME, totalReward);
+                console.log(`✅ ${COIN_NAME} added:`, totalReward);
+                
+                if (isFirstCompletion) {
+                    await completeMinigame(MINIGAME_NAME);
+                    console.log('✅ Minigame marked complete');
+                }
+                
+                // Refresh leaderboard
+                if (window.GameControl && window.GameControl.leaderboard) {
+                    try {
+                        await window.GameControl.leaderboard.refresh();
+                    } catch (e) {}
+                }
+                
+                btn.textContent = '✅ Saved!';
+                btn.style.background = '#4CAF50';
+                
+                setTimeout(() => {
+                    window.laundryMinigameActive = false;
+                    window.minigameActive = false;
+                    document.body.removeChild(overlay);
+                    if (onComplete) onComplete();
+                }, 800);
+                
+            } catch (error) {
+                console.error('❌ Sync failed:', error);
+                btn.textContent = '⚠️ Error - Closing...';
+                btn.style.background = '#f44336';
+                
+                setTimeout(() => {
+                    window.laundryMinigameActive = false;
+                    window.minigameActive = false;
+                    document.body.removeChild(overlay);
+                    if (onComplete) onComplete();
+                }, 1500);
             }
-            
-            // Refresh leaderboard
-            if (window.GameControl && window.GameControl.leaderboard) {
-                try {
-                    await window.GameControl.leaderboard.refresh();
-                } catch (e) {}
-            }
-            
-            continueBtn.textContent = '✅ Saved!';
-            continueBtn.style.background = '#0033ad';
-            
-            setTimeout(() => {
-                window.laundryMinigameActive = false;
-                window.minigameActive = false;
-                document.body.removeChild(overlay);
-                if (onComplete) onComplete();
-            }, 800);
-            
-        } catch (error) {
-            console.error('❌ Sync failed:', error);
-            continueBtn.textContent = '⚠️ Error - Closing...';
-            continueBtn.style.background = '#ff4444';
-            
-            setTimeout(() => {
-                window.laundryMinigameActive = false;
-                window.minigameActive = false;
-                document.body.removeChild(overlay);
-                try {
-                    if (window.Leaderboard && typeof window.Leaderboard.refresh === 'function') {
-                        window.Leaderboard.refresh();
-                    }
-                } catch(e) {}
-                if (onComplete) onComplete();
-            }, 1500);
-        }
+        };
     }
-
-    overlay.appendChild(container);
-    document.body.appendChild(overlay);
 }
 
 window.showLaundryMinigame = showLaundryMinigame;

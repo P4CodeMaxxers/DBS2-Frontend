@@ -4,7 +4,9 @@
 
 import { rewardMinigame, isMinigameCompleted, completeMinigame } from './StatsManager.js';
 
-const MINIGAME_NAME = 'cryptochecker';
+// Use 'whackarat' as MINIGAME_NAME because backend maps whackarat -> dogecoin
+// The game is called CryptoChecker/Crypto Border Control but uses legacy backend name
+const MINIGAME_NAME = 'whackarat';
 const COIN_NAME = 'Dogecoin';
 const COIN_SYMBOL = 'DOGE';
 

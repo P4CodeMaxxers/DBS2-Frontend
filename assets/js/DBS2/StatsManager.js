@@ -30,6 +30,7 @@ function getAPI() {
 const MINIGAME_COINS = {
     crypto_miner: 'satoshis',
     cryptochecker: 'dogecoin',
+    whackarat: 'dogecoin',  // Backend uses whackarat for dogecoin rewards
     laundry: 'cardano',
     ash_trail: 'solana',
     infinite_user: 'ethereum'

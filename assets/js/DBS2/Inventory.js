@@ -188,7 +188,9 @@ const Inventory = {
                 foundAt.includes(minigame.replace('_', '')) ||
                 itemName.includes(minigame) ||
                 itemName.includes(minigame.replace('_', ' ')) ||
-                itemName.includes(scrap.name.toLowerCase())) {
+                itemName.includes(scrap.name.toLowerCase()) ||
+                // Handle legacy whackarat name mapping to cryptochecker
+                (minigame === 'cryptochecker' && (itemName.includes('whack') || itemName.includes('rat') || foundAt.includes('whack')))) {
                 return {
                     ...scrap,
                     minigame: minigame
@@ -203,7 +205,7 @@ const Inventory = {
             if (itemName.includes('laundry') || itemName.includes('wash') || itemName.includes('transaction') || itemName.includes('validator')) {
                 return { ...CODE_SCRAPS.laundry, minigame: 'laundry' };
             }
-            if (itemName.includes('security') || itemName.includes('checker') || itemName.includes('scam')) {
+            if (itemName.includes('security') || itemName.includes('checker') || itemName.includes('scam') || itemName.includes('whack') || itemName.includes('rat')) {
                 return { ...CODE_SCRAPS.cryptochecker, minigame: 'cryptochecker' };
             }
             if (itemName.includes('ash') || itemName.includes('trail') || itemName.includes('book') || itemName.includes('page') || itemName.includes('backup')) {
