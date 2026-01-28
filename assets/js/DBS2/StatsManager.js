@@ -9,38 +9,20 @@ let DBS2API = null;
 try {
     const module = await import('./DBS2API.js');
     DBS2API = module.default || module;
-    console.log('[StatsManager] DBS2API loaded via import');
 } catch (e) {
-    console.log('[StatsManager] DBS2API import failed, checking window.DBS2API');
-    // Try window.DBS2API as fallback
-    if (typeof window !== 'undefined' && window.DBS2API) {
-        DBS2API = window.DBS2API;
-        console.log('[StatsManager] Using window.DBS2API');
-    } else {
-        console.log('[StatsManager] DBS2API not available, using local storage fallback');
-    }
-}
-
-// Helper to get DBS2API (checks both imported and window versions)
-function getAPI() {
-    return DBS2API || (typeof window !== 'undefined' ? window.DBS2API : null);
+    console.log('DBS2API not available, using local storage fallback');
 }
 
 // Minigame to coin mapping
 const MINIGAME_COINS = {
     crypto_miner: 'satoshis',
-    cryptochecker: 'dogecoin',
-    whackarat: 'dogecoin',  // Backend uses whackarat for dogecoin rewards
+    whackarat: 'dogecoin',
     laundry: 'cardano',
     ash_trail: 'solana',
     infinite_user: 'ethereum'
 };
 
-// Current user ID (set when syncing with backend)
-let currentUserId = null;
-
-// Local state (fallback when API unavailable) - ALWAYS starts empty
-// Backend data takes priority; localStorage is only for offline fallback
+// Local state (fallback when API unavailable)
 let localState = {
     crypto: 0,
     inventory: [],
@@ -56,143 +38,39 @@ let localState = {
     }
 };
 
-// Get user-specific localStorage key
-function getStorageKey() {
-    return currentUserId ? `dbs2_state_${currentUserId}` : 'dbs2_state_anonymous';
-}
-
-// Load local state from localStorage (only for current user)
+// Load local state from localStorage
 function loadLocalState() {
     try {
-        const key = getStorageKey();
-        const saved = localStorage.getItem(key);
+        const saved = localStorage.getItem('dbs2_local_state');
         if (saved) {
-            const parsed = JSON.parse(saved);
-            // Merge with defaults to ensure all fields exist
-            localState = {
-                crypto: parsed.crypto || 0,
-                inventory: parsed.inventory || [],
-                scores: parsed.scores || {},
-                minigames_completed: parsed.minigames_completed || {},
-                wallet: {
-                    satoshis: parsed.wallet?.satoshis || parsed.crypto || 0,
-                    bitcoin: parsed.wallet?.bitcoin || 0,
-                    ethereum: parsed.wallet?.ethereum || 0,
-                    solana: parsed.wallet?.solana || 0,
-                    cardano: parsed.wallet?.cardano || 0,
-                    dogecoin: parsed.wallet?.dogecoin || 0
-                }
-            };
-            console.log(`[StatsManager] Loaded local state for user: ${currentUserId || 'anonymous'}`);
-        }
-    } catch (e) {
-        console.log('[StatsManager] Could not load local state:', e);
-    }
-}
-
-// Save local state to localStorage (user-specific)
-function saveLocalState() {
-    try {
-        const key = getStorageKey();
-        localStorage.setItem(key, JSON.stringify(localState));
-    } catch (e) {
-        console.log('[StatsManager] Could not save local state:', e);
-    }
-}
-
-// Reset local state to defaults (called on user change)
-function resetLocalState() {
-    localState = {
-        crypto: 0,
-        inventory: [],
-        scores: {},
-        minigames_completed: {},
-        wallet: {
-            satoshis: 0,
-            bitcoin: 0,
-            ethereum: 0,
-            solana: 0,
-            cardano: 0,
-            dogecoin: 0
-        }
-    };
-    console.log('[StatsManager] Local state reset to defaults');
-}
-
-/**
- * Initialize StatsManager with current user
- * Should be called on page load or after login
- * @returns {Promise<boolean>} Success
- */
-export async function initializeForUser() {
-    const api = getAPI();
-    try {
-        if (api && api.getPlayer) {
-            const player = await api.getPlayer();
-            if (player && player.user_info) {
-                const newUserId = player.user_info.uid || player.user_info.id;
-                
-                // Check if user changed
-                if (currentUserId !== newUserId) {
-                    console.log(`[StatsManager] User changed: ${currentUserId} -> ${newUserId}`);
-                    currentUserId = newUserId;
-                    resetLocalState();
-                    loadLocalState();
-                }
-                
-                // Sync local state with backend data
-                localState.crypto = player.crypto || player.satoshis || 0;
-                localState.inventory = player.inventory || [];
-                localState.scores = player.scores || {};
-                localState.minigames_completed = {
-                    crypto_miner: player.completed_crypto_miner,
-                    cryptochecker: player.completed_cryptochecker || player.completed_whackarat,
-                    laundry: player.completed_laundry,
-                    ash_trail: player.completed_ash_trail,
-                    infinite_user: player.completed_infinite_user
+            localState = JSON.parse(saved);
+            if (!localState.wallet) {
+                localState.wallet = {
+                    satoshis: localState.crypto || 0,
+                    bitcoin: 0,
+                    ethereum: 0,
+                    solana: 0,
+                    cardano: 0,
+                    dogecoin: 0
                 };
-                
-                // Sync wallet
-                if (player.wallet) {
-                    localState.wallet = {
-                        satoshis: player.wallet.satoshis || player.crypto || 0,
-                        bitcoin: player.wallet.bitcoin || 0,
-                        ethereum: player.wallet.ethereum || 0,
-                        solana: player.wallet.solana || 0,
-                        cardano: player.wallet.cardano || 0,
-                        dogecoin: player.wallet.dogecoin || 0
-                    };
-                }
-                
-                saveLocalState();
-                console.log('[StatsManager] Synced with backend for user:', currentUserId);
-                return true;
             }
         }
     } catch (e) {
-        console.log('[StatsManager] Could not sync with backend:', e);
+        console.log('Could not load local state:', e);
     }
-    return false;
 }
 
-/**
- * Clear all local data (call on logout)
- */
-export function clearLocalData() {
-    console.log('[StatsManager] Clearing local data for logout');
-    // Clear current user's data
+// Save local state to localStorage
+function saveLocalState() {
     try {
-        const key = getStorageKey();
-        localStorage.removeItem(key);
+        localStorage.setItem('dbs2_local_state', JSON.stringify(localState));
     } catch (e) {
-        console.log('[StatsManager] Could not clear localStorage:', e);
+        console.log('Could not save local state:', e);
     }
-    currentUserId = null;
-    resetLocalState();
 }
 
-// Don't auto-load on module init - wait for initializeForUser() call
-// This prevents loading stale data from a previous user;
+// Initialize local state on load
+loadLocalState();
 
 // ==================== WALLET FUNCTIONS ====================
 
@@ -210,27 +88,13 @@ export function getCoinForMinigame(minigame) {
  * @returns {Promise<Object>} Wallet object
  */
 export async function getWallet() {
-    const api = getAPI();
     try {
-        if (api && api.getWallet) {
-            const result = await api.getWallet();
-            // Sync local state with backend data
-            if (result && result.raw_balances) {
-                localState.wallet = {
-                    satoshis: result.raw_balances.satoshis || 0,
-                    bitcoin: result.raw_balances.bitcoin || 0,
-                    ethereum: result.raw_balances.ethereum || 0,
-                    solana: result.raw_balances.solana || 0,
-                    cardano: result.raw_balances.cardano || 0,
-                    dogecoin: result.raw_balances.dogecoin || 0
-                };
-                localState.crypto = localState.wallet.satoshis;
-                saveLocalState();
-            }
+        if (DBS2API && DBS2API.getWallet) {
+            const result = await DBS2API.getWallet();
             return result;
         }
     } catch (e) {
-        console.log('[StatsManager] API getWallet failed, using local:', e);
+        console.log('API getWallet failed, using local:', e);
     }
     return { wallet: localState.wallet, raw_balances: localState.wallet, total_usd: 0 };
 }
@@ -242,20 +106,13 @@ export async function getWallet() {
  * @returns {Promise<Object>} Updated wallet
  */
 export async function addToWallet(coin, amount) {
-    const api = getAPI();
     try {
-        if (api && api.addToWallet) {
-            const result = await api.addToWallet(coin, amount);
-            // Sync local state
-            if (result && result.wallet) {
-                localState.wallet = { ...localState.wallet, ...result.wallet };
-                localState.crypto = localState.wallet.satoshis || 0;
-                saveLocalState();
-            }
+        if (DBS2API && DBS2API.addToWallet) {
+            const result = await DBS2API.addToWallet(coin, amount);
             return result;
         }
     } catch (e) {
-        console.log('[StatsManager] API addToWallet failed, using local:', e);
+        console.log('API addToWallet failed, using local:', e);
     }
     // Local fallback
     if (coin in localState.wallet) {
@@ -451,19 +308,13 @@ export async function getAllPrices() {
  * @returns {Promise<Array>} Inventory items
  */
 export async function getInventory() {
-    const api = getAPI();
     try {
-        if (api && api.getInventory) {
-            const result = await api.getInventory();
-            const inventory = result.inventory || [];
-            // Sync local state with backend
-            localState.inventory = inventory;
-            saveLocalState();
-            console.log('[StatsManager] getInventory synced from backend:', inventory.length, 'items');
-            return inventory;
+        if (DBS2API && DBS2API.getInventory) {
+            const result = await DBS2API.getInventory();
+            return result.inventory || [];
         }
     } catch (e) {
-        console.log('[StatsManager] API getInventory failed, using local:', e);
+        console.log('API getInventory failed, using local:', e);
     }
     return localState.inventory;
 }
@@ -478,17 +329,13 @@ export async function addInventoryItem(item) {
         ? { name: item, found_at: 'unknown', timestamp: new Date().toISOString() }
         : item;
     
-    const api = getAPI();
     try {
-        if (api && api.addInventoryItem) {
-            const result = await api.addInventoryItem(itemObj);
-            const inventory = result.inventory || [];
-            localState.inventory = inventory;
-            saveLocalState();
-            return inventory;
+        if (DBS2API && DBS2API.addInventoryItem) {
+            const result = await DBS2API.addInventoryItem(itemObj);
+            return result.inventory || [];
         }
     } catch (e) {
-        console.log('[StatsManager] API addInventoryItem failed, using local:', e);
+        console.log('API addInventoryItem failed, using local:', e);
     }
     // Local fallback
     const exists = localState.inventory.some(i => 
@@ -538,76 +385,40 @@ export async function hasItem(item) {
 
 /**
  * Purchase an item from the shop
- * The backend /shop/purchase endpoint handles:
- * 1. Balance checking
- * 2. Coin deduction  
- * 3. Adding item to inventory
  * @param {string} itemId - Shop item ID
  * @param {Object} item - Item data
  * @returns {Promise<Object>} Purchase result
  */
 export async function purchaseShopItem(itemId, item) {
-    const coin = item.price.coin;
-    const amount = item.price.amount;
-    const api = getAPI();
-    
-    console.log(`[Shop] Attempting purchase: ${itemId} for ${amount} ${coin}`);
-    console.log(`[Shop] API available:`, !!api);
-    
     try {
-        // Try API first - backend handles everything
-        if (api && api.purchaseShopItem) {
-            console.log('[Shop] Using DBS2API.purchaseShopItem');
-            const result = await api.purchaseShopItem(itemId, item);
-            
-            if (result && result.success) {
-                console.log('[Shop] Purchase successful via API');
-                // Refresh local state from backend
-                await getWallet();
-                await getInventory();
-                return result;
-            } else {
-                console.log('[Shop] API purchase failed:', result?.error);
-                return result || { success: false, error: 'Purchase failed' };
-            }
+        // Call the backend shop purchase API directly
+        const { pythonURI, fetchOptions } = await import('../api/config.js');
+        
+        const response = await fetch(`${pythonURI}/api/dbs2/shop/purchase`, {
+            ...fetchOptions,
+            method: 'POST',
+            headers: {
+                ...fetchOptions.headers,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ item_id: itemId })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            console.log('[Shop] Purchase successful:', result);
+            return { success: true, ...result };
+        } else {
+            console.log('[Shop] Purchase failed:', result);
+            return { success: false, error: result.error || 'Purchase failed' };
         }
-        
-        // Local fallback when API not available (offline mode)
-        console.log('[Shop] Using local storage fallback');
-        const currentBalance = localState.wallet[coin] || 0;
-        
-        if (currentBalance < amount) {
-            return { success: false, error: 'Insufficient funds' };
-        }
-        
-        // Deduct from local wallet
-        localState.wallet[coin] = currentBalance - amount;
-        
-        // Add to local inventory if it's a code scrap
-        if (item.type === 'code_scrap') {
-            const inventoryNameMap = {
-                'scrap_crypto_miner': 'Mining Algorithm Code Scrap',
-                'scrap_laundry': 'Transaction Ledger Code Scrap',
-                'scrap_whackarat': 'Security Keys Code Scrap',
-                'scrap_ash_trail': 'Backup Documentation Code Scrap',
-                'scrap_infinite_user': 'Master Password List Code Scrap'
-            };
-            
-            const inventoryName = inventoryNameMap[itemId] || item.name;
-            localState.inventory.push({
-                name: inventoryName,
-                found_at: 'Closet Shop',
-                timestamp: new Date().toISOString()
-            });
-        }
-        
-        saveLocalState();
-        console.log('[Shop] Local purchase successful');
-        return { success: true };
-        
     } catch (e) {
-        console.error('[Shop] Purchase error:', e);
-        return { success: false, error: e.message || 'Purchase failed' };
+        console.error('[Shop] API purchase error:', e);
+        return { 
+            success: false, 
+            error: 'Shop connection failed. Please try again.' 
+        };
     }
 }
 
@@ -742,13 +553,23 @@ export async function completeMinigame(minigameName) {
  */
 export async function getPlayerData() {
     try {
-        if (DBS2API && DBS2API.getPlayer) {
-            return await DBS2API.getPlayer();
+        // Directly call the backend player API
+        const { pythonURI, fetchOptions } = await import('../api/config.js');
+        const response = await fetch(`${pythonURI}/api/dbs2/player`, fetchOptions);
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data;
         }
     } catch (e) {
         console.log('API getPlayer failed, using local:', e);
     }
     return localState;
+}
+
+// Alias for getPlayerData
+export async function getPlayer() {
+    return await getPlayerData();
 }
 
 /**
@@ -845,6 +666,7 @@ export default {
     isMinigameCompleted,
     completeMinigame,
     // Player
+    getPlayer,
     getPlayerData,
     syncWithServer
 };

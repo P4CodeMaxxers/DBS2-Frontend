@@ -62,6 +62,7 @@ const CODE_SCRAPS = {
 const Inventory = {
     slots: 10,
     items: [],
+    scrapsOwned: {},  // Track scrap ownership from backend scrap_* fields
     isOpen: false,
     isLoading: false,
     baseImagePath: '',
@@ -106,21 +107,43 @@ const Inventory = {
         this.updateLoadingState();
         
         try {
+            // Load scrap ownership from player data (scrap_* fields)
+            await this.loadScrapsOwned();
+            
+            // Also load regular inventory items
             const inventory = await getInventory();
             console.log('[Inventory] Loaded from backend:', inventory);
             
             this.items = [];
+            
+            // First, add scraps from scrapsOwned (the new system)
+            for (const [minigame, owned] of Object.entries(this.scrapsOwned)) {
+                if (owned && CODE_SCRAPS[minigame]) {
+                    this.items.push({
+                        ...CODE_SCRAPS[minigame],
+                        minigame: minigame,
+                        raw: { name: CODE_SCRAPS[minigame].name, found_at: 'Closet Shop' }
+                    });
+                }
+            }
+            
+            // Then add any other inventory items (non-scraps)
             if (Array.isArray(inventory) && inventory.length > 0) {
                 for (const item of inventory) {
                     if (!item) continue;
                     
                     try {
                         const scrapInfo = this.getCodeScrapInfo(item);
+                        // Skip if it's a code scrap - we already added from scrapsOwned
                         if (scrapInfo) {
-                            this.items.push({
-                                ...scrapInfo,
-                                raw: item
-                            });
+                            // Check if we already have this scrap from scrapsOwned
+                            const alreadyHave = this.items.some(i => i.minigame === scrapInfo.minigame);
+                            if (!alreadyHave) {
+                                this.items.push({
+                                    ...scrapInfo,
+                                    raw: item
+                                });
+                            }
                         } else {
                             let name = 'Unknown Item';
                             if (typeof item === 'string') {
@@ -160,6 +183,34 @@ const Inventory = {
         this.isLoading = false;
         this.updateLoadingState();
     },
+    
+    async loadScrapsOwned() {
+        try {
+            // Fetch player data which includes scrap_* fields
+            const { pythonURI, fetchOptions } = await import('../api/config.js');
+            const response = await fetch(`${pythonURI}/api/dbs2/player`, fetchOptions);
+            
+            if (response.ok) {
+                const playerData = await response.json();
+                console.log('[Inventory] Loaded player data for scraps:', playerData);
+                
+                // Map backend scrap_* fields to our scrapsOwned object
+                this.scrapsOwned = {
+                    crypto_miner: playerData.scrap_crypto_miner || false,
+                    laundry: playerData.scrap_laundry || false,
+                    cryptochecker: playerData.scrap_whackarat || false,  // Map whackarat to cryptochecker
+                    whackarat: playerData.scrap_whackarat || false,
+                    ash_trail: playerData.scrap_ash_trail || false,
+                    infinite_user: playerData.scrap_infinite_user || false
+                };
+                
+                console.log('[Inventory] Scraps owned:', this.scrapsOwned);
+            }
+        } catch (e) {
+            console.error('[Inventory] Failed to load scraps owned:', e);
+            this.scrapsOwned = {};
+        }
+    },
 
     getCodeScrapInfo(item) {
         if (!item) return null;
@@ -188,9 +239,7 @@ const Inventory = {
                 foundAt.includes(minigame.replace('_', '')) ||
                 itemName.includes(minigame) ||
                 itemName.includes(minigame.replace('_', ' ')) ||
-                itemName.includes(scrap.name.toLowerCase()) ||
-                // Handle legacy whackarat name mapping to cryptochecker
-                (minigame === 'cryptochecker' && (itemName.includes('whack') || itemName.includes('rat') || foundAt.includes('whack')))) {
+                itemName.includes(scrap.name.toLowerCase())) {
                 return {
                     ...scrap,
                     minigame: minigame
@@ -205,7 +254,7 @@ const Inventory = {
             if (itemName.includes('laundry') || itemName.includes('wash') || itemName.includes('transaction') || itemName.includes('validator')) {
                 return { ...CODE_SCRAPS.laundry, minigame: 'laundry' };
             }
-            if (itemName.includes('security') || itemName.includes('checker') || itemName.includes('scam') || itemName.includes('whack') || itemName.includes('rat')) {
+            if (itemName.includes('security') || itemName.includes('checker') || itemName.includes('scam')) {
                 return { ...CODE_SCRAPS.cryptochecker, minigame: 'cryptochecker' };
             }
             if (itemName.includes('ash') || itemName.includes('trail') || itemName.includes('book') || itemName.includes('page') || itemName.includes('backup')) {
@@ -226,6 +275,18 @@ const Inventory = {
 
     getCollectedMinigames() {
         const collected = new Set();
+        
+        // First check scrapsOwned (new system - scrap_* fields)
+        for (const [minigame, owned] of Object.entries(this.scrapsOwned || {})) {
+            if (owned) {
+                collected.add(minigame);
+                // Also add alternate name for cryptochecker/whackarat
+                if (minigame === 'whackarat') collected.add('cryptochecker');
+                if (minigame === 'cryptochecker') collected.add('whackarat');
+            }
+        }
+        
+        // Also check items array for backwards compatibility
         for (const item of this.items) {
             if (item.minigame) {
                 collected.add(item.minigame);
