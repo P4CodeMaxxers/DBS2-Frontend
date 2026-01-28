@@ -31,14 +31,14 @@ const SHOP_ITEMS = {
         description: 'A soggy, barely legible page with transaction validation formulas.',
         unlockMessage: 'Code scrap added to inventory!'
     },
-    code_scrap_whackarat: {
-        id: 'code_scrap_whackarat',
+    code_scrap_cryptochecker: {
+        id: 'code_scrap_cryptochecker',
         name: 'Security Keys Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapRats.png',
         price: { coin: 'dogecoin', amount: 100 },
-        description: 'A chewed and torn page with bite marks. Security protocol keys written here.',
+        description: 'A document with security protocol keys. Teaches scam detection and crypto safety.',
         unlockMessage: 'Code scrap added to inventory!'
     },
     code_scrap_ash_trail: {
@@ -576,4 +576,3 @@ export default {
     closeShop,
     SHOP_ITEMS
 };
-

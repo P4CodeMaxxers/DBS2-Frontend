@@ -16,7 +16,7 @@ try {
 // Minigame to coin mapping
 const MINIGAME_COINS = {
     crypto_miner: 'satoshis',
-    whackarat: 'dogecoin',
+    cryptochecker: 'dogecoin',
     laundry: 'cardano',
     ash_trail: 'solana',
     infinite_user: 'ethereum'
@@ -400,7 +400,7 @@ export async function purchaseShopItem(itemId, item) {
                 const inventoryNameMap = {
                     'code_scrap_crypto_miner': 'Code Scrap: Crypto Miner',
                     'code_scrap_laundry': 'Code Scrap: Laundry',
-                    'code_scrap_whackarat': 'Code Scrap: Whack-a-Rat',
+                    'code_scrap_cryptochecker': 'Code Scrap: Security Protocol',
                     'code_scrap_ash_trail': 'Code Scrap: Ash Trail',
                     'code_scrap_infinite_user': 'Code Scrap: Infinite User'
                 };

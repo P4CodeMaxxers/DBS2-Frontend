@@ -1,19 +1,21 @@
 // GameLevelBasement.js
+// Story: The Green Machine - IShowGreen's ethical crypto mining program
+// Player learns blockchain concepts through minigames, earns crypto, buys code scraps
+
 import GameEnv from './GameEnv.js';
 import Background from './Background.js';
 import Player from './Player.js';
 import Npc from './Npc.js';
-import startWhackGame from './whackarat.js';
 
 /**
  * GameLevelBasement
  * - All asset paths use `${path}/images/DBS2/...`
- * - SodaCan NPC replaces ShellNpc1 and launches Whackarat minigame
- * - Cards NPC launches Crypto Checker minigame (positioned right beside SodaCan)
+ * - Cards NPC launches Crypto Checker minigame (security training)
+ * - Each NPC teaches a different aspect of blockchain/crypto
  */
 class GameLevelBasement {
   constructor(path = '') {
-    // path should be the base path for assets (e.g. '' or '/DBS2-Frontend' or location of site)
+    // path should be the base path for assets (e.g. '' or '/DBS2-Frontend')
     this.path = path;
 
     // Responsive dimensions provided by GameEnv.create()
@@ -25,7 +27,7 @@ class GameLevelBasement {
     ------------------------*/
     const image_data_basement = {
       name: 'basement',
-      greeting: "IShowGreen has locked you in his discord mod basement. Earn enough Crypto to escape.",
+      greeting: "IShowGreen's basement workshop. Screens flicker with blockchain data. Learn, earn, and build The Green Machine.",
       src: `${this.path}/images/DBS2/basement.png`,
       pixels: { height: 580, width: 1038 }
     };
@@ -35,8 +37,8 @@ class GameLevelBasement {
     ------------------------*/
     const CHILLGUY_SCALE_FACTOR = 5;
     const sprite_data_chillguy = {
-      id: 'player', // Note: GameLevel expects the player id to be "player" in some places
-      greeting: "I am Chill Guy, the desert wanderer. I am looking for wisdom and adventure!",
+      id: 'player',
+      greeting: "I'm here to learn about ethical crypto mining and help build The Green Machine!",
       src: `${this.path}/images/DBS2/chillguy.png`,
       SCALE_FACTOR: CHILLGUY_SCALE_FACTOR,
       STEP_FACTOR: 1000,
@@ -55,11 +57,14 @@ class GameLevelBasement {
     };
 
     /* ----------------------
-       NPCs
+       NPCs - Each teaches a blockchain concept
     ------------------------*/
+    
+    // Computer1 - Password Terminal (Infinite User minigame)
+    // Teaches: Wallet security and authentication
     const sprite_data_computer1 = {
       id: 'Computer1',
-      greeting: "PASSWORD REQUIRED. DECRYPTION SEQUENCE: ACTIVATED.",
+      greeting: "AUTHENTICATION TERMINAL. Learn how password encryption protects crypto wallets.",
       src: `${this.path}/images/DBS2/computer1.png`,
       SCALE_FACTOR: 8,
       ANIMATION_RATE: 8,
@@ -70,15 +75,11 @@ class GameLevelBasement {
       hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 }
     };
 
+    // Computer2 - Mining Terminal (Crypto Miner minigame)
+    // Teaches: Proof of Work and hash functions
     const sprite_data_computer2 = {
       id: 'Computer2',
-      greeting: [
-        "$list$",
-        "Hi, I am Computer2! I am the GitHub code guardian.",
-        "Wait, you're not IShowGreen? Finally, someone with proper sanitation!",
-        "Psst! Don't tell him I keep deleting his NFTs...",
-        "Finally, someone without Dorito dust on their fingers."
-      ],
+      greeting: "MINING TERMINAL. Learn how proof-of-work consensus actually works.",
       src: `${this.path}/images/DBS2/computer2.png`,
       SCALE_FACTOR: 8,
       ANIMATION_RATE: 12,
@@ -89,14 +90,15 @@ class GameLevelBasement {
       hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 }
     };
 
+    // IShowGreen - The mentor NPC
     const sprite_data_ishowgreen = {
       id: 'IShowGreen',
       greeting: [
         "$list$",
-        "Crypto... bLOcKcHaIn...",
-        "EW, WHAT IS THAT SMELL? ... SHAMPOO?!",
-        "Get out of my room unless you're buying my meme coin!",
-        "Don't give me water... I HATE the taste!"
+        "Welcome! I am IShowGreen. I want to mine crypto the RIGHT way.",
+        "Complete the minigames to learn about blockchain technology.",
+        "Earn crypto and buy code scraps from the CLOSET.",
+        "Together, we'll build The Green Machine - ethical crypto mining!"
       ],
       src: `${this.path}/images/DBS2/ishowgreen.png`,
       SCALE_FACTOR: 4,
@@ -109,43 +111,29 @@ class GameLevelBasement {
     };
 
     /* ----------------------
-       SODA CAN (NPC) - Launches Whackarat
-    ------------------------*/
-    const sprite_data_sodacan = {
-      id: 'SodaCan',
-      greeting: 'Whack some rats! DONT EVEN THINK OF TOUCHING MY CANS!!!',
-      src: `${this.path}/images/DBS2/sodacan.png`,
-      SCALE_FACTOR: 8,
-      ANIMATION_RATE: 0,
-      pixels: { height: 1000, width: 750 },
-      INIT_POSITION: { x: width * 1 / 12, y: height * 0.6 },
-      orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
-      stationary: true
-    };
-
-    /* ----------------------
-       CARDS (NPC) - Launches Crypto Checker
-       Positioned to the RIGHT of the soda can (further away to avoid overlap)
+       CARDS (NPC) - Launches Crypto Checker minigame
+       Teaches: Identifying scams vs legitimate crypto
+       Sprite: 213x237 with 4 frames = 852 total width
     ------------------------*/
     const sprite_data_cards = {
       id: 'Cards',
-      greeting: 'Test your crypto knowledge! Approve legit coins, reject scams!',
+      greeting: 'SECURITY CHECKPOINT. Learn to identify crypto scams vs legitimate technology!',
       src: `${this.path}/images/DBS2/cards.png`,
-      SCALE_FACTOR: 10,
-      ANIMATION_RATE: 0,
-      pixels: { height: 600, width: 600 },
-      INIT_POSITION: { x: width * 1 / 12 + width * 0.15, y: height * 0.62 }, // Moved further right
-      orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
+      SCALE_FACTOR: 8,
+      ANIMATION_RATE: 24,
+      pixels: { height: 237, width: 213 },  // 213*4 = 852
+      INIT_POSITION: { x: width * 1 / 12, y: height * 0.6 },
+      orientation: { rows: 2, columns: 2 },
+      down: { row: 0, start: 0, columns: 2 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
       stationary: true
     };
 
-    const sprite_data_shell2 = {
+    // Laundry Machine - Transaction Validator minigame
+    // Teaches: Transaction validation and verification
+    const sprite_data_laundry = {
       id: 'laundry',
-      greeting: 'Fix the laundry machine!',
+      greeting: 'TRANSACTION VALIDATOR. Learn how transactions are cleaned and verified!',
       src: `${this.path}/images/DBS2/broken-washing-machine-jpeg.jpg`,
       SCALE_FACTOR: 5,
       ANIMATION_RATE: 0,
@@ -157,9 +145,11 @@ class GameLevelBasement {
       stationary: true
     };
 
+    // Bookshelf - Ash Trail minigame
+    // Teaches: Blockchain verification and audit trails
     const sprite_data_bookshelf = {
       id: 'Bookshelf',
-      greeting: 'A bookshelf filled with coding books and references.',
+      greeting: 'BLOCKCHAIN ARCHIVE. Trace the transaction trails and verify the chain!',
       src: `${this.path}/images/DBS2/Tracethepage.png`,
       SCALE_FACTOR: 3,
       ANIMATION_RATE: 0,
@@ -171,9 +161,10 @@ class GameLevelBasement {
       stationary: true
     };
 
+    // Closet - Shop to buy code scraps
     const sprite_data_closet = {
       id: 'Closet',
-      greeting: 'Browse and purchase items from the closet shop!',
+      greeting: 'THE CLOSET SHOP. Buy code scraps with your earned crypto to build The Green Machine!',
       src: `${this.path}/images/DBS2/closet.png`,
       SCALE_FACTOR: 8,
       ANIMATION_RATE: 0,
@@ -192,9 +183,8 @@ class GameLevelBasement {
       { class: Npc, data: sprite_data_computer1 },
       { class: Npc, data: sprite_data_computer2 },
       { class: Npc, data: sprite_data_ishowgreen },
-      { class: Npc, data: sprite_data_sodacan }, // Monster can - launches Whackarat
-      { class: Npc, data: sprite_data_cards },   // Cards - launches Crypto Checker (RIGHT BESIDE soda can)
-      { class: Npc, data: sprite_data_shell2 },
+      { class: Npc, data: sprite_data_cards },      // Cards - launches Crypto Checker
+      { class: Npc, data: sprite_data_laundry },
       { class: Npc, data: sprite_data_bookshelf },
       { class: Npc, data: sprite_data_closet },
     ];

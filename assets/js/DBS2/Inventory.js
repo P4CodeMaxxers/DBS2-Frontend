@@ -17,45 +17,45 @@ const CODE_SCRAPS = {
         name: 'Mining Algorithm',
         icon: 'PAGE',
         image: 'codescrapCrypto.png',
-        description: 'A crumpled page covered in dense handwritten code. The mining algorithm that powered The Green Machine. IShowGreen wrote it during a mass power outage when he couldnt use his computer. He typed it in later but lost the original page behind the terminal.',
-        hint: 'Check behind the mining terminal.',
-        storyFragment: '"I wrote the whole algorithm by hand during the blackout. Twelve pages. This was the most important one." - Journal Entry #47'
+        description: 'The core hash algorithm for The Green Machine. IShowGreen designed it to mine efficiently using minimal energy. This fragment teaches how proof-of-work consensus actually works - finding valid hashes through computational effort.',
+        hint: 'Learn mining by completing the Crypto Miner challenge.',
+        storyFragment: '"Mining doesn\'t have to waste energy. This algorithm proves it. Every hash matters." - IShowGreen'
     },
     laundry: {
         id: 'laundry',
         name: 'Transaction Ledger',
         icon: 'PAGE',
         image: 'codescrapLaundry.png', 
-        description: 'A soggy, barely legible page. The transaction validation formulas were written on this paper. IShowGreen left it in his pants pocket and threw them in the wash. The ink ran but the code is still readable if you squint.',
-        hint: 'Something paper is stuck in the washing machine drum.',
-        storyFragment: '"I keep important notes in my pockets. I also never check my pockets before doing laundry. You can see the problem." - Journal Entry #62'
+        description: 'The transaction validation module. IShowGreen wrote this to ensure all transactions are clean and legitimate. No shady business - just pure, ethical blockchain operations.',
+        hint: 'Learn about transaction flow in the Laundry challenge.',
+        storyFragment: '"Clean code, clean transactions, clean conscience. That\'s the green way." - IShowGreen'
     },
-    whackarat: {
-        id: 'whackarat',
-        name: 'Security Keys',
+    cryptochecker: {
+        id: 'cryptochecker',
+        name: 'Security Protocol',
         icon: 'PAGE',
         image: 'codescrapRats.png',
-        description: 'A chewed and torn page with bite marks all over it. The security protocol keys were written here. IShowGreen hid it in a crack in the wall. The rats found it and shredded half of it for their nest. What remains is still usable.',
-        hint: 'The rats took paper into the walls. Get it back.',
-        storyFragment: '"I hid it where no one would look. The rats looked. They ate the corners but the important parts survived." - Journal Entry #78'
+        description: 'The security layer that protects The Green Machine from scammers. IShowGreen knew that ethical mining means knowing how to identify fraud - protecting users from scams and rug pulls.',
+        hint: 'Learn about scam detection in the Crypto Checker challenge.',
+        storyFragment: '"Scammers are everywhere in crypto. This code teaches you to spot them." - IShowGreen'
     },
     ash_trail: {
         id: 'ash_trail',
-        name: 'Backup Documentation',
+        name: 'Blockchain Verifier',
         icon: 'PAGE',
         image: 'codescrapPages.png',
-        description: 'A charred page with burned edges. IShowGreen printed his backup codes and recovery keys on paper for safekeeping. A candle fell on the bookshelf. Most of the pages burned but this one only lost the margins.',
-        hint: 'Trace the burned pages on the bookshelf.',
-        storyFragment: '"Paper cant be hacked, I said. Paper is safe, I said. Paper burns, I learned." - Journal Entry #91'
+        description: 'The audit trail module. Every transaction leaves a trace. IShowGreen built this to ensure full transparency - anyone can verify that The Green Machine operates honestly.',
+        hint: 'Learn about blockchain trails in the Ash Trail challenge.',
+        storyFragment: '"Transparency is trust. Every transaction traceable. That\'s how you do crypto right." - IShowGreen'
     },
     infinite_user: {
         id: 'infinite_user',
-        name: 'Master Password List',
+        name: 'Authentication Module',
         icon: 'PAGE',
         image: 'codescrapPassword.png',
-        description: 'A faded page with a list of passwords and authentication codes. IShowGreen wrote them down so he wouldnt forget. Then he forgot where he put the paper. It was wedged behind the keyboard the whole time.',
-        hint: 'The password terminal might have something stuck behind it.',
-        storyFragment: '"I wrote down every password so I would never be locked out. Then I lost the paper. I was locked out for three months." - Journal Entry #103'
+        description: 'The wallet security system. Strong passwords, proper authentication - IShowGreen made sure The Green Machine protects its users\' assets with unbreakable security.',
+        hint: 'Learn about password security in the Infinite User challenge.',
+        storyFragment: '"Your keys, your crypto. This module makes sure only YOU can access your wallet." - IShowGreen'
     }
 };
 
@@ -203,8 +203,8 @@ const Inventory = {
             if (itemName.includes('laundry') || itemName.includes('wash') || itemName.includes('transaction') || itemName.includes('validator')) {
                 return { ...CODE_SCRAPS.laundry, minigame: 'laundry' };
             }
-            if (itemName.includes('rat') || itemName.includes('whack') || itemName.includes('security')) {
-                return { ...CODE_SCRAPS.whackarat, minigame: 'whackarat' };
+            if (itemName.includes('security') || itemName.includes('checker') || itemName.includes('scam')) {
+                return { ...CODE_SCRAPS.cryptochecker, minigame: 'cryptochecker' };
             }
             if (itemName.includes('ash') || itemName.includes('trail') || itemName.includes('book') || itemName.includes('page') || itemName.includes('backup')) {
                 return { ...CODE_SCRAPS.ash_trail, minigame: 'ash_trail' };
@@ -666,25 +666,13 @@ const Inventory = {
                 <div class="wallet-coins" id="wallet-coins">
                     <div style="color: #666; text-align: center; padding: 10px;">Loading wallet...</div>
                 </div>
-                <div class="wallet-convert" id="wallet-convert">
-                    <div class="convert-title">💰 Convert Coins</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                        <div>
-                            <label style="display: block; color: #888; font-size: 11px; margin-bottom: 4px;">FROM</label>
-                            <select id="convert-from-coin" class="convert-select">
-                                <option value="">Select coin...</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display: block; color: #888; font-size: 11px; margin-bottom: 4px;">TO</label>
-                            <select id="convert-to-coin" class="convert-select">
-                                <option value="">Select coin...</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="wallet-convert" id="wallet-convert" style="display: none;">
+                    <div class="convert-title">Convert to Satoshis</div>
+                    <select id="convert-coin" class="convert-select">
+                        <option value="">Select coin...</option>
+                    </select>
                     <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="0.0001" min="0">
-                    <div id="convert-preview" style="font-size: 12px; color: #888; margin: 8px 0; min-height: 16px; text-align: center;"></div>
-                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertCoins()">CONVERT (5% fee)</button>
+                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertToSats()">CONVERT (5% fee)</button>
                     <div id="convert-result" class="convert-result"></div>
                 </div>
             </div>
@@ -743,7 +731,7 @@ const Inventory = {
         const text = document.getElementById('progress-text');
         
         if (icons) {
-            const order = ['crypto_miner', 'laundry', 'whackarat', 'ash_trail', 'infinite_user'];
+            const order = ['crypto_miner', 'laundry', 'cryptochecker', 'ash_trail', 'infinite_user'];
             icons.innerHTML = order.map(m => {
                 return collected.has(m) ? '[X]' : '[ ]';
             }).join(' ');
@@ -848,10 +836,20 @@ const Inventory = {
 
     async loadWallet() {
         try {
-            const [walletResult, pricesResult] = await Promise.all([
-                getWallet(),
-                getPrices()
-            ]);
+            // Try DBS2API directly first
+            let walletResult, pricesResult;
+            
+            if (window.DBS2API) {
+                [walletResult, pricesResult] = await Promise.all([
+                    window.DBS2API.getWallet(),
+                    window.DBS2API.getPrices()
+                ]);
+            } else {
+                [walletResult, pricesResult] = await Promise.all([
+                    getWallet(),
+                    getPrices()
+                ]);
+            }
             
             this.walletData = walletResult;
             this.pricesData = pricesResult?.prices || {};
@@ -870,8 +868,7 @@ const Inventory = {
         const coinsEl = document.getElementById('wallet-coins');
         const totalEl = document.getElementById('wallet-total');
         const convertSection = document.getElementById('wallet-convert');
-        const convertFromSelect = document.getElementById('convert-from-coin');
-        const convertToSelect = document.getElementById('convert-to-coin');
+        const convertSelect = document.getElementById('convert-coin');
         
         if (!coinsEl || !this.walletData) return;
         
@@ -883,8 +880,8 @@ const Inventory = {
         }
         
         let html = '';
-        let fromOptions = '<option value="">Select coin...</option>';
-        let toOptions = '<option value="">Select coin...</option>';
+        let hasConvertibleCoins = false;
+        let selectOptions = '<option value="">Select coin...</option>';
         
         for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
             const balance = wallet[coinId] || 0;
@@ -907,31 +904,21 @@ const Inventory = {
                 </div>
             `;
             
-            // Add to FROM select if has balance
-            if (balance > 0) {
-                fromOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+            // Add to select if has balance and not satoshis
+            if (balance > 0 && coinId !== 'satoshis') {
+                hasConvertibleCoins = true;
+                selectOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
             }
-            
-            // Add all coins to TO select
-            toOptions += `<option value="${coinId}">${config.symbol}</option>`;
         }
         
         coinsEl.innerHTML = html;
         
-        // Update convert selects
-        if (convertFromSelect) {
-            convertFromSelect.innerHTML = fromOptions;
-            convertFromSelect.onchange = () => this.updateConvertPreview();
+        // Show/hide convert section
+        if (convertSection) {
+            convertSection.style.display = hasConvertibleCoins ? 'block' : 'none';
         }
-        if (convertToSelect) {
-            convertToSelect.innerHTML = toOptions;
-            convertToSelect.onchange = () => this.updateConvertPreview();
-        }
-        
-        // Add listener to amount input
-        const amountInput = document.getElementById('convert-amount');
-        if (amountInput) {
-            amountInput.oninput = () => this.updateConvertPreview();
+        if (convertSelect) {
+            convertSelect.innerHTML = selectOptions;
         }
     },
 
@@ -951,91 +938,33 @@ const Inventory = {
         });
         event.currentTarget?.classList.add('selected');
         
-        // Populate convert fields
-        const fromSelect = document.getElementById('convert-from-coin');
-        const amountInput = document.getElementById('convert-amount');
-        
-        if (fromSelect) {
-            fromSelect.value = coinId;
-        }
-        if (amountInput && this.walletData?.raw_balances) {
-            amountInput.value = this.walletData.raw_balances[coinId] || '';
-        }
-        
-        this.updateConvertPreview();
-    },
-    
-    updateConvertPreview() {
-        const fromSelect = document.getElementById('convert-from-coin');
-        const toSelect = document.getElementById('convert-to-coin');
-        const amountInput = document.getElementById('convert-amount');
-        const previewDiv = document.getElementById('convert-preview');
-        
-        if (!fromSelect || !toSelect || !amountInput || !previewDiv) return;
-        
-        const fromCoin = fromSelect.value;
-        const toCoin = toSelect.value;
-        const amount = parseFloat(amountInput.value || 0);
-        
-        if (!fromCoin || !toCoin || fromCoin === toCoin || amount <= 0) {
-            previewDiv.textContent = '';
-            return;
-        }
-        
-        // Calculate preview using prices
-        const fromPrice = this.pricesData[fromCoin]?.price_usd || 0;
-        const toPrice = this.pricesData[toCoin]?.price_usd || 0;
-        
-        if (fromPrice > 0 && toPrice > 0) {
-            // Calculate: amount * from_price / to_price * 0.95 (5% fee)
-            const usdValue = amount * fromPrice;
-            const receivedUsd = usdValue * 0.95; // 5% fee
-            const receivedAmount = receivedUsd / toPrice;
+        // If not satoshis, populate convert fields
+        if (coinId !== 'satoshis') {
+            const select = document.getElementById('convert-coin');
+            const amountInput = document.getElementById('convert-amount');
             
-            const fromConfig = this.COIN_CONFIG[fromCoin];
-            const toConfig = this.COIN_CONFIG[toCoin];
-            
-            previewDiv.innerHTML = `
-                <span style="color: #888;">≈ </span>
-                <span style="color: #fa0; font-weight: bold;">${this.formatBalance(receivedAmount, toConfig.decimals)} ${toConfig.symbol}</span>
-                <span style="color: #666; font-size: 11px;"> (after 5% fee)</span>
-            `;
-        } else {
-            previewDiv.textContent = 'Loading exchange rates...';
+            if (select) {
+                select.value = coinId;
+            }
+            if (amountInput && this.walletData?.raw_balances) {
+                amountInput.value = this.walletData.raw_balances[coinId] || '';
+            }
         }
     },
 
-    async convertCoins() {
-        const fromSelect = document.getElementById('convert-from-coin');
-        const toSelect = document.getElementById('convert-to-coin');
+    async convertToSats() {
+        const coinSelect = document.getElementById('convert-coin');
         const amountInput = document.getElementById('convert-amount');
         const resultDiv = document.getElementById('convert-result');
         const btn = document.getElementById('convert-btn');
         
-        const fromCoin = fromSelect?.value;
-        const toCoin = toSelect?.value;
+        const coinId = coinSelect?.value;
         const amount = parseFloat(amountInput?.value || 0);
         
-        if (!fromCoin) {
+        if (!coinId) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Select source coin';
-            }
-            return;
-        }
-        
-        if (!toCoin) {
-            if (resultDiv) {
-                resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Select target coin';
-            }
-            return;
-        }
-        
-        if (fromCoin === toCoin) {
-            if (resultDiv) {
-                resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Cannot convert to same coin';
+                resultDiv.textContent = 'Select a coin to convert';
             }
             return;
         }
@@ -1049,7 +978,7 @@ const Inventory = {
         }
         
         // Check balance
-        const balance = this.walletData?.raw_balances?.[fromCoin] || 0;
+        const balance = this.walletData?.raw_balances?.[coinId] || 0;
         if (amount > balance) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
@@ -1069,15 +998,18 @@ const Inventory = {
         }
         
         try {
-            const result = await convertCoin(fromCoin, toCoin, amount);
+            // Try DBS2API directly first, then fall back to StatsManager
+            let result;
+            if (window.DBS2API && window.DBS2API.convertCoin) {
+                result = await window.DBS2API.convertCoin(coinId, 'satoshis', amount);
+            } else {
+                result = await convertCoin(coinId, 'satoshis', amount);
+            }
             
             if (result && result.success) {
-                const toConfig = this.COIN_CONFIG[toCoin];
-                const formattedAmount = this.formatBalance(result.to_amount, toConfig.decimals);
-                
                 if (resultDiv) {
                     resultDiv.className = 'convert-result success';
-                    resultDiv.textContent = `✓ Converted to ${formattedAmount} ${toConfig.symbol}`;
+                    resultDiv.textContent = `✓ Converted to ${result.to_amount.toLocaleString()} sats`;
                 }
                 
                 // Refresh wallet
@@ -1085,12 +1017,7 @@ const Inventory = {
                 
                 // Clear inputs
                 if (amountInput) amountInput.value = '';
-                if (fromSelect) fromSelect.value = '';
-                if (toSelect) toSelect.value = '';
-                
-                // Clear preview
-                const previewDiv = document.getElementById('convert-preview');
-                if (previewDiv) previewDiv.textContent = '';
+                if (coinSelect) coinSelect.value = '';
                 
             } else {
                 throw new Error(result?.error || 'Conversion failed');
