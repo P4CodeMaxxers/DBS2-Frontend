@@ -9,55 +9,56 @@ import { getCoinInfo } from './WalletDisplay.js';
 import { addInventoryItem } from './StatsManager.js';
 
 // Shop item definitions
+// NOTE: IDs and prices must match backend SHOP_ITEMS exactly
 const SHOP_ITEMS = {
     // Code Scraps (purchasable for progression)
-    code_scrap_crypto_miner: {
-        id: 'code_scrap_crypto_miner',
+    scrap_crypto_miner: {
+        id: 'scrap_crypto_miner',
         name: 'Mining Algorithm Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapCrypto.png',
-        price: { coin: 'ethereum', amount: 0.001 },
+        price: { coin: 'satoshis', amount: 500 },  // Backend: satoshis 500
         description: 'A crumpled page covered in dense handwritten code. The mining algorithm that powered The Green Machine.',
         unlockMessage: 'Code scrap added to inventory!'
     },
-    code_scrap_laundry: {
-        id: 'code_scrap_laundry',
+    scrap_laundry: {
+        id: 'scrap_laundry',
         name: 'Transaction Ledger Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapLaundry.png',
-        price: { coin: 'cardano', amount: 50 },
+        price: { coin: 'cardano', amount: 5 },  // Backend: cardano 5
         description: 'A soggy, barely legible page with transaction validation formulas.',
         unlockMessage: 'Code scrap added to inventory!'
     },
-    code_scrap_cryptochecker: {
-        id: 'code_scrap_cryptochecker',
+    scrap_whackarat: {
+        id: 'scrap_whackarat',
         name: 'Security Keys Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapRats.png',
-        price: { coin: 'dogecoin', amount: 100 },
+        price: { coin: 'dogecoin', amount: 10 },  // Backend: dogecoin 10
         description: 'A document with security protocol keys. Teaches scam detection and crypto safety.',
         unlockMessage: 'Code scrap added to inventory!'
     },
-    code_scrap_ash_trail: {
-        id: 'code_scrap_ash_trail',
+    scrap_ash_trail: {
+        id: 'scrap_ash_trail',
         name: 'Backup Documentation Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapPages.png',
-        price: { coin: 'solana', amount: 0.5 },
+        price: { coin: 'solana', amount: 0.05 },  // Backend: solana 0.05
         description: 'A charred page with burned edges. Backup codes and recovery keys.',
         unlockMessage: 'Code scrap added to inventory!'
     },
-    code_scrap_infinite_user: {
-        id: 'code_scrap_infinite_user',
+    scrap_infinite_user: {
+        id: 'scrap_infinite_user',
         name: 'Master Password List Code Scrap',
         type: 'code_scrap',
         category: 'progression',
         image: 'codescrapPassword.png',
-        price: { coin: 'ethereum', amount: 0.0015 },
+        price: { coin: 'ethereum', amount: 0.0005 },  // Backend: ethereum 0.0005
         description: 'A faded page with a list of passwords and authentication codes.',
         unlockMessage: 'Code scrap added to inventory!'
     },

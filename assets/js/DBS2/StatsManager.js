@@ -537,6 +537,10 @@ export async function hasItem(item) {
 
 /**
  * Purchase an item from the shop
+ * The backend /shop/purchase endpoint handles:
+ * 1. Balance checking
+ * 2. Coin deduction  
+ * 3. Adding item to inventory
  * @param {string} itemId - Shop item ID
  * @param {Object} item - Item data
  * @returns {Promise<Object>} Purchase result
@@ -550,74 +554,24 @@ export async function purchaseShopItem(itemId, item) {
     console.log(`[Shop] API available:`, !!api);
     
     try {
-        // Try API first
+        // Try API first - backend handles everything
         if (api && api.purchaseShopItem) {
             console.log('[Shop] Using DBS2API.purchaseShopItem');
             const result = await api.purchaseShopItem(itemId, item);
             
-            // If purchase successful and it's a code scrap, add to inventory
             if (result && result.success) {
-                if (item.type === 'code_scrap') {
-                    const inventoryNameMap = {
-                        'code_scrap_crypto_miner': 'Code Scrap: Crypto Miner',
-                        'code_scrap_laundry': 'Code Scrap: Laundry',
-                        'code_scrap_cryptochecker': 'Code Scrap: Security Protocol',
-                        'code_scrap_ash_trail': 'Code Scrap: Ash Trail',
-                        'code_scrap_infinite_user': 'Code Scrap: Infinite User'
-                    };
-                    
-                    const inventoryName = inventoryNameMap[itemId] || item.name;
-                    try {
-                        await addInventoryItem({
-                            name: inventoryName,
-                            found_at: 'shop_purchase',
-                            timestamp: new Date().toISOString()
-                        });
-                        console.log('[Shop] Added to inventory:', inventoryName);
-                    } catch (e) {
-                        console.log('[Shop] Could not add to inventory:', e);
-                    }
-                }
+                console.log('[Shop] Purchase successful via API');
+                // Refresh local state from backend
+                await getWallet();
+                await getInventory();
                 return result;
-            } else if (result) {
-                return result;
+            } else {
+                console.log('[Shop] API purchase failed:', result?.error);
+                return result || { success: false, error: 'Purchase failed' };
             }
         }
         
-        // Fallback: Try using addToWallet directly with negative amount
-        if (api && api.addToWallet) {
-            console.log('[Shop] Fallback: Using DBS2API.addToWallet');
-            const walletResult = await api.addToWallet(coin, -amount);
-            
-            if (walletResult && walletResult.success !== false) {
-                // Add to inventory if it's a code scrap
-                if (item.type === 'code_scrap') {
-                    const inventoryNameMap = {
-                        'code_scrap_crypto_miner': 'Code Scrap: Crypto Miner',
-                        'code_scrap_laundry': 'Code Scrap: Laundry',
-                        'code_scrap_cryptochecker': 'Code Scrap: Security Protocol',
-                        'code_scrap_ash_trail': 'Code Scrap: Ash Trail',
-                        'code_scrap_infinite_user': 'Code Scrap: Infinite User'
-                    };
-                    
-                    const inventoryName = inventoryNameMap[itemId] || item.name;
-                    try {
-                        await addInventoryItem({
-                            name: inventoryName,
-                            found_at: 'shop_purchase',
-                            timestamp: new Date().toISOString()
-                        });
-                        console.log('[Shop] Added to inventory:', inventoryName);
-                    } catch (e) {
-                        console.log('[Shop] Could not add to inventory:', e);
-                    }
-                }
-                
-                return { success: true };
-            }
-        }
-        
-        // Local fallback when API not available
+        // Local fallback when API not available (offline mode)
         console.log('[Shop] Using local storage fallback');
         const currentBalance = localState.wallet[coin] || 0;
         
@@ -631,17 +585,17 @@ export async function purchaseShopItem(itemId, item) {
         // Add to local inventory if it's a code scrap
         if (item.type === 'code_scrap') {
             const inventoryNameMap = {
-                'code_scrap_crypto_miner': 'Code Scrap: Crypto Miner',
-                'code_scrap_laundry': 'Code Scrap: Laundry',
-                'code_scrap_cryptochecker': 'Code Scrap: Security Protocol',
-                'code_scrap_ash_trail': 'Code Scrap: Ash Trail',
-                'code_scrap_infinite_user': 'Code Scrap: Infinite User'
+                'scrap_crypto_miner': 'Mining Algorithm Code Scrap',
+                'scrap_laundry': 'Transaction Ledger Code Scrap',
+                'scrap_whackarat': 'Security Keys Code Scrap',
+                'scrap_ash_trail': 'Backup Documentation Code Scrap',
+                'scrap_infinite_user': 'Master Password List Code Scrap'
             };
             
             const inventoryName = inventoryNameMap[itemId] || item.name;
             localState.inventory.push({
                 name: inventoryName,
-                found_at: 'shop_purchase',
+                found_at: 'Closet Shop',
                 timestamp: new Date().toISOString()
             });
         }

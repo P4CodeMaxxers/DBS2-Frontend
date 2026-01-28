@@ -107,21 +107,32 @@ const DBS2API = {
     
     async purchaseShopItem(itemId, item) {
         try {
-            // Deduct the coin amount from wallet
-            const coin = item.price.coin;
-            const amount = item.price.amount;
+            console.log(`[DBS2API] Purchasing ${itemId}: ${item.price.amount} ${item.price.coin}`);
             
-            console.log(`[DBS2API] Purchasing ${itemId}: ${amount} ${coin}`);
+            // Use the dedicated shop purchase endpoint
+            const res = await fetch(`${this.baseUrl}/shop/purchase`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({
+                    item_id: itemId
+                })
+            });
             
-            // Use negative amount to deduct
-            const result = await this.addToWallet(coin, -amount);
+            const data = await res.json();
             
-            if (result && result.success !== false) {
-                console.log(`[DBS2API] Purchase successful`);
-                return { success: true };
-            } else {
-                return { success: false, error: 'Failed to deduct coins' };
+            if (!res.ok) {
+                console.log(`[DBS2API] Purchase failed:`, data.error);
+                return { success: false, error: data.error || 'Purchase failed' };
             }
+            
+            console.log(`[DBS2API] Purchase successful:`, data);
+            this.refreshLeaderboard();
+            return { 
+                success: true, 
+                item: data.item,
+                new_balance: data.new_balance,
+                coin: data.coin 
+            };
         } catch (e) {
             console.log('[DBS2API] purchaseShopItem error:', e);
             return { success: false, error: e.message };
