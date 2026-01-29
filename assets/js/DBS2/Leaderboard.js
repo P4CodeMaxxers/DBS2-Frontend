@@ -20,6 +20,10 @@ class Leaderboard {
         }
         this.refreshInterval = null;
         this.isRefreshing = false;
+        this.currentTab = 'satoshis'; // 'satoshis' | 'games' | 'ashtrail'
+        this.gamesData = [];      // sorted by completions count
+        this.ashTrailData = [];   // { rank, name, score } for selected book
+        this.ashTrailBook = 'defi_grimoire';
         
         // Default filler data (used as fallback)
         this.leaderboardData = [
@@ -163,13 +167,60 @@ class Leaderboard {
                 rank: entry.rank || 0,
                 name: entry.user_info?.name || entry.user_info?.uid || 'Unknown',
                 uid: entry.user_info?.uid || '',
-                score: entry.crypto || 0
+                score: entry.crypto || 0,
+                minigames_completed: entry.minigames_completed || {}
             }));
             
             return transformedData;
         } catch (error) {
             console.error('[Leaderboard] Error fetching leaderboard:', error);
             return null;
+        }
+    }
+
+    /**
+     * Fetch leaderboard data for Games Completed view (more entries, sorted by completions)
+     */
+    async fetchLeaderboardForGames(limit = 50) {
+        const raw = await this.fetchLeaderboard(limit);
+        if (!raw || !raw.length) return [];
+        const mgCount = (entry) => {
+            const m = entry.minigames_completed || {};
+            return [m.crypto_miner, m.infinite_user, m.laundry, m.ash_trail, m.whackarat].filter(Boolean).length;
+        };
+        const sorted = [...raw].sort((a, b) => mgCount(b) - mgCount(a));
+        return sorted.map((entry, idx) => ({ ...entry, rank: idx + 1 }));
+    }
+
+    /**
+     * Fetch Ash Trail minigame leaderboard by book
+     */
+    async fetchAshTrailLeaderboard(book = 'defi_grimoire', limit = 10) {
+        try {
+            const gameKey = `ash_trail_${book}`;
+            const url = `${this.apiBase}/leaderboard/minigame?game=${encodeURIComponent(gameKey)}&limit=${limit}`;
+            let token = null;
+            try {
+                token = localStorage.getItem('jwt_token');
+                if (!token && document.cookie) {
+                    const parts = `; ${document.cookie}`.split('; jwt_python_flask=');
+                    if (parts.length === 2) token = parts.pop().split(';').shift();
+                }
+            } catch (e) {}
+            const headers = { 'Content-Type': 'application/json', 'X-Origin': 'client' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const response = await fetch(url, { method: 'GET', credentials: 'include', headers });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const rows = data.leaderboard || [];
+            return rows.map((entry, idx) => ({
+                rank: entry.rank ?? idx + 1,
+                name: entry.user_info?.name || entry.user_info?.uid || 'Unknown',
+                score: typeof entry.score === 'number' ? entry.score : Number(entry.score ?? 0)
+            }));
+        } catch (e) {
+            console.error('[Leaderboard] Ash Trail fetch error:', e);
+            return [];
         }
     }
 
@@ -252,6 +303,40 @@ class Leaderboard {
             color: #ffd700;
         `;
 
+        const tabRow = document.createElement('div');
+        tabRow.style.cssText = `display: flex; gap: 4px; margin-top: 6px;`;
+        const tabStyle = (active) => `
+            background: ${active ? 'rgba(255, 215, 0, 0.25)' : 'rgba(255,255,255,0.08)'};
+            border: 2px solid ${active ? '#ffd700' : '#666'};
+            color: ${active ? '#ffd700' : '#ccc'};
+            cursor: pointer;
+            font-size: 10px;
+            padding: 4px 8px;
+            font-family: 'Sixtyfour', 'Courier New', monospace;
+        `;
+        const satoshisTab = document.createElement('button');
+        satoshisTab.textContent = '💰 Satoshis';
+        satoshisTab.id = 'leaderboard-tab-satoshis';
+        satoshisTab.style.cssText = tabStyle(true);
+        satoshisTab.onclick = () => this.switchTab('satoshis');
+        const gamesTab = document.createElement('button');
+        gamesTab.textContent = '🎮 Games';
+        gamesTab.id = 'leaderboard-tab-games';
+        gamesTab.style.cssText = tabStyle(false);
+        gamesTab.onclick = () => this.switchTab('games');
+        const ashTrailTab = document.createElement('button');
+        ashTrailTab.textContent = '📚 Ash Trail';
+        ashTrailTab.id = 'leaderboard-tab-ashtrail';
+        ashTrailTab.style.cssText = tabStyle(false);
+        ashTrailTab.onclick = () => this.switchTab('ashtrail');
+        tabRow.appendChild(satoshisTab);
+        tabRow.appendChild(gamesTab);
+        tabRow.appendChild(ashTrailTab);
+
+        const headerLeft = document.createElement('div');
+        headerLeft.appendChild(title);
+        headerLeft.appendChild(tabRow);
+
         const controls = document.createElement('div');
         controls.style.cssText = `display: flex; gap: 6px;`;
 
@@ -312,11 +397,14 @@ class Leaderboard {
 
         controls.appendChild(refreshBtn);
         controls.appendChild(minimizeBtn);
-        header.appendChild(title);
+        header.appendChild(headerLeft);
         header.appendChild(controls);
         this.container.appendChild(header);
 
-        // Create entries container
+        // Panel: Satoshis
+        const panelSatoshis = document.createElement('div');
+        panelSatoshis.id = 'leaderboard-panel-satoshis';
+        panelSatoshis.style.cssText = 'display: block;';
         const entriesContainer = document.createElement('div');
         entriesContainer.id = 'leaderboard-entries';
         entriesContainer.style.cssText = `
@@ -326,13 +414,43 @@ class Leaderboard {
             padding: 10px;
             transition: all 0.3s ease;
         `;
-
         this.leaderboardData.forEach((entry, index) => {
             const entryElement = this.createEntry(entry, index);
             entriesContainer.appendChild(entryElement);
         });
+        panelSatoshis.appendChild(entriesContainer);
+        this.container.appendChild(panelSatoshis);
 
-        this.container.appendChild(entriesContainer);
+        // Panel: Games Completed
+        const panelGames = document.createElement('div');
+        panelGames.id = 'leaderboard-panel-games';
+        panelGames.style.cssText = 'display: none; padding: 10px;';
+        const gamesEntries = document.createElement('div');
+        gamesEntries.id = 'leaderboard-games-entries';
+        gamesEntries.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+        panelGames.appendChild(gamesEntries);
+        this.container.appendChild(panelGames);
+
+        // Panel: Ash Trail
+        const panelAshTrail = document.createElement('div');
+        panelAshTrail.id = 'leaderboard-panel-ashtrail';
+        panelAshTrail.style.cssText = 'display: none;';
+        const ashTrailSelectRow = document.createElement('div');
+        ashTrailSelectRow.style.cssText = 'padding: 8px 10px; border-bottom: 2px solid #666; display: flex; align-items: center; gap: 8px;';
+        const ashTrailSelect = document.createElement('select');
+        ashTrailSelect.id = 'leaderboard-ashtrail-book';
+        ashTrailSelect.style.cssText = 'background: rgba(0,0,0,0.5); color: #fff; border: 2px solid #666; font-size: 11px; padding: 4px 6px;';
+        ashTrailSelect.innerHTML = '<option value="defi_grimoire">DeFi Grimoire</option><option value="lost_ledger">Lost Ledger</option><option value="proof_of_burn">Proof-of-Burn</option>';
+        ashTrailSelect.value = this.ashTrailBook;
+        ashTrailSelect.onchange = () => { this.ashTrailBook = ashTrailSelect.value; this.switchTab('ashtrail'); };
+        ashTrailSelectRow.appendChild(document.createTextNode('Book:'));
+        ashTrailSelectRow.appendChild(ashTrailSelect);
+        panelAshTrail.appendChild(ashTrailSelectRow);
+        const ashTrailEntries = document.createElement('div');
+        ashTrailEntries.id = 'leaderboard-ashtrail-entries';
+        ashTrailEntries.style.cssText = 'display: flex; flex-direction: column; gap: 4px; padding: 10px;';
+        panelAshTrail.appendChild(ashTrailEntries);
+        this.container.appendChild(panelAshTrail);
 
         // Create YOUR CRYPTO section
         const yourSection = document.createElement('div');
@@ -492,6 +610,127 @@ class Leaderboard {
     }
 
     /**
+     * Switch leaderboard tab (satoshis | games | ashtrail)
+     */
+    async switchTab(tab) {
+        this.currentTab = tab;
+        const panels = ['leaderboard-panel-satoshis', 'leaderboard-panel-games', 'leaderboard-panel-ashtrail'];
+        const tabs = ['leaderboard-tab-satoshis', 'leaderboard-tab-games', 'leaderboard-tab-ashtrail'];
+        const tabKeys = ['satoshis', 'games', 'ashtrail'];
+        panels.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = tabKeys[i] === tab ? 'block' : 'none';
+        });
+        tabs.forEach((id, i) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                const active = tabKeys[i] === tab;
+                btn.style.background = active ? 'rgba(255, 215, 0, 0.25)' : 'rgba(255,255,255,0.08)';
+                btn.style.borderColor = active ? '#ffd700' : '#666';
+                btn.style.color = active ? '#ffd700' : '#ccc';
+            }
+        });
+        if (tab === 'games') {
+            this.gamesData = await this.fetchLeaderboardForGames(50);
+            this.renderGamesPanel();
+        } else if (tab === 'ashtrail') {
+            const book = document.getElementById('leaderboard-ashtrail-book')?.value || this.ashTrailBook;
+            this.ashTrailBook = book;
+            this.ashTrailData = await this.fetchAshTrailLeaderboard(book, 10);
+            this.renderAshTrailPanel();
+        }
+    }
+
+    /**
+     * Render Games Completed panel (icons for each minigame)
+     */
+    renderGamesPanel() {
+        const container = document.getElementById('leaderboard-games-entries');
+        if (!container) return;
+        const gameIcons = [
+            { key: 'crypto_miner', icon: '⛏️', title: 'Crypto Miner' },
+            { key: 'infinite_user', icon: '💻', title: 'Infinite User' },
+            { key: 'laundry', icon: '📋', title: 'Laundry' },
+            { key: 'ash_trail', icon: '📚', title: 'Ash Trail' },
+            { key: 'whackarat', icon: '🔐', title: 'Whackarat' }
+        ];
+        if (!this.gamesData || !this.gamesData.length) {
+            container.innerHTML = '<div style="color:#888;font-size:11px;padding:8px;">No data. Refresh?</div>';
+            return;
+        }
+        container.innerHTML = '';
+        this.gamesData.slice(0, 15).forEach((entry, index) => {
+            const m = entry.minigames_completed || {};
+            const isCurrent = this.currentPlayerData && entry.uid === this.currentPlayerData.uid;
+            const row = document.createElement('div');
+            row.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 5px 8px;
+                background: ${isCurrent ? 'rgba(0, 255, 100, 0.2)' : index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)'};
+                border: 2px solid ${isCurrent ? '#0f0' : '#444'};
+                font-size: 10px;
+            `;
+            const rankSpan = document.createElement('span');
+            rankSpan.textContent = `#${entry.rank}`;
+            rankSpan.style.cssText = `font-weight: bold; min-width: 24px; color: ${index < 3 ? '#ffd700' : '#aaa'};`;
+            const nameSpan = document.createElement('span');
+            const displayName = (entry.name || '').length > 10 ? (entry.name || '').substring(0, 9) + '…' : (entry.name || '?');
+            nameSpan.textContent = isCurrent ? `${displayName} (YOU)` : displayName;
+            nameSpan.style.cssText = `flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`;
+            const iconsWrap = document.createElement('span');
+            iconsWrap.style.cssText = 'display: flex; gap: 2px;';
+            gameIcons.forEach(g => {
+                const done = m[g.key];
+                const span = document.createElement('span');
+                span.title = g.title + (done ? ' ✓' : '');
+                span.textContent = done ? g.icon : '—';
+                span.style.cssText = `opacity: ${done ? 1 : 0.4}; font-size: 11px;`;
+                iconsWrap.appendChild(span);
+            });
+            row.appendChild(rankSpan);
+            row.appendChild(nameSpan);
+            row.appendChild(iconsWrap);
+            container.appendChild(row);
+        });
+    }
+
+    /**
+     * Render Ash Trail panel
+     */
+    renderAshTrailPanel() {
+        const container = document.getElementById('leaderboard-ashtrail-entries');
+        if (!container) return;
+        if (!this.ashTrailData || !this.ashTrailData.length) {
+            container.innerHTML = '<div style="color:#888;font-size:11px;padding:8px;">No scores yet</div>';
+            return;
+        }
+        container.innerHTML = '';
+        this.ashTrailData.forEach((entry, index) => {
+            const row = document.createElement('div');
+            row.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 5px 8px;
+                background: ${index === 0 ? 'rgba(134, 239, 172, 0.1)' : index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)'};
+                border: 2px solid ${index === 0 ? '#86efac' : '#444'};
+                font-size: 11px;
+            `;
+            const left = document.createElement('span');
+            const displayName = (entry.name || '').length > 10 ? (entry.name || '').substring(0, 9) + '…' : (entry.name || '?');
+            left.textContent = `#${entry.rank} ${displayName}`;
+            const right = document.createElement('span');
+            right.textContent = `${Math.max(0, Math.min(100, Math.round(Number(entry.score) || 0)))}%`;
+            right.style.color = '#86efac';
+            row.appendChild(left);
+            row.appendChild(right);
+            container.appendChild(row);
+        });
+    }
+
+    /**
      * Toggle minimize state
      */
     toggleMinimize() {
@@ -499,12 +738,26 @@ class Leaderboard {
         
         const entriesContainer = document.getElementById('leaderboard-entries');
         const yourCrypto = document.getElementById('leaderboard-your-crypto');
+        const gamesEntries = document.getElementById('leaderboard-games-entries');
+        const ashTrailEntries = document.getElementById('leaderboard-ashtrail-entries');
+        const panelAshTrail = document.getElementById('leaderboard-panel-ashtrail');
         const minimizeBtn = document.getElementById('leaderboard-minimize-btn');
         
-        if (entriesContainer) {
-            entriesContainer.style.maxHeight = this.isMinimized ? '0' : '500px';
-            entriesContainer.style.padding = this.isMinimized ? '0 10px' : '10px';
-            entriesContainer.style.opacity = this.isMinimized ? '0' : '1';
+        const collapse = (el, maxH, pad) => {
+            if (!el) return;
+            el.style.maxHeight = this.isMinimized ? '0' : maxH;
+            el.style.padding = this.isMinimized ? '0 10px' : pad;
+            el.style.opacity = this.isMinimized ? '0' : '1';
+        };
+        if (entriesContainer) collapse(entriesContainer, '500px', '10px');
+        if (gamesEntries) collapse(gamesEntries, '400px', '10px');
+        if (ashTrailEntries) collapse(ashTrailEntries, '400px', '10px');
+        if (panelAshTrail && panelAshTrail.querySelector('div')) {
+            const first = panelAshTrail.firstElementChild;
+            if (first) {
+                first.style.maxHeight = this.isMinimized ? '0' : 'none';
+                first.style.overflow = this.isMinimized ? 'hidden' : 'visible';
+            }
         }
         
         if (yourCrypto) {
@@ -537,6 +790,15 @@ class Leaderboard {
         
         // Update YOUR CRYPTO section
         this.renderYourCrypto();
+
+        // Refresh visible tab data
+        if (this.currentTab === 'games') {
+            this.gamesData = await this.fetchLeaderboardForGames(50);
+            this.renderGamesPanel();
+        } else if (this.currentTab === 'ashtrail') {
+            this.ashTrailData = await this.fetchAshTrailLeaderboard(this.ashTrailBook, 10);
+            this.renderAshTrailPanel();
+        }
     }
 
     /**
