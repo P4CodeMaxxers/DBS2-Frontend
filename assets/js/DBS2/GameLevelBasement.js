@@ -6,12 +6,14 @@ import GameEnv from './GameEnv.js';
 import Background from './Background.js';
 import Player from './Player.js';
 import Npc from './Npc.js';
+import EasterEgg from './EasterEgg.js';
 
 /**
  * GameLevelBasement
  * - All asset paths use `${path}/images/DBS2/...`
  * - Cards NPC launches Crypto Checker minigame (security training)
  * - Each NPC teaches a different aspect of blockchain/crypto
+ * - Pinpad EasterEgg floats near IShowGreen with secret PIN entry
  */
 class GameLevelBasement {
   constructor(path = '') {
@@ -111,6 +113,24 @@ class GameLevelBasement {
     };
 
     /* ----------------------
+       PINPAD EASTER EGG - Secret PIN entry
+       Floats near IShowGreen
+    ------------------------*/
+    const sprite_data_pinpad = {
+      id: 'Pinpad',
+      greeting: 'SECRET SECURITY TERMINAL. Can you crack the code?',
+      src: `${this.path}/images/DBS2/pinpad.png`,
+      SCALE_FACTOR: 6,
+      ANIMATION_RATE: 0,
+      pixels: { height: 512, width: 512 },
+      INIT_POSITION: { x: width * 19 / 24, y: height * 0.35 },
+      orientation: { rows: 1, columns: 1 },
+      down: { row: 0, start: 0, columns: 1 },
+      hitbox: { widthPercentage: 0.5, heightPercentage: 0.5 },
+      stationary: false // Will float up and down
+    };
+
+    /* ----------------------
        CARDS (NPC) - Launches Crypto Checker minigame
        Teaches: Identifying scams vs legitimate crypto
        Sprite: 213x237 with 4 frames = 852 total width
@@ -183,7 +203,8 @@ class GameLevelBasement {
       { class: Npc, data: sprite_data_computer1 },
       { class: Npc, data: sprite_data_computer2 },
       { class: Npc, data: sprite_data_ishowgreen },
-      { class: Npc, data: sprite_data_cards },      // Cards - launches Crypto Checker
+      { class: EasterEgg, data: sprite_data_pinpad },  // Pinpad Easter Egg
+      { class: Npc, data: sprite_data_cards },         // Cards - launches Crypto Checker
       { class: Npc, data: sprite_data_laundry },
       { class: Npc, data: sprite_data_bookshelf },
       { class: Npc, data: sprite_data_closet },
