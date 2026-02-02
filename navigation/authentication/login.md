@@ -90,7 +90,7 @@ show_reading_time: false
 </div>
 
 <script type="module">
-    import { pythonURI, getHeaders } from '{{site.baseurl}}/assets/js/api/config.js';
+    import { pythonURI, getHeaders, setAuthToken } from '{{site.baseurl}}/assets/js/api/config.js';
 
     // Login Form Handler
     document.getElementById('pythonForm').addEventListener('submit', async (event) => {
@@ -139,8 +139,10 @@ show_reading_time: false
             console.log("=== LOGIN SUCCESSFUL ===");
             console.log("User:", data.user);
             
-            // Cookie is automatically set by the browser from the response
-            // No need to store token in localStorage!
+            // Store token in sessionStorage - works cross-origin (cookies often blocked)
+            if (data.token) {
+                setAuthToken(data.token);
+            }
             
             messageEl.style.color = "green";
             messageEl.textContent = "Login successful! Redirecting...";

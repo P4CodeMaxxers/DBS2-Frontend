@@ -4,18 +4,13 @@
  * Handles wallet, inventory, scores, and minigame state
  */
 
-import { pythonURI, fetchOptions } from '../api/config.js';
+import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
 
-// Fetch options for DBS2 API - use standard headers only to avoid CORS preflight issues.
-// Cache-buster query param (?_t=timestamp) ensures fresh data without custom headers.
+// Fetch options for DBS2 API - headers from getHeaders() include Authorization when logged in
 const noCacheFetchOptions = {
     ...fetchOptions,
     cache: 'no-store',
-    headers: {
-        ...fetchOptions.headers
-        // Do NOT add Cache-Control or Pragma - they trigger CORS preflight which
-        // can fail on cross-origin (e.g. p4codemaxxers.github.io -> dbs2.opencodingsociety.com)
-    }
+    get headers() { return getHeaders(); }
 };
 
 // Coin configurations

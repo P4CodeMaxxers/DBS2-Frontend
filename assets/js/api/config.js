@@ -1,9 +1,12 @@
 /**
  * config.js - API Configuration
- * Uses cookies for JWT authentication (not localStorage)
+ * Uses JWT token in sessionStorage for cross-origin auth (cookies often blocked)
  */
 
 export const baseurl = "/DBS2-Frontend";
+
+// Key for JWT in sessionStorage - must match backend JWT_TOKEN_NAME (jwt_python_flask)
+export const JWT_TOKEN_KEY = 'jwt_python_flask';
 
 // Flask backend URI
 export var pythonURI;
@@ -19,29 +22,44 @@ console.log('[Config] Backend pythonURI:', pythonURI);
 export var javaURI = pythonURI;
 
 /**
- * Get headers for API requests
- * No longer includes Authorization header - cookies handle auth
+ * Get headers for API requests - includes Authorization when token is present
+ * Token from sessionStorage works cross-origin (cookies often blocked by browsers)
  */
 export function getHeaders() {
-    return {
+    const headers = {
         'Content-Type': 'application/json',
         'X-Origin': 'client'
     };
+    const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(JWT_TOKEN_KEY) : null;
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
+/** Store auth token after login (call from login page before redirect) */
+export function setAuthToken(token) {
+    if (token && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(JWT_TOKEN_KEY, token);
+    }
+}
+
+/** Clear auth token on logout */
+export function clearAuthToken() {
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(JWT_TOKEN_KEY);
+    }
 }
 
 /**
- * Standard fetch options with credentials for cookie-based auth
- * credentials: 'include' ensures cookies are sent with cross-origin requests
+ * Standard fetch options - headers are dynamic (include Authorization when logged in)
  */
 export const fetchOptions = {
     method: 'GET',
     mode: 'cors',
     cache: 'default',
-    credentials: 'include',  // IMPORTANT: This sends cookies with requests
-    headers: {
-        'Content-Type': 'application/json',
-        'X-Origin': 'client'
-    }
+    credentials: 'include',  // Send cookies as fallback
+    get headers() { return getHeaders(); }
 };
 
 /**

@@ -3,7 +3,7 @@
  * Displays a pixel-themed leaderboard with data from backend API
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
-import { pythonURI } from '../api/config.js';
+import { pythonURI, getHeaders } from '../api/config.js';
 
 class Leaderboard {
     constructor(apiBase = null) {
@@ -57,35 +57,11 @@ class Leaderboard {
                 }
             }
             
-            // Fallback to direct fetch if DBS2API not available or failed
-            // Get token from localStorage or cookie
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    const name = 'jwt_python_flask';
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) {
-                        token = parts.pop().split(';').shift();
-                    }
-                }
-            } catch (e) {
-                console.warn('[Leaderboard] Could not get token:', e);
-            }
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-Origin': 'client'
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
-            const response = await fetch(`${this.apiBase}/player`, {
+            // Fallback to direct fetch - use getHeaders() which includes Authorization when logged in
+            const response = await fetch(`${this.apiBase}/player?_t=${Date.now()}`, {
                 method: 'GET',
                 credentials: 'include',
-                headers: headers
+                headers: getHeaders()
             });
             
             if (response.ok) {
@@ -117,34 +93,10 @@ class Leaderboard {
             const url = `${this.apiBase}/leaderboard?limit=${limit}`;
             console.log('[Leaderboard] Fetching from:', url);
             
-            // Get token from localStorage or cookie
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    const name = 'jwt_python_flask';
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) {
-                        token = parts.pop().split(';').shift();
-                    }
-                }
-            } catch (e) {
-                console.warn('[Leaderboard] Could not get token:', e);
-            }
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-Origin': 'client'
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
             const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
-                headers: headers
+                headers: getHeaders()
             });
             
             if (!response.ok) {
@@ -197,17 +149,7 @@ class Leaderboard {
         try {
             const gameKey = `ash_trail_${book}`;
             const url = `${this.apiBase}/leaderboard/minigame?game=${encodeURIComponent(gameKey)}&limit=${limit}`;
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token && document.cookie) {
-                    const parts = `; ${document.cookie}`.split('; jwt_python_flask=');
-                    if (parts.length === 2) token = parts.pop().split(';').shift();
-                }
-            } catch (e) {}
-            const headers = { 'Content-Type': 'application/json', 'X-Origin': 'client' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const response = await fetch(url, { method: 'GET', credentials: 'include', headers });
+            const response = await fetch(url, { method: 'GET', credentials: 'include', headers: getHeaders() });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             const rows = data.leaderboard || [];
