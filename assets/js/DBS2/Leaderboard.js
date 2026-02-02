@@ -99,10 +99,8 @@ class Leaderboard {
                 return this.currentPlayerData;
             } else {
                 console.warn('[Leaderboard] Failed to fetch current player:', response.status, response.statusText);
-                // If 401, log token status for debugging
                 if (response.status === 401) {
-                    const token = getJWTToken();
-                    console.warn('[Leaderboard] 401 Unauthorized - Token available:', !!token);
+                    console.warn('[Leaderboard] 401 Unauthorized - Auth cookie may be missing or expired. Try logging in again.');
                 }
             }
         } catch (error) {
