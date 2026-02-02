@@ -20,7 +20,7 @@ class Leaderboard {
         }
         this.refreshInterval = null;
         this.isRefreshing = false;
-        this.currentTab = 'satoshis'; // 'satoshis' | 'games' | 'ashtrail'
+        this.currentTab = 'games'; // 'satoshis' | 'games' | 'ashtrail' — Games is main
         this.gamesData = [];      // sorted by completions count
         this.ashTrailData = [];   // { rank, name, score } for selected book
         this.ashTrailBook = 'defi_grimoire';
@@ -317,12 +317,12 @@ class Leaderboard {
         const satoshisTab = document.createElement('button');
         satoshisTab.textContent = '💰 Satoshis';
         satoshisTab.id = 'leaderboard-tab-satoshis';
-        satoshisTab.style.cssText = tabStyle(true);
+        satoshisTab.style.cssText = tabStyle(false);
         satoshisTab.onclick = () => this.switchTab('satoshis');
         const gamesTab = document.createElement('button');
         gamesTab.textContent = '🎮 Games';
         gamesTab.id = 'leaderboard-tab-games';
-        gamesTab.style.cssText = tabStyle(false);
+        gamesTab.style.cssText = tabStyle(true);
         gamesTab.onclick = () => this.switchTab('games');
         const ashTrailTab = document.createElement('button');
         ashTrailTab.textContent = '📚 Ash Trail';
@@ -404,7 +404,7 @@ class Leaderboard {
         // Panel: Satoshis
         const panelSatoshis = document.createElement('div');
         panelSatoshis.id = 'leaderboard-panel-satoshis';
-        panelSatoshis.style.cssText = 'display: block;';
+        panelSatoshis.style.cssText = 'display: none;';
         const entriesContainer = document.createElement('div');
         entriesContainer.id = 'leaderboard-entries';
         entriesContainer.style.cssText = `
@@ -421,10 +421,10 @@ class Leaderboard {
         panelSatoshis.appendChild(entriesContainer);
         this.container.appendChild(panelSatoshis);
 
-        // Panel: Games Completed
+        // Panel: Games Completed (main default)
         const panelGames = document.createElement('div');
         panelGames.id = 'leaderboard-panel-games';
-        panelGames.style.cssText = 'display: none; padding: 10px;';
+        panelGames.style.cssText = 'display: block; padding: 10px;';
         const gamesEntries = document.createElement('div');
         gamesEntries.id = 'leaderboard-games-entries';
         gamesEntries.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
@@ -466,6 +466,9 @@ class Leaderboard {
         this.container.appendChild(yourSection);
 
         document.body.appendChild(this.container);
+
+        // Load default tab data (Games is main)
+        await this.switchTab(this.currentTab);
 
         if (autoRefresh) {
             this.startAutoRefresh(refreshIntervalMs);
