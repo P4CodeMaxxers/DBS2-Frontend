@@ -154,14 +154,14 @@ class GameLevelBasement {
     const sprite_data_laundry = {
       id: 'laundry',
       greeting: 'TRANSACTION VALIDATOR. Learn how transactions are cleaned and verified!',
-      src: `${this.path}/images/DBS2/broken-washing-machine-jpeg.jpg`,
-      SCALE_FACTOR: 5,
+      src: `${this.path}/images/DBS2/computa3.png`,
+      SCALE_FACTOR: 10,
       ANIMATION_RATE: 0,
-      pixels: { height: 423, width: 414 },
+      pixels: { height: 2000, width: 2000 },
       INIT_POSITION: { x: width * 8 / 21, y: height * 0.75 },
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 },
+      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
       stationary: true
     };
 
@@ -170,14 +170,14 @@ class GameLevelBasement {
     const sprite_data_bookshelf = {
       id: 'Bookshelf',
       greeting: 'BLOCKCHAIN ARCHIVE. Trace the transaction trails and verify the chain!',
-      src: `${this.path}/images/DBS2/Tracethepage.png`,
-      SCALE_FACTOR: 3,
+      src: `${this.path}/images/DBS2/computa4.png`,
+      SCALE_FACTOR: 8,
       ANIMATION_RATE: 0,
-      pixels: { height: 592, width: 592 },
+      pixels: { height: 1592, width: 1592 },
       INIT_POSITION: { x: width * 19 / 22, y: height * 3 / 5 },
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.01, heightPercentage: 0.01 },
+      hitbox: { widthPercentage: 0.1, heightPercentage: 0.1 },
       stationary: true
     };
 
