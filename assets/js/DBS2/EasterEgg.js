@@ -19,7 +19,7 @@ class EasterEgg extends Character {
         // PIN entry state
         this.isPinpadOpen = false;
         this.enteredPin = '';
-        this.correctPin = '2026'; // Change this to your secret PIN
+        this.correctPin = '72651'; // 5-digit secret PIN
     }
 
     update() {
@@ -112,14 +112,14 @@ class EasterEgg extends Character {
             border-radius: 10px;
             padding: 20px 40px;
             margin-bottom: 30px;
-            min-width: 200px;
+            min-width: 250px;
             text-align: center;
             font-size: 36px;
             color: #ecf0f1;
             letter-spacing: 10px;
             box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
         `;
-        pinDisplay.textContent = '____';
+        pinDisplay.textContent = '_____';
         overlay.appendChild(pinDisplay);
 
         // Pinpad Grid
@@ -178,7 +178,7 @@ class EasterEgg extends Character {
             margin-top: 30px;
             text-align: center;
         `;
-        instructions.textContent = 'Enter the secret PIN or press ESC to close';
+        instructions.textContent = 'Enter the 5-digit secret PIN or press ESC to close';
         overlay.appendChild(instructions);
 
         document.body.appendChild(overlay);
@@ -276,12 +276,12 @@ class EasterEgg extends Character {
     }
 
     addToPin(digit) {
-        if (this.enteredPin.length < 4) {
+        if (this.enteredPin.length < 5) {
             this.enteredPin += digit;
             this.updatePinDisplay();
             
-            // Auto-check when 4 digits entered
-            if (this.enteredPin.length === 4) {
+            // Auto-check when 5 digits entered
+            if (this.enteredPin.length === 5) {
                 setTimeout(() => this.checkPin(), 300);
             }
         }
@@ -289,7 +289,7 @@ class EasterEgg extends Character {
 
     updatePinDisplay() {
         if (this.pinDisplay) {
-            const display = this.enteredPin.padEnd(4, '_');
+            const display = this.enteredPin.padEnd(5, '_');
             this.pinDisplay.textContent = display.split('').join(' ');
         }
     }
@@ -297,7 +297,7 @@ class EasterEgg extends Character {
     checkPin() {
         if (this.enteredPin === this.correctPin) {
             this.showSuccess();
-        } else if (this.enteredPin.length === 4) {
+        } else if (this.enteredPin.length === 5) {
             this.showError();
         }
     }
@@ -306,7 +306,7 @@ class EasterEgg extends Character {
         if (this.pinDisplay) {
             this.pinDisplay.style.color = '#2ecc71';
             this.pinDisplay.style.borderColor = '#2ecc71';
-            this.pinDisplay.textContent = '✓ ✓ ✓ ✓';
+            this.pinDisplay.textContent = '✓ ✓ ✓ ✓ ✓';
         }
 
         // Show success message
@@ -331,19 +331,20 @@ class EasterEgg extends Character {
                 successMsg.innerHTML = `
                     🎉 ACCESS GRANTED 🎉<br>
                     <div style="font-size: 16px; margin-top: 15px; opacity: 0.9;">
-                        Secret unlocked! The Green Machine approves.
+                        Secret unlocked! The Green Machine approves.<br>
+                        <span style="color: #f1c40f; font-size: 20px; margin-top: 10px; display: block;">💰 +100,000 CRYPTO! 💰</span>
                     </div>
                 `;
                 this.overlay.appendChild(successMsg);
 
-                // Award crypto bonus
+                // Award crypto bonus - 100,000 crypto
                 const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
                 if (player && player.spriteData) {
-                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 100;
-                    console.log('🎁 Bonus awarded: 100 crypto!');
+                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 100000;
+                    console.log('🎁 Bonus awarded: 100,000 crypto!');
                 }
 
-                setTimeout(() => this.closePinpad(), 2500);
+                setTimeout(() => this.closePinpad(), 3000);
             }
         }, 500);
     }
@@ -352,7 +353,7 @@ class EasterEgg extends Character {
         if (this.pinDisplay) {
             this.pinDisplay.style.color = '#e74c3c';
             this.pinDisplay.style.borderColor = '#e74c3c';
-            this.pinDisplay.textContent = 'X X X X';
+            this.pinDisplay.textContent = 'X X X X X';
         }
 
         setTimeout(() => {
