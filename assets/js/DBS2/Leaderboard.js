@@ -4,6 +4,8 @@
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
 import { pythonURI, getHeaders } from '../api/config.js';
+import { getAshTrailRuns, getAshTrailRun } from './StatsManager.js';
+import { showAshTrailReplay } from './AshTrailMinigame.js';
 
 class Leaderboard {
     constructor(apiBase = null) {
@@ -24,6 +26,7 @@ class Leaderboard {
         this.gamesData = [];      // sorted by completions count
         this.ashTrailData = [];   // { rank, name, score } for selected book
         this.ashTrailBook = 'defi_grimoire';
+        this.ashTrailRunCache = new Map();
         
         // Default filler data (used as fallback)
         this.leaderboardData = [
@@ -153,11 +156,52 @@ class Leaderboard {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             const rows = data.leaderboard || [];
-            return rows.map((entry, idx) => ({
-                rank: entry.rank ?? idx + 1,
-                name: entry.user_info?.name || entry.user_info?.uid || 'Unknown',
-                score: typeof entry.score === 'number' ? entry.score : Number(entry.score ?? 0)
-            }));
+
+            // Build lookup of best recorded runs per user for this book
+            const runLookup = new Map();
+            try {
+                const runPayload = await getAshTrailRuns(book, Math.max(limit, 10) * 3);
+                if (runPayload?.runs && Array.isArray(runPayload.runs)) {
+                    runPayload.runs.forEach((run) => {
+                        if (!run || !run.user_info) return;
+                        const uid = run.user_info.uid;
+                        if (!uid) return;
+                        const existing = runLookup.get(uid);
+                        if (!existing || (Number(run.score) || 0) > (Number(existing.score) || 0)) {
+                            runLookup.set(uid, run);
+                        }
+                        if (run.id != null) {
+                            this.ashTrailRunCache.set(run.id, run);
+                        }
+                    });
+                }
+            } catch (runErr) {
+                console.warn('[Leaderboard] Unable to load Ash Trail runs:', runErr);
+            }
+
+            return rows.map((entry, idx) => {
+                const userInfo = entry.user_info || {};
+                const uid = userInfo.uid;
+                const bestRun = uid ? runLookup.get(uid) : null;
+                const scoreFromEntry = typeof entry.score === 'number' ? entry.score : Number(entry.score ?? NaN);
+                const scoreValue = Number.isFinite(scoreFromEntry)
+                    ? scoreFromEntry
+                    : Number(bestRun?.score ?? 0);
+
+                if (bestRun?.id && !this.ashTrailRunCache.has(bestRun.id)) {
+                    this.ashTrailRunCache.set(bestRun.id, bestRun);
+                }
+
+                return {
+                    rank: entry.rank ?? idx + 1,
+                    name: userInfo.name || uid || 'Unknown',
+                    score: scoreValue,
+                    bookId: book,
+                    user: userInfo,
+                    runId: bestRun?.id ?? null,
+                    runCreatedAt: bestRun?.created_at ?? null
+                };
+            });
         } catch (e) {
             console.error('[Leaderboard] Ash Trail fetch error:', e);
             return [];
@@ -579,6 +623,7 @@ class Leaderboard {
         } else if (tab === 'ashtrail') {
             const book = document.getElementById('leaderboard-ashtrail-book')?.value || this.ashTrailBook;
             this.ashTrailBook = book;
+            this.ashTrailRunCache = new Map();
             this.ashTrailData = await this.fetchAshTrailLeaderboard(book, 10);
             this.renderAshTrailPanel();
         }
@@ -664,13 +709,82 @@ class Leaderboard {
             const left = document.createElement('span');
             const displayName = (entry.name || '').length > 10 ? (entry.name || '').substring(0, 9) + '…' : (entry.name || '?');
             left.textContent = `#${entry.rank} ${displayName}`;
-            const right = document.createElement('span');
-            right.textContent = `${Math.max(0, Math.min(100, Math.round(Number(entry.score) || 0)))}%`;
-            right.style.color = '#86efac';
+            const rightWrap = document.createElement('span');
+            rightWrap.style.cssText = 'display:flex; align-items:center; gap:6px;';
+
+            const scoreValue = Math.max(0, Math.min(100, Math.round(Number(entry.score) || 0)));
+            const scoreSpan = document.createElement('span');
+            scoreSpan.textContent = `${scoreValue}%`;
+            scoreSpan.style.color = '#86efac';
+
+            const playBtn = document.createElement('button');
+            playBtn.textContent = entry.runId ? '▶' : '—';
+            playBtn.style.cssText = `
+                background: rgba(255,255,255,0.08);
+                border: 2px solid #666;
+                color: ${entry.runId ? '#fff' : '#555'};
+                font-size: 10px;
+                padding: 2px 6px;
+                cursor: ${entry.runId ? 'pointer' : 'not-allowed'};
+                border-radius: 4px;
+            `;
+            playBtn.title = entry.runId ? 'Play replay' : 'Replay not available';
+            playBtn.disabled = !entry.runId;
+            if (entry.runId) {
+                playBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.handleAshTrailPlay(entry, playBtn);
+                });
+            }
+
+            rightWrap.appendChild(scoreSpan);
+            rightWrap.appendChild(playBtn);
+
             row.appendChild(left);
-            row.appendChild(right);
+            row.appendChild(rightWrap);
             container.appendChild(row);
         });
+    }
+
+    async handleAshTrailPlay(entry, button) {
+        if (!entry?.runId) {
+            window.alert('Replay not available for this player yet.');
+            return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = '…';
+
+        try {
+            let run = this.ashTrailRunCache.get(entry.runId);
+            if (!run) {
+                const payload = await getAshTrailRun(entry.runId);
+                if (payload?.run) {
+                    run = payload.run;
+                    this.ashTrailRunCache.set(entry.runId, run);
+                }
+            }
+
+            if (!run || !Array.isArray(run.trace) || run.trace.length === 0) {
+                window.alert('Replay data is not yet available. Please try again later.');
+                return;
+            }
+
+            await showAshTrailReplay(run, {
+                bookId: entry.bookId,
+                playerName: entry.name,
+                score: entry.score,
+                rank: entry.rank
+            });
+        } catch (err) {
+            console.error('[Leaderboard] Failed to open Ash Trail replay:', err);
+            window.alert('Unable to load replay. Please try again.');
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
     }
 
     /**

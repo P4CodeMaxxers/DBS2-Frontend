@@ -167,6 +167,8 @@ let lastReward = 0;
 // Continuous movement state
 let pressedDirs = { up: false, down: false, left: false, right: false };
 let runAnimId = null;
+let replayTrace = [];
+let replayAnimId = null;
 let lastTimestamp = null;
 let sampleAccumulator = 0;
 let keyHandlerDown = null;
@@ -236,8 +238,17 @@ function closeOverlay() {
   ctx = null;
   truePath = [];
   playerPath = [];
+  replayTrace = [];
   playerPos = null;
   isRunPhase = false;
+  if (runAnimId) {
+    cancelAnimationFrame(runAnimId);
+    runAnimId = null;
+  }
+  if (replayAnimId) {
+    cancelAnimationFrame(replayAnimId);
+    replayAnimId = null;
+  }
   cleanupRunInput();
   window.ashTrailActive = false;
   window.minigameActive = false;
@@ -1666,6 +1677,241 @@ function renderResultsScene(score) {
   layout.appendChild(right);
   setScene(layout);
 }
+
+function drawOptimalPathOverlay(alpha = 0.45) {
+  if (!ctx || !canvas || !Array.isArray(truePath) || truePath.length === 0) return;
+  const cellW = canvas.width / GRID_COLS;
+  const cellH = canvas.height / GRID_ROWS;
+  ctx.save();
+  ctx.lineWidth = cellW * 0.35;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = `rgba(0, 255, 163, ${alpha})`;
+  ctx.beginPath();
+  truePath.forEach((p, idx) => {
+    const cx = (Number(p.x) + 0.5) * cellW;
+    const cy = (Number(p.y) + 0.5) * cellH;
+    if (idx === 0) ctx.moveTo(cx, cy);
+    else ctx.lineTo(cx, cy);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawReplayFrame(trace, uptoIndex) {
+  if (!ctx || !canvas) return;
+  drawBackground();
+  drawOptimalPathOverlay(0.45);
+
+  if (!Array.isArray(trace) || trace.length === 0 || uptoIndex < 0) return;
+
+  const cappedIndex = Math.min(trace.length - 1, uptoIndex);
+  const cellW = canvas.width / GRID_COLS;
+  const cellH = canvas.height / GRID_ROWS;
+
+  ctx.save();
+  ctx.lineWidth = cellW * 0.45;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(59,130,246,0.9)";
+  ctx.beginPath();
+  trace.forEach((p, idx) => {
+    if (idx > cappedIndex) return;
+    const cx = (Number(p.x) + 0.5) * cellW;
+    const cy = (Number(p.y) + 0.5) * cellH;
+    if (idx === 0) ctx.moveTo(cx, cy);
+    else ctx.lineTo(cx, cy);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  const head = trace[cappedIndex];
+  if (head) {
+    const hx = (Number(head.x) + 0.5) * cellW;
+    const hy = (Number(head.y) + 0.5) * cellH;
+    const radius = cellW * 0.4;
+    const gradient = ctx.createRadialGradient(hx, hy, 1, hx, hy, radius);
+    gradient.addColorStop(0, '#38bdf8');
+    gradient.addColorStop(0.5, 'rgba(56,189,248,0.75)');
+    gradient.addColorStop(1, 'rgba(56,189,248,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(hx, hy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function animateReplayTrace(trace) {
+  if (!ctx || !canvas || !Array.isArray(trace) || trace.length === 0) {
+    drawReplayFrame([], -1);
+    return;
+  }
+
+  if (replayAnimId) {
+    cancelAnimationFrame(replayAnimId);
+    replayAnimId = null;
+  }
+
+  const total = trace.length;
+  const duration = Math.min(12000, Math.max(3500, total * 22));
+  const start = performance.now();
+
+  const step = (now) => {
+    const progress = Math.min(1, (now - start) / duration);
+    const idx = Math.max(0, Math.floor(progress * (total - 1)));
+    drawReplayFrame(trace, idx);
+    if (progress < 1) {
+      replayAnimId = requestAnimationFrame(step);
+    } else {
+      replayAnimId = null;
+    }
+  };
+
+  replayAnimId = requestAnimationFrame(step);
+}
+
+function renderReplayScene({ book, playerName, score, rank, createdAt }) {
+  const layout = createEl("div", {
+    style: {
+      display: "flex",
+      width: "100%",
+      height: "100%",
+      gap: "18px",
+      padding: "12px 18px 18px",
+      boxSizing: "border-box",
+    },
+  });
+
+  const left = createEl("div", {
+    style: {
+      flex: "1",
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
+    },
+  });
+
+  const heading = createEl("h2", {
+    textContent: `${playerName}'s Ash Trail Run`,
+    style: {
+      margin: "0",
+      fontSize: "20px",
+      color: COIN_COLOR,
+    },
+  });
+
+  const meta = createEl("div", {
+    style: {
+      fontSize: "12px",
+      color: "#cbd5f5",
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    },
+  });
+
+  const recordedText = createdAt ? new Date(createdAt).toLocaleString() : null;
+  const scoreValue = Math.max(0, Math.min(100, Math.round(Number(score) || 0)));
+
+  meta.innerHTML = `
+    <div>Book: <span style="color:#fff;">${book?.title || 'Unknown'}</span></div>
+    <div>Routing Path: <span style="color:#38bdf8;">${book?.routingExample || '—'}</span></div>
+    <div>Score: <span style="color:#86efac;">${scoreValue}%</span>${rank ? ` · Rank #${rank}` : ''}</div>
+    ${recordedText ? `<div style="color:#94a3b8;">Recorded: ${recordedText}</div>` : ''}
+  `;
+
+  const description = createEl("p", {
+    textContent: "Watch the recorded run retrace the optimal liquidity pool route. The closer the blue path is to the green optimal path, the more efficient the DeFi swap.",
+    style: {
+      fontSize: "12px",
+      lineHeight: "1.5",
+      color: "#9ca3af",
+    },
+  });
+
+  const controls = createEl("div", {
+    style: { display: "flex", gap: "10px" },
+  });
+  const replayBtn = createPrimaryButton("Replay Run", () => animateReplayTrace(replayTrace));
+  const closeBtn = createPrimaryButton("Close", () => closeOverlay());
+  replayBtn.style.marginTop = "0";
+  closeBtn.style.marginTop = "0";
+  closeBtn.style.background = "#1f2937";
+  closeBtn.style.borderColor = "#374151";
+  controls.appendChild(replayBtn);
+  controls.appendChild(closeBtn);
+
+  if (!Array.isArray(replayTrace) || replayTrace.length === 0) {
+    replayBtn.disabled = true;
+    replayBtn.style.opacity = "0.5";
+    const warning = createEl("div", {
+      textContent: "Replay trace is not available for this run yet.",
+      style: {
+        fontSize: "12px",
+        color: "#f87171",
+        background: "rgba(248,113,113,0.12)",
+        border: "1px solid rgba(248,113,113,0.35)",
+        padding: "8px",
+        borderRadius: "8px",
+      },
+    });
+    left.appendChild(warning);
+  }
+
+  left.appendChild(heading);
+  left.appendChild(meta);
+  left.appendChild(description);
+  left.appendChild(controls);
+
+  const right = createEl("div", {
+    style: {
+      flex: "1.2",
+      display: "flex",
+    },
+  });
+  const panel = createCanvasPanel("Ash Trail Replay", "Green = optimal path · Blue = recorded player path");
+  right.appendChild(panel);
+
+  layout.appendChild(left);
+  layout.appendChild(right);
+  setScene(layout);
+
+  drawReplayFrame(replayTrace, replayTrace.length ? 0 : -1);
+  if (replayTrace.length) {
+    animateReplayTrace(replayTrace);
+  }
+}
+
+export async function showAshTrailReplay(run, options = {}) {
+  if (!run) {
+    window.alert('Replay data was not found.');
+    return;
+  }
+
+  const bookId = options.bookId || run.book_id || 'defi_grimoire';
+  const book = BOOKS.find((b) => b.id === bookId) || BOOKS[0];
+  currentBook = book;
+  truePath = Array.isArray(book?.path) ? book.path.map((p) => ({ ...p })) : [];
+  replayTrace = Array.isArray(run.trace)
+    ? run.trace.map((p) => ({
+        x: typeof p.x === 'number' ? p.x : Number(p.x) || 0,
+        y: typeof p.y === 'number' ? p.y : Number(p.y) || 0,
+      }))
+    : [];
+
+  window.ashTrailActive = true;
+  window.minigameActive = false;
+  isRunPhase = false;
+
+  openOverlay();
+  renderReplayScene({
+    book,
+    playerName: options.playerName || run.user_info?.name || run.user_info?.uid || 'Unknown',
+    score: options.score ?? run.score ?? 0,
+    rank: options.rank ?? null,
+    createdAt: run.created_at ?? null,
+  });
+}
+
+window.showAshTrailReplay = showAshTrailReplay;
 
 // Public entry point
 export async function showAshTrailMinigame() {

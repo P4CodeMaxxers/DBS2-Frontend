@@ -342,6 +342,60 @@ const DBS2API = {
         }
     },
 
+    // ============ ASH TRAIL RUNS ============
+    async submitAshTrailRun(bookId, score, trace) {
+        try {
+            const res = await fetch(`${this.baseUrl}/ash-trail/runs`, {
+                ...fetchOptions,
+                method: 'POST',
+                body: JSON.stringify({
+                    book_id: bookId,
+                    score,
+                    trace: Array.isArray(trace) ? trace : []
+                })
+            });
+            if (!res.ok) {
+                console.log('[DBS2API] submitAshTrailRun failed:', res.status);
+                return { success: false };
+            }
+            return await res.json();
+        } catch (e) {
+            console.log('[DBS2API] submitAshTrailRun error:', e);
+            return { success: false, error: e?.message || 'network-error' };
+        }
+    },
+
+    async getAshTrailRuns(bookId, limit = 10) {
+        try {
+            const params = new URLSearchParams();
+            if (bookId) params.set('book_id', bookId);
+            if (limit) params.set('limit', Math.min(limit, 50));
+            const res = await fetch(`${this.baseUrl}/ash-trail/runs?${params.toString()}`, fetchOptions);
+            if (!res.ok) {
+                console.log('[DBS2API] getAshTrailRuns failed:', res.status);
+                return { runs: [], book_id: bookId };
+            }
+            return await res.json();
+        } catch (e) {
+            console.log('[DBS2API] getAshTrailRuns error:', e);
+            return { runs: [], book_id: bookId, error: e?.message || 'network-error' };
+        }
+    },
+
+    async getAshTrailRun(runId) {
+        try {
+            const res = await fetch(`${this.baseUrl}/ash-trail/runs/${runId}`, fetchOptions);
+            if (!res.ok) {
+                console.log('[DBS2API] getAshTrailRun failed:', res.status);
+                return { run: null };
+            }
+            return await res.json();
+        } catch (e) {
+            console.log('[DBS2API] getAshTrailRun error:', e);
+            return { run: null, error: e?.message || 'network-error' };
+        }
+    },
+
     // ============ LEADERBOARD ============
     async getLeaderboard(limit = 10) {
         try {
