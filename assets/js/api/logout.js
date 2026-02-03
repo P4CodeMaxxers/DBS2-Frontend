@@ -1,9 +1,8 @@
 /**
  * logout.js - Logout handler
- * Uses cookies for JWT authentication
  */
 
-import { pythonURI, javaURI } from './config.js';
+import { pythonURI, javaURI, getHeaders, clearAuthToken } from './config.js';
 
 // Try to import StatsManager for clearing local data
 let clearLocalData = null;
@@ -29,12 +28,13 @@ export async function handleLogout() {
         }
     }
     
-    // Logout from python backend (clears cookie)
+    // Logout from python backend (invalidates token) - send token before we clear it
     try {
         await fetch(pythonURI + '/api/authenticate', {
             method: 'DELETE',
             mode: 'cors',
-            credentials: 'include'  // Include cookies so backend can clear them
+            credentials: 'include',
+            headers: getHeaders()  // Include Authorization so backend can invalidate
         });
         console.log('[logout] Logged out from Python backend');
     } catch (e) {
@@ -52,6 +52,9 @@ export async function handleLogout() {
     } catch (e) {
         // Java backend might not exist, ignore
     }
+    
+    // Clear auth token from sessionStorage
+    clearAuthToken();
     
     // Clear any other localStorage items
     localStorage.removeItem('dbs2_intro_seen');

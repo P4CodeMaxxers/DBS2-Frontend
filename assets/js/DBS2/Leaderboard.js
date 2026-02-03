@@ -3,7 +3,7 @@
  * Displays a pixel-themed leaderboard with data from backend API
  * Features: refresh button, minimize button, auto-refresh, shows YOUR crypto
  */
-import { pythonURI } from '../api/config.js';
+import { pythonURI, getHeaders } from '../api/config.js';
 
 class Leaderboard {
     constructor(apiBase = null) {
@@ -20,7 +20,7 @@ class Leaderboard {
         }
         this.refreshInterval = null;
         this.isRefreshing = false;
-        this.currentTab = 'satoshis'; // 'satoshis' | 'games' | 'ashtrail'
+        this.currentTab = 'games'; // 'satoshis' | 'games' | 'ashtrail' — Games is main
         this.gamesData = [];      // sorted by completions count
         this.ashTrailData = [];   // { rank, name, score } for selected book
         this.ashTrailBook = 'defi_grimoire';
@@ -57,35 +57,11 @@ class Leaderboard {
                 }
             }
             
-            // Fallback to direct fetch if DBS2API not available or failed
-            // Get token from localStorage or cookie
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    const name = 'jwt_python_flask';
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) {
-                        token = parts.pop().split(';').shift();
-                    }
-                }
-            } catch (e) {
-                console.warn('[Leaderboard] Could not get token:', e);
-            }
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-Origin': 'client'
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
-            const response = await fetch(`${this.apiBase}/player`, {
+            // Fallback to direct fetch - use getHeaders() which includes Authorization when logged in
+            const response = await fetch(`${this.apiBase}/player?_t=${Date.now()}`, {
                 method: 'GET',
                 credentials: 'include',
-                headers: headers
+                headers: getHeaders()
             });
             
             if (response.ok) {
@@ -99,10 +75,8 @@ class Leaderboard {
                 return this.currentPlayerData;
             } else {
                 console.warn('[Leaderboard] Failed to fetch current player:', response.status, response.statusText);
-                // If 401, log token status for debugging
                 if (response.status === 401) {
-                    const token = getJWTToken();
-                    console.warn('[Leaderboard] 401 Unauthorized - Token available:', !!token);
+                    console.warn('[Leaderboard] 401 Unauthorized - Auth cookie may be missing or expired. Try logging in again.');
                 }
             }
         } catch (error) {
@@ -119,34 +93,10 @@ class Leaderboard {
             const url = `${this.apiBase}/leaderboard?limit=${limit}`;
             console.log('[Leaderboard] Fetching from:', url);
             
-            // Get token from localStorage or cookie
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token) {
-                    const name = 'jwt_python_flask';
-                    const value = `; ${document.cookie}`;
-                    const parts = value.split(`; ${name}=`);
-                    if (parts.length === 2) {
-                        token = parts.pop().split(';').shift();
-                    }
-                }
-            } catch (e) {
-                console.warn('[Leaderboard] Could not get token:', e);
-            }
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-Origin': 'client'
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
             const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
-                headers: headers
+                headers: getHeaders()
             });
             
             if (!response.ok) {
@@ -199,17 +149,7 @@ class Leaderboard {
         try {
             const gameKey = `ash_trail_${book}`;
             const url = `${this.apiBase}/leaderboard/minigame?game=${encodeURIComponent(gameKey)}&limit=${limit}`;
-            let token = null;
-            try {
-                token = localStorage.getItem('jwt_token');
-                if (!token && document.cookie) {
-                    const parts = `; ${document.cookie}`.split('; jwt_python_flask=');
-                    if (parts.length === 2) token = parts.pop().split(';').shift();
-                }
-            } catch (e) {}
-            const headers = { 'Content-Type': 'application/json', 'X-Origin': 'client' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const response = await fetch(url, { method: 'GET', credentials: 'include', headers });
+            const response = await fetch(url, { method: 'GET', credentials: 'include', headers: getHeaders() });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
             const rows = data.leaderboard || [];
@@ -317,12 +257,12 @@ class Leaderboard {
         const satoshisTab = document.createElement('button');
         satoshisTab.textContent = '💰 Satoshis';
         satoshisTab.id = 'leaderboard-tab-satoshis';
-        satoshisTab.style.cssText = tabStyle(true);
+        satoshisTab.style.cssText = tabStyle(false);
         satoshisTab.onclick = () => this.switchTab('satoshis');
         const gamesTab = document.createElement('button');
         gamesTab.textContent = '🎮 Games';
         gamesTab.id = 'leaderboard-tab-games';
-        gamesTab.style.cssText = tabStyle(false);
+        gamesTab.style.cssText = tabStyle(true);
         gamesTab.onclick = () => this.switchTab('games');
         const ashTrailTab = document.createElement('button');
         ashTrailTab.textContent = '📚 Ash Trail';
@@ -404,7 +344,7 @@ class Leaderboard {
         // Panel: Satoshis
         const panelSatoshis = document.createElement('div');
         panelSatoshis.id = 'leaderboard-panel-satoshis';
-        panelSatoshis.style.cssText = 'display: block;';
+        panelSatoshis.style.cssText = 'display: none;';
         const entriesContainer = document.createElement('div');
         entriesContainer.id = 'leaderboard-entries';
         entriesContainer.style.cssText = `
@@ -421,10 +361,10 @@ class Leaderboard {
         panelSatoshis.appendChild(entriesContainer);
         this.container.appendChild(panelSatoshis);
 
-        // Panel: Games Completed
+        // Panel: Games Completed (main default)
         const panelGames = document.createElement('div');
         panelGames.id = 'leaderboard-panel-games';
-        panelGames.style.cssText = 'display: none; padding: 10px;';
+        panelGames.style.cssText = 'display: block; padding: 10px;';
         const gamesEntries = document.createElement('div');
         gamesEntries.id = 'leaderboard-games-entries';
         gamesEntries.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
@@ -466,6 +406,9 @@ class Leaderboard {
         this.container.appendChild(yourSection);
 
         document.body.appendChild(this.container);
+
+        // Load default tab data (Games is main)
+        await this.switchTab(this.currentTab);
 
         if (autoRefresh) {
             this.startAutoRefresh(refreshIntervalMs);

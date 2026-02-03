@@ -4,17 +4,13 @@
  * Handles wallet, inventory, scores, and minigame state
  */
 
-import { pythonURI, fetchOptions } from '../api/config.js';
+import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
 
-// No-cache fetch options to always get fresh data
+// Fetch options for DBS2 API - headers from getHeaders() include Authorization when logged in
 const noCacheFetchOptions = {
     ...fetchOptions,
     cache: 'no-store',
-    headers: {
-        ...fetchOptions.headers,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-    }
+    get headers() { return getHeaders(); }
 };
 
 // Coin configurations
