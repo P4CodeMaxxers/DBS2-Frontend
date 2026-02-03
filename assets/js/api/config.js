@@ -5,8 +5,38 @@
 
 export const baseurl = "/DBS2-Frontend";
 
-// Key for JWT in sessionStorage - must match backend JWT_TOKEN_NAME (jwt_python_flask)
+// Key for JWT storage - must match backend JWT_TOKEN_NAME (jwt_python_flask)
 export const JWT_TOKEN_KEY = 'jwt_python_flask';
+
+/**
+ * Detect the best available Web Storage bucket for auth tokens.
+ * Prefer sessionStorage so the token clears with the tab, fall back to localStorage
+ * when browsers disable sessionStorage (tracking protection / private browsing).
+ */
+function detectStorage() {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const storagePriority = ['sessionStorage', 'localStorage'];
+    for (const type of storagePriority) {
+        try {
+            const storage = window[type];
+            if (!storage) continue;
+            const testKey = '__dbs2_auth_test__';
+            storage.setItem(testKey, '1');
+            storage.removeItem(testKey);
+            return { storage, type };
+        } catch (err) {
+            console.warn(`[Config] ${type} unavailable for auth token`, err?.message || err);
+        }
+    }
+
+    console.warn('[Config] Web Storage unavailable; backend requests will rely on cookies only');
+    return null;
+}
+
+const storageHandle = detectStorage();
 
 // Flask backend URI
 export var pythonURI;
@@ -21,6 +51,44 @@ console.log('[Config] Backend pythonURI:', pythonURI);
 
 export var javaURI = pythonURI;
 
+function readAuthToken() {
+    if (!storageHandle) {
+        return null;
+    }
+    try {
+        return storageHandle.storage.getItem(JWT_TOKEN_KEY);
+    } catch (err) {
+        console.warn('[Config] Unable to read auth token', err?.message || err);
+        return null;
+    }
+}
+
+function writeAuthToken(token) {
+    if (!storageHandle) {
+        return;
+    }
+    try {
+        storageHandle.storage.setItem(JWT_TOKEN_KEY, token);
+    } catch (err) {
+        console.warn('[Config] Unable to persist auth token', err?.message || err);
+    }
+}
+
+function removeStoredToken() {
+    const stores = [];
+    if (typeof window !== 'undefined') {
+        if (window.sessionStorage) stores.push(window.sessionStorage);
+        if (window.localStorage) stores.push(window.localStorage);
+    }
+    stores.forEach(store => {
+        try {
+            store.removeItem(JWT_TOKEN_KEY);
+        } catch (err) {
+            /* ignore */
+        }
+    });
+}
+
 /**
  * Get headers for API requests - includes Authorization when token is present
  * Token from sessionStorage works cross-origin (cookies often blocked by browsers)
@@ -30,25 +98,26 @@ export function getHeaders() {
         'Content-Type': 'application/json',
         'X-Origin': 'client'
     };
-    const token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(JWT_TOKEN_KEY) : null;
+    const token = readAuthToken();
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
 }
 
-/** Store auth token after login (call from login page before redirect) */
-export function setAuthToken(token) {
-    if (token && typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem(JWT_TOKEN_KEY, token);
-    }
+export function getAuthToken() {
+    return readAuthToken();
 }
 
-/** Clear auth token on logout */
+/** Store auth token after login (call from login page before redirect) */
+export function setAuthToken(token) {
+    if (!token) return;
+    writeAuthToken(token);
+}
+
+/** Remove auth token from every available storage bucket */
 export function clearAuthToken() {
-    if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.removeItem(JWT_TOKEN_KEY);
-    }
+    removeStoredToken();
 }
 
 /**
