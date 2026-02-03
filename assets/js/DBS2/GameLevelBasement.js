@@ -185,14 +185,14 @@ class GameLevelBasement {
     const sprite_data_closet = {
       id: 'Closet',
       greeting: 'THE CLOSET SHOP. Buy code scraps with your earned crypto to build The Green Machine!',
-      src: `${this.path}/images/DBS2/closet.png`,
-      SCALE_FACTOR: 8,
-      ANIMATION_RATE: 0,
-      pixels: { height: 1439, width: 1338 },
-      INIT_POSITION: { x: width * 8 / 21, y: height * 0.45 },
-      orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
-      hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
+      src: `${this.path}/images/DBS2/closetsheet.png`,
+      SCALE_FACTOR: 4,
+      ANIMATION_RATE: 80,
+      pixels: { height: 2000, width: 16000 },
+      INIT_POSITION: { x: width * 8 / 21, y: height * 0.35 },
+      orientation: { rows: 1, columns: 13 },
+      down: { row: 0, start: 0, columns: 8 },
+      hitbox: { widthPercentage: 0.001, heightPercentage: 0.5 },
       stationary: true
     };
 
