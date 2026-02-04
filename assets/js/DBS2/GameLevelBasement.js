@@ -156,11 +156,11 @@ class GameLevelBasement {
       greeting: 'TRANSACTION VALIDATOR. Learn how transactions are cleaned and verified!',
       src: `${this.path}/images/DBS2/computer3.png`,
       SCALE_FACTOR: 10,
-      ANIMATION_RATE: 0,
+      ANIMATION_RATE: 20,
       pixels: { height: 1628, width: 7649 / 5 },
       INIT_POSITION: { x: width * 8 / 21, y: height * 0.75 },
       orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
+      down: { row: 0, start: 0, columns: 5 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
       stationary: true
     };
