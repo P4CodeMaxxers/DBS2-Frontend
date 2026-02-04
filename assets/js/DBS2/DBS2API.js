@@ -410,8 +410,9 @@ const DBS2API = {
     
     refreshLeaderboard() {
         try {
-            if (window.Leaderboard && typeof window.Leaderboard.refresh === 'function') {
-                window.Leaderboard.refresh();
+            const lb = window.GameControl?.leaderboard || window.Leaderboard;
+            if (lb && typeof lb.refresh === 'function') {
+                lb.refresh();
             }
         } catch (e) {
             // Ignore leaderboard refresh errors
