@@ -114,16 +114,18 @@ class GameLevelBasement {
 
     /* ----------------------
        PINPAD EASTER EGG - Secret PIN entry
-       Floats near IShowGreen
+       Floats on top wall above IShowGreen
+       CHANGED: SCALE_FACTOR from 12 to 6 (doubles the size)
+       CHANGED: INIT_POSITION to be on top wall above IShowGreen
     ------------------------*/
     const sprite_data_pinpad = {
       id: 'Pinpad',
       greeting: 'SECRET SECURITY TERMINAL. Can you crack the code?',
       src: `${this.path}/images/DBS2/pinpad.png`,
-      SCALE_FACTOR: 6,
+      SCALE_FACTOR: 6,  // CHANGED from 12 to 6 (lower number = bigger sprite)
       ANIMATION_RATE: 0,
       pixels: { height: 512, width: 512 },
-      INIT_POSITION: { x: width * 19 / 24, y: height * 0.35 },
+      INIT_POSITION: { x: width * 17 / 22, y: height * 0.08 },  // CHANGED - same x as IShowGreen, top wall
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
       hitbox: { widthPercentage: 0.5, heightPercentage: 0.5 },
