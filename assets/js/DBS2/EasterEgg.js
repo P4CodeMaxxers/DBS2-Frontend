@@ -8,6 +8,12 @@ import Character from "./Character.js";
 class EasterEgg extends Character {
     constructor(data = null) {
         super(data);
+        
+        // Double the size of the sprite
+        if (this.spriteData) {
+            this.spriteData.scale = (this.spriteData.scale || 1) * 4;
+        }
+        
         this.bindEventListeners();
         
         // Floating animation properties
