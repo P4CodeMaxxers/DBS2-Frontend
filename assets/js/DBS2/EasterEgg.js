@@ -19,7 +19,7 @@ class EasterEgg extends Character {
         // PIN entry state
         this.isPinpadOpen = false;
         this.enteredPin = '';
-        this.correctPin = '72651'; // 5-digit secret PIN
+        this.correctPin = '72561'; // 5-digit secret PIN
     }
 
     update() {
