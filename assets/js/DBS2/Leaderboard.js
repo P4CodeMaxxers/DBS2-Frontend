@@ -670,13 +670,15 @@ class Leaderboard {
             const iconsWrap = document.createElement('span');
             iconsWrap.style.cssText = 'display: flex; gap: 2px;';
             gameIcons.forEach(g => {
-                const done = m[g.key];
-                const span = document.createElement('span');
-                span.title = g.title + (done ? ' ✓' : '');
-                span.textContent = done ? g.icon : '—';
-                span.style.cssText = `opacity: ${done ? 1 : 0.4}; font-size: 11px;`;
-                iconsWrap.appendChild(span);
-            });
+                    const done = m[g.key];
+                    const span = document.createElement('span');
+                    span.title = g.title + (done ? ' ✓' : '');
+                    span.textContent = g.icon;
+                    span.style.cssText = done
+                        ? 'font-size: 11px; filter: drop-shadow(0 0 4px #0f0) drop-shadow(0 0 2px #0f0);'
+                        : 'font-size: 11px; opacity: 0.3; filter: grayscale(1);';
+                    iconsWrap.appendChild(span);
+                });
             row.appendChild(rankSpan);
             row.appendChild(nameSpan);
             row.appendChild(iconsWrap);
