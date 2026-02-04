@@ -114,16 +114,18 @@ class GameLevelBasement {
 
     /* ----------------------
        PINPAD EASTER EGG - Secret PIN entry
-       Floats near IShowGreen
+       Floats on top wall above IShowGreen
+       CHANGED: SCALE_FACTOR from 12 to 6 (doubles the size)
+       CHANGED: INIT_POSITION to be on top wall above IShowGreen
     ------------------------*/
     const sprite_data_pinpad = {
       id: 'Pinpad',
       greeting: 'SECRET SECURITY TERMINAL. Can you crack the code?',
       src: `${this.path}/images/DBS2/pinpad.png`,
-      SCALE_FACTOR: 6,
+      SCALE_FACTOR: 6,  // CHANGED from 12 to 6 (lower number = bigger sprite)
       ANIMATION_RATE: 0,
       pixels: { height: 512, width: 512 },
-      INIT_POSITION: { x: width * 19 / 24, y: height * 0.35 },
+      INIT_POSITION: { x: width * 17 / 22, y: height * 0.08 },  // CHANGED - same x as IShowGreen, top wall
       orientation: { rows: 1, columns: 1 },
       down: { row: 0, start: 0, columns: 1 },
       hitbox: { widthPercentage: 0.5, heightPercentage: 0.5 },
@@ -154,13 +156,13 @@ class GameLevelBasement {
     const sprite_data_laundry = {
       id: 'laundry',
       greeting: 'TRANSACTION VALIDATOR. Learn how transactions are cleaned and verified!',
-      src: `${this.path}/images/DBS2/computa3.png`,
+      src: `${this.path}/images/DBS2/computer3.png`,
       SCALE_FACTOR: 10,
-      ANIMATION_RATE: 0,
-      pixels: { height: 2000, width: 2000 },
+      ANIMATION_RATE: 32,
+      pixels: { height: 1628, width: 7649 / 5 },
       INIT_POSITION: { x: width * 8 / 21, y: height * 0.75 },
       orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
+      down: { row: 0, start: 0, columns: 5 },
       hitbox: { widthPercentage: 0.3, heightPercentage: 0.3 },
       stationary: true
     };
@@ -170,13 +172,13 @@ class GameLevelBasement {
     const sprite_data_bookshelf = {
       id: 'Bookshelf',
       greeting: 'BLOCKCHAIN ARCHIVE. Trace the transaction trails and verify the chain!',
-      src: `${this.path}/images/DBS2/computa4.png`,
+      src: `${this.path}/images/DBS2/computer4.png`,
       SCALE_FACTOR: 8,
-      ANIMATION_RATE: 0,
-      pixels: { height: 1592, width: 1592 },
+      ANIMATION_RATE: 32,
+      pixels: { height: 2227, width: 9505 / 5 },
       INIT_POSITION: { x: width * 19 / 22, y: height * 3 / 5 },
       orientation: { rows: 1, columns: 1 },
-      down: { row: 0, start: 0, columns: 1 },
+      down: { row: 0, start: 0, columns: 5 },
       hitbox: { widthPercentage: 0.1, heightPercentage: 0.1 },
       stationary: true
     };
