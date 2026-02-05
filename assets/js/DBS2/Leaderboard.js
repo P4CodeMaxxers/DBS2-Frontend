@@ -787,7 +787,9 @@ class Leaderboard {
 
         try {
             let run = this.ashTrailRunCache.get(entry.runId);
-            if (!run) {
+            // Cached runs from list API don't include trace - always fetch full run for replay
+            const needsTrace = !run || !Array.isArray(run.trace) || run.trace.length === 0;
+            if (needsTrace) {
                 const payload = await getAshTrailRun(entry.runId);
                 if (payload?.run) {
                     run = payload.run;
