@@ -1,4 +1,4 @@
-import { addInventoryItem, rewardMinigame, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun, getCoinPrice } from './StatsManager.js';
+import { rewardMinigame, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun, getCoinPrice } from './StatsManager.js';
 import { showRewardAnimation } from './WalletDisplay.js';
 
 // Coin config for this minigame
@@ -1272,11 +1272,6 @@ async function awardCryptoForScore(score) {
       
       try {
         await completeMinigame('ash_trail');
-        await addInventoryItem({
-          name: 'Code Scrap: Ash Trail',
-          found_at: 'ash_trail',
-          timestamp: new Date().toISOString()
-        });
         isFirstCompletion = false;
       } catch (e) {}
     }
