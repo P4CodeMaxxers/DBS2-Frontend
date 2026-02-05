@@ -276,6 +276,74 @@ const DBS2API = {
         }
     },
 
+/**
+ * DBS2API.js - Character Management Additions
+ * Add these methods to your existing DBS2API object in DBS2API.js
+ */
+
+// Add these methods to the DBS2API object (around line 200, after the inventory methods)
+
+// ============ CHARACTER MANAGEMENT ============
+
+async equipCharacter(characterId) {
+    try {
+        const res = await fetch(`${this.baseUrl}/equip_character`, {
+            ...fetchOptions,
+            method: 'POST',
+            body: JSON.stringify({ character_id: characterId })
+        });
+        
+        if (!res.ok) {
+            const error = await res.json();
+            console.log('[DBS2API] equipCharacter failed:', error);
+            return { success: false, error: error.error || 'Failed to equip character' };
+        }
+        
+        const data = await res.json();
+        console.log('[DBS2API] Character equipped:', data);
+        return { success: true, ...data };
+    } catch (e) {
+        console.log('[DBS2API] equipCharacter error:', e);
+        return { success: false, error: e.message };
+    }
+},
+
+async getEquippedCharacter() {
+    try {
+        const cacheBuster = `?_t=${Date.now()}`;
+        const res = await fetch(`${this.baseUrl}/equipped_character${cacheBuster}`, noCacheFetchOptions);
+        
+        if (!res.ok) {
+            console.log('[DBS2API] getEquippedCharacter failed:', res.status);
+            return 'chillguy'; // Default character
+        }
+        
+        const data = await res.json();
+        return data.equipped_character || 'chillguy';
+    } catch (e) {
+        console.log('[DBS2API] getEquippedCharacter error:', e);
+        return 'chillguy';
+    }
+},
+
+async getOwnedCharacters() {
+    try {
+        const cacheBuster = `?_t=${Date.now()}`;
+        const res = await fetch(`${this.baseUrl}/owned_characters${cacheBuster}`, noCacheFetchOptions);
+        
+        if (!res.ok) {
+            console.log('[DBS2API] getOwnedCharacters failed:', res.status);
+            return ['chillguy']; // Default character always owned
+        }
+        
+        const data = await res.json();
+        return data.owned_characters || ['chillguy'];
+    } catch (e) {
+        console.log('[DBS2API] getOwnedCharacters error:', e);
+        return ['chillguy'];
+    }
+},
+
     // ============ SCORES ============
     async getScores() {
         try {

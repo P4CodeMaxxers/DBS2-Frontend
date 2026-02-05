@@ -9,6 +9,132 @@
  */
 
 import { getInventory, addInventoryItem, getWallet, convertCoin, getPrices } from './StatsManager.js';
+import { showCharacterSelector } from './CharacterSelector.js';
+
+/**
+ * Add this to your renderInventoryItem function
+ * This adds an "EQUIP" button for character items
+ */
+function renderInventoryItem(item, index) {
+    const baseurl = document.body.getAttribute('data-baseurl') || '';
+    
+    // Existing code...
+    
+    // Add this section for character items
+    let equipButton = '';
+    if (item.type === 'character') {
+        const equippedId = localStorage.getItem('equippedCharacter') || 'chillguy';
+        const isEquipped = item.id === equippedId;
+        
+        equipButton = `
+            <button class="inventory-equip-btn" 
+                    data-item-id="${item.id}"
+                    style="
+                width: 100%;
+                padding: 8px;
+                margin-top: 8px;
+                background: ${isEquipped ? '#666' : '#9d4edd'};
+                color: ${isEquipped ? '#999' : '#fff'};
+                border: none;
+                border-radius: 5px;
+                cursor: ${isEquipped ? 'not-allowed' : 'pointer'};
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                font-weight: bold;
+                transition: all 0.2s;
+            " ${isEquipped ? 'disabled' : ''}>
+                ${isEquipped ? '✓ EQUIPPED' : 'EQUIP'}
+            </button>
+        `;
+    }
+    
+    return `
+        <div class="inventory-item-card" data-item-index="${index}" style="...">
+            <!-- existing item card HTML -->
+            ${equipButton}
+        </div>
+    `;
+}
+
+/**
+ * Add this function to handle equip button clicks
+ * Call this after rendering inventory items
+ */
+function attachEquipHandlers() {
+    document.querySelectorAll('.inventory-equip-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const itemId = btn.dataset.itemId;
+            
+            // Import and call character selector
+            if (window.CharacterSelector) {
+                // Get the player object
+                const player = GameEnv.gameObjects.find(obj => obj.id === 'player');
+                if (player && player.changeCharacter) {
+                    player.changeCharacter(itemId);
+                    showMessage('Character equipped!', 'success');
+                    
+                    // Refresh inventory display
+                    if (window.Inventory && window.Inventory.refresh) {
+                        window.Inventory.refresh();
+                    }
+                }
+            }
+        };
+    });
+}
+
+/**
+ * Add a "Change Character" button to inventory UI
+ */
+function addCharacterSelectorButton() {
+    const inventoryContainer = document.getElementById('inventory-container');
+    if (!inventoryContainer) return;
+    
+    const existingBtn = document.getElementById('open-character-selector');
+    if (existingBtn) return; // Already added
+    
+    const btn = document.createElement('button');
+    btn.id = 'open-character-selector';
+    btn.textContent = '👤 CHANGE CHARACTER';
+    btn.style.cssText = `
+        position: absolute;
+        top: 15px;
+        right: 120px;
+        background: #9d4edd;
+        color: white;
+        border: 1px solid #c77dff;
+        padding: 8px 15px;
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: all 0.2s;
+    `;
+    
+    btn.onmouseenter = () => {
+        btn.style.background = '#c77dff';
+        btn.style.transform = 'scale(1.05)';
+    };
+    
+    btn.onmouseleave = () => {
+        btn.style.background = '#9d4edd';
+        btn.style.transform = 'scale(1)';
+    };
+    
+    btn.onclick = () => {
+        if (window.CharacterSelector) {
+            window.CharacterSelector.show();
+        }
+    };
+    
+    inventoryContainer.appendChild(btn);
+}
+
+// Call this in your inventory initialization
+// After: window.Inventory = { ... }
+// Add: addCharacterSelectorButton();
 
 // Code scrap definitions - physical paper fragments with handwritten code
 const CODE_SCRAPS = {
@@ -682,6 +808,24 @@ const Inventory = {
             }
             .convert-result.success { color: #0f0; }
             .convert-result.error { color: #f66; }
+            .inventory-character-btn {
+            position: absolute;
+            top: 10px;
+            right: 80px;
+            background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);
+            color: white;
+            border: 2px solid #c77dff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .inventory-character-btn:hover {
+            background: linear-gradient(135deg, #c77dff 0%, #9d4edd 100%);
+            transform: translateY(-2px);
+        }
         `;
         document.head.appendChild(style);
     },
@@ -706,7 +850,12 @@ const Inventory = {
             <button class="inventory-close" onclick="Inventory.close()">CLOSE</button>
             <h2>THE GREEN MACHINE</h2>
             <div class="inventory-subtitle">Recovery Status</div>
-            
+        
+            <button class="inventory-character-btn" onclick="Inventory.openCharacterSelector()" 
+                    title="Change Character">
+                CHARACTERS
+            </button>
+
             <div class="inventory-story-hint">
                 <p>Recover all five code fragments and present them to IShowGreen.</p>
                 <p>He may let you leave. Or you can earn 500 crypto to buy your way out.</p>
@@ -1097,6 +1246,15 @@ const Inventory = {
                 btn.disabled = false;
                 btn.textContent = 'CONVERT (5% fee)';
             }
+        }
+    },
+    async convertToSats() {
+        // ... existing code ...
+    },  // ← Add comma here!
+    
+    openCharacterSelector() {
+        if (window.CharacterSelector && window.CharacterSelector.show) {
+            window.CharacterSelector.show();
         }
     }
 };

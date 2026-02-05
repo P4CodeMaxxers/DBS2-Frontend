@@ -1,11 +1,12 @@
 import GameEnv from './GameEnv.js';
 import Character from './Character.js';
 import Inventory from './Inventory.js';
+import { getEquippedCharacter as getEquippedFromBackend } from './StatsManager.js';
 
 // Define non-mutable constants as defaults
-const SCALE_FACTOR = 25; // 1/nth of the height of the canvas
-const STEP_FACTOR = 100; // 1/nth, or N steps up and across the canvas
-const ANIMATION_RATE = 1; // 1/nth of the frame rate
+const SCALE_FACTOR = 25;
+const STEP_FACTOR = 100;
+const ANIMATION_RATE = 1;
 const INIT_POSITION = { x: 0, y: 0 };
 
 /**
@@ -22,12 +23,6 @@ function isMinigameOrDialogueActive() {
 
 /**
  * Player is a dynamic class that manages the data and events for objects like a player 
- * 
- * This class uses a classic Java class pattern which is nice for managing object data and events.
- * 
- * @method bindEventListeners - Binds key event listeners to handle object movement.
- * @method handleKeyDown - Handles key down events to change the object's velocity.
- * @method handleKeyUp - Handles key up events to stop the object's velocity.
  */
 class Player extends Character {
     /**
@@ -36,13 +31,17 @@ class Player extends Character {
      * @param {Object|null} data - The sprite data for the object. If null, a default red square is used.
      */
     constructor(data = null) {
-        super(data);
+        // Load equipped character before initializing
+        const characterData = Player.loadEquippedCharacter(data);
+        
+        super(characterData);
         this.keypress = data?.keypress || {up: 87, left: 65, down: 83, right: 68};
+        this.characterId = characterData.characterId || 'chillguy';
         this.bindEventListeners();
-        // Link this player to the global Inventory so inventory belongs to the player instance
+        
+        // Link this player to the global Inventory
         try {
             Inventory.setOwner(this);
-            // ensure the player has an `inventory` property referencing current items
             this.inventory = Inventory.getItems();
         } catch (e) {
             console.error('Could not attach Inventory to Player', e);
@@ -50,12 +49,95 @@ class Player extends Character {
         }
     }
 
+    /**
+     * Load the equipped character sprite data
+     */
+    static loadEquippedCharacter(baseData) {
+        const baseurl = document.body.getAttribute('data-baseurl') || '';
+        
+        // Get equipped character from localStorage
+        const equippedId = localStorage.getItem('equippedCharacter') || 'chillguy';
+        
+        // Character sprite definitions
+        const CHARACTER_SPRITES = {
+            chillguy: {
+                src: `${baseurl}/images/DBS2/chillguy.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            },
+            'character_pink_princess': {
+                src: `${baseurl}/images/DBS2/pink-princess.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            },
+            'character_yellow_princess': {
+                src: `${baseurl}/images/DBS2/yellow-princess.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            }
+        };
+        
+        // Get the equipped character sprite or default to chillguy
+        const equippedSprite = CHARACTER_SPRITES[equippedId] || CHARACTER_SPRITES.chillguy;
+        
+        // Merge equipped sprite data with base data
+        const characterData = {
+            ...baseData,
+            src: equippedSprite.src,
+            pixels: equippedSprite.pixels,
+            SCALE_FACTOR: equippedSprite.SCALE_FACTOR,
+            characterId: equippedId
+        };
+        
+        console.log('[Player] Loaded equipped character:', equippedId);
+        
+        return characterData;
+    }
+
+    /**
+     * Change the player's character sprite
+     */
+    changeCharacter(characterId) {
+        const baseurl = document.body.getAttribute('data-baseurl') || '';
+        
+        const CHARACTER_SPRITES = {
+            chillguy: {
+                src: `${baseurl}/images/DBS2/chillguy.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            },
+            'character_pink_princess': {
+                src: `${baseurl}/images/DBS2/pink-princess.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            },
+            'character_yellow_princess': {
+                src: `${baseurl}/images/DBS2/yellow-princess.png`,
+                pixels: { height: 128, width: 128 },
+                SCALE_FACTOR: 5
+            }
+        };
+        
+        const newSprite = CHARACTER_SPRITES[characterId];
+        if (!newSprite) {
+            console.error('[Player] Invalid character ID:', characterId);
+            return false;
+        }
+        
+        // Update sprite sheet
+        this.spriteSheet.src = newSprite.src;
+        this.characterId = characterId;
+        
+        // Store in localStorage
+        localStorage.setItem('equippedCharacter', characterId);
+        
+        console.log('[Player] Character changed to:', characterId);
+        
+        return true;
+    }
 
     /**
      * Binds key event listeners to handle object movement.
-     * 
-     * This method binds keydown and keyup event listeners to handle object movement.
-     * The .bind(this) method ensures that 'this' refers to the object object.
      */
     bindEventListeners() {
         addEventListener('keydown', this.handleKeyDown.bind(this));
@@ -67,7 +149,7 @@ class Player extends Character {
         if (isMinigameOrDialogueActive()) return;
         
         const keyCode = event.keyCode || event.which;
-        if (!keyCode) return; // Skip if no keyCode available
+        if (!keyCode) return;
         
         switch (keyCode) {
             case this.keypress.up:
@@ -91,17 +173,13 @@ class Player extends Character {
 
     /**
      * Handles key up events to stop the player's velocity.
-     * 
-     * This method stops the player's velocity based on the key released.
-     * 
-     * @param {Object} event - The keyup event object.
      */
     handleKeyUp(event) {
         // Disable movement while any minigame or dialogue is active
         if (isMinigameOrDialogueActive()) return;
         
         const keyCode = event.keyCode || event.which;
-        if (!keyCode) return; // Skip if no keyCode available
+        if (!keyCode) return;
         
         switch (keyCode) {
             case this.keypress.up:
@@ -118,7 +196,6 @@ class Player extends Character {
                 break;
         }
     }
-
 }
 
 export default Player;
