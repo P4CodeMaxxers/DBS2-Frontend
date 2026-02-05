@@ -626,7 +626,6 @@ export async function syncWithServer() {
     }
 }
 
-// Alias for backwards compatibility with Prompt.js
 export const updateBalance = updateCrypto;
 
 // Export default object with all functions for backwards compatibility
@@ -668,5 +667,51 @@ export default {
     // Player
     getPlayer,
     getPlayerData,
-    syncWithServer
+    syncWithServer,
+    // Character Management
+    equipCharacter,
+    getEquippedCharacter
 };
+
+// ==================== CHARACTER MANAGEMENT FUNCTIONS ====================
+
+/**
+ * Equip a character
+ */
+export async function equipCharacter(characterId) {
+    try {
+        if (DBS2API && DBS2API.equipCharacter) {
+            const result = await DBS2API.equipCharacter(characterId);
+            if (result.success) {
+                localStorage.setItem('equippedCharacter', characterId);
+                return { success: true, data: result };
+            }
+            return { success: false, error: result.error };
+        }
+        
+        // Fallback
+        localStorage.setItem('equippedCharacter', characterId);
+        return { success: true, message: 'Equipped locally' };
+    } catch (e) {
+        console.error('[StatsManager] equipCharacter error:', e);
+        localStorage.setItem('equippedCharacter', characterId);
+        return { success: true };
+    }
+}
+
+/**
+ * Get equipped character
+ */
+export async function getEquippedCharacter() {
+    try {
+        if (DBS2API && DBS2API.getEquippedCharacter) {
+            const equipped = await DBS2API.getEquippedCharacter();
+            if (equipped) localStorage.setItem('equippedCharacter', equipped);
+            return equipped || 'chillguy';
+        }
+        return localStorage.getItem('equippedCharacter') || 'chillguy';
+    } catch (e) {
+        return localStorage.getItem('equippedCharacter') || 'chillguy';
+    }
+}
+
