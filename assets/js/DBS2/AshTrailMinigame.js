@@ -125,7 +125,7 @@ const BOOKS = [
     difficulty: 3,
     rating: "9.5/10",
     requiredScore: 60,
-    description: "Advanced routing through multiple pools with varying liquidity (SOL → USDC → ETH → BTC). Requires understanding price impact, slippage, and optimal pathfinding.",
+    description: "Advanced routing through multiple pools with varying liquidity. Requires understanding price impact, slippage, and optimal pathfinding.",
     path: buildHeartPath(),
     routingExample: "SOL → USDC → ETH → BTC",
     poolType: "Multi-Hop Optimization",
