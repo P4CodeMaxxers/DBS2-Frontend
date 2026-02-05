@@ -4,7 +4,7 @@
  * Handles wallet, inventory, scores, and minigame state
  */
 
-import { pythonURI, fetchOptions, getHeaders } from '../api/config.js';
+import { pythonURI, fetchOptions, getHeaders, getAuthFetchOptions, getAuthToken } from '../api/config.js';
 
 // Fetch options for DBS2 API - headers from getHeaders() include Authorization when logged in
 const noCacheFetchOptions = {
@@ -35,6 +35,17 @@ const MINIGAME_COINS = {
 
 const DBS2API = {
     baseUrl: pythonURI + '/api/dbs2',
+
+    /** Persistent guest ID for unauthenticated Ash Trail runs (localStorage) */
+    _getOrCreateGuestId() {
+        const key = 'dbs2_guest_id';
+        let id = localStorage.getItem(key);
+        if (!id) {
+            id = 'Guest_' + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem(key, id);
+        }
+        return id;
+    },
     
     // ============ PLAYER ============
     async getPlayer() {
@@ -345,20 +356,24 @@ const DBS2API = {
     // ============ ASH TRAIL RUNS ============
     async submitAshTrailRun(bookId, score, trace) {
         try {
-            const res = await fetch(`${this.baseUrl}/ash-trail/runs`, {
-                ...fetchOptions,
-                method: 'POST',
-                body: JSON.stringify({
-                    book_id: bookId,
-                    score,
-                    trace: Array.isArray(trace) ? trace : []
-                })
-            });
-            if (!res.ok) {
-                console.log('[DBS2API] submitAshTrailRun failed:', res.status);
-                return { success: false };
+            const body = {
+                book_id: bookId,
+                score,
+                trace: Array.isArray(trace) ? trace : []
+            };
+            // When not logged in, pass guest_name so backend can store run under guest user
+            if (!getAuthToken()) {
+                body.guest_name = this._getOrCreateGuestId();
             }
-            return await res.json();
+            const res = await fetch(`${this.baseUrl}/ash-trail/runs`, getAuthFetchOptions('POST', body));
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const msg = errData.error || errData.message || `HTTP ${res.status}`;
+                console.log('[DBS2API] submitAshTrailRun failed:', res.status, msg);
+                return { success: false, error: msg };
+            }
+            const data = await res.json();
+            return { success: true, run: data.run, ...data };
         } catch (e) {
             console.log('[DBS2API] submitAshTrailRun error:', e);
             return { success: false, error: e?.message || 'network-error' };

@@ -1,4 +1,5 @@
 import { rewardMinigame, isMinigameCompleted, completeMinigame, updateScore, getScores, submitAshTrailRun, getCoinPrice } from './StatsManager.js';
+import { pythonURI } from '../api/config.js';
 import { showRewardAnimation } from './WalletDisplay.js';
 
 // Coin config for this minigame
@@ -1235,10 +1236,19 @@ async function finishRun() {
       const trace = playerPath.filter((_, i) => i % stride === 0).map(p => ({ x: p.x, y: p.y }));
       console.log('[AshTrail] Submitting run:', { bookId: currentBook.id, score, traceLength: trace.length });
       const result = await submitAshTrailRun(currentBook.id, score, trace);
-      if (result && result.success) {
+      if (result && (result.success || result.run)) {
         console.log('[AshTrail] Run submitted successfully:', result.run?.id);
+        // Refresh leaderboard so the new run appears and replays work
+        try {
+          const lb = window.GameControl?.leaderboard || window.Leaderboard;
+          if (lb && typeof lb.refresh === 'function') lb.refresh();
+        } catch (_) {}
       } else {
-        console.warn('[AshTrail] Run submission failed:', result?.error || 'Unknown error');
+        const err = result?.error || 'Unknown error';
+        console.warn('[AshTrail] Run submission failed:', err);
+        if (err.includes('authenticated') || err.includes('log in')) {
+          console.warn('[AshTrail] Log in to save your run and enable replays.');
+        }
       }
     } else {
       console.warn('[AshTrail] Cannot submit run - missing book or path:', { 
@@ -1396,8 +1406,7 @@ function reactionForScore(score) {
 async function fetchAshTrailAI(book, score) {
   try {
     if (!book?.id) return null;
-    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const apiBase = isLocalhost ? "http://localhost:8403/api/dbs2" : "/api/dbs2";
+    const apiBase = (pythonURI || '').replace(/\/$/, '') + '/api/dbs2';
     const res = await fetch(`${apiBase}/ash-trail/ai`, {
       method: "POST",
       credentials: "include",

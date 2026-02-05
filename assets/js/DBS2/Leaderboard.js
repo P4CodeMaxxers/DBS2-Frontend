@@ -158,20 +158,35 @@ class Leaderboard {
             const rows = data.leaderboard || [];
 
             // Build lookup of best recorded runs per user for this book
+            // For guests (uid=_ashtrail_guest), key by name (guest_name) so each guest has own entry
             const runLookup = new Map();
+            const guestRunRows = [];  // Runs from guests (no minigame leaderboard entry)
             try {
                 const runPayload = await getAshTrailRuns(book, Math.max(limit, 10) * 3);
                 if (runPayload?.runs && Array.isArray(runPayload.runs)) {
                     runPayload.runs.forEach((run) => {
                         if (!run || !run.user_info) return;
                         const uid = run.user_info.uid;
-                        if (!uid) return;
-                        const existing = runLookup.get(uid);
+                        const name = run.user_info.name || 'Guest';
+                        const key = (uid === '_ashtrail_guest') ? `guest:${name}` : (uid || '');
+                        if (!key) return;
+                        const existing = runLookup.get(key);
                         if (!existing || (Number(run.score) || 0) > (Number(existing.score) || 0)) {
-                            runLookup.set(uid, run);
+                            runLookup.set(key, run);
                         }
                         if (run.id != null) {
                             this.ashTrailRunCache.set(run.id, run);
+                        }
+                    });
+                    // Build rows for guest runs (not in minigame leaderboard)
+                    const minigameUids = new Set((rows || []).map(r => (r.user_info || {}).uid));
+                    runLookup.forEach((run, key) => {
+                        if (key.startsWith('guest:') && run.user_info?.uid === '_ashtrail_guest') {
+                            guestRunRows.push({
+                                rank: 0,
+                                user_info: run.user_info,
+                                score: Number(run.score) || 0
+                            });
                         }
                     });
                 }
@@ -179,10 +194,21 @@ class Leaderboard {
                 console.warn('[Leaderboard] Unable to load Ash Trail runs:', runErr);
             }
 
-            return rows.map((entry, idx) => {
+            const allRows = [...rows];
+            guestRunRows.sort((a, b) => (b.score || 0) - (a.score || 0));
+            guestRunRows.forEach((r, i) => {
+                if (!allRows.some(ex => (ex.user_info?.name || ex.user_info?.uid) === (r.user_info?.name || r.user_info?.uid))) {
+                    allRows.push({ ...r, rank: allRows.length + 1 });
+                }
+            });
+            allRows.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+
+            return allRows.map((entry, idx) => {
                 const userInfo = entry.user_info || {};
                 const uid = userInfo.uid;
-                const bestRun = uid ? runLookup.get(uid) : null;
+                const name = userInfo.name || 'Unknown';
+                const lookupKey = (uid === '_ashtrail_guest') ? `guest:${name}` : uid;
+                const bestRun = lookupKey ? runLookup.get(lookupKey) : null;
                 const scoreFromEntry = typeof entry.score === 'number' ? entry.score : Number(entry.score ?? NaN);
                 const scoreValue = Number.isFinite(scoreFromEntry)
                     ? scoreFromEntry
