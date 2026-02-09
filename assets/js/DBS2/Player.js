@@ -53,46 +53,58 @@ class Player extends Character {
      * Load the equipped character sprite data
      */
     static loadEquippedCharacter(baseData) {
-        const baseurl = document.body.getAttribute('data-baseurl') || '';
-        
-        // Get equipped character from localStorage
-        const equippedId = localStorage.getItem('equippedCharacter') || 'chillguy';
-        
-        // Character sprite definitions
-        const CHARACTER_SPRITES = {
-            chillguy: {
-                src: `${baseurl}/images/DBS2/chillguy.png`,
-                pixels: { height: 128, width: 128 },
-                SCALE_FACTOR: 5
-            },
-            'character_pink_princess': {
-                src: `${baseurl}/images/DBS2/pink-princess.png`,
-                pixels: { height: 128, width: 128 },
-                SCALE_FACTOR: 5
-            },
-            'character_yellow_princess': {
-                src: `${baseurl}/images/DBS2/yellow-princess.png`,
-                pixels: { height: 128, width: 128 },
-                SCALE_FACTOR: 5
-            }
-        };
-        
-        // Get the equipped character sprite or default to chillguy
-        const equippedSprite = CHARACTER_SPRITES[equippedId] || CHARACTER_SPRITES.chillguy;
-        
-        // Merge equipped sprite data with base data
-        const characterData = {
-            ...baseData,
-            src: equippedSprite.src,
-            pixels: equippedSprite.pixels,
-            SCALE_FACTOR: equippedSprite.SCALE_FACTOR,
-            characterId: equippedId
-        };
-        
-        console.log('[Player] Loaded equipped character:', equippedId);
-        
-        return characterData;
+    const baseurl = document.body.getAttribute('data-baseurl') || '';
+    
+    // Get equipped character from localStorage
+    let equippedId = localStorage.getItem('equippedCharacter') || 'chillguy';
+    
+    console.log('[Player] RAW equipped ID from localStorage:', equippedId);
+    
+    // Remove 'character_' prefix if present
+    if (equippedId && equippedId.startsWith('character_')) {
+        equippedId = equippedId.replace('character_', '');
     }
+    
+    console.log('[Player] CLEAN equipped ID:', equippedId);
+    
+    // Character sprite definitions
+    const CHARACTER_SPRITES = {
+        'chillguy': {
+            src: `${baseurl}/images/DBS2/chillguy.png`,
+            pixels: { height: 128, width: 128 },
+            SCALE_FACTOR: 5
+        },
+        'pink_princess': {
+            src: `${baseurl}/images/DBS2/pink-princess.png`,
+            pixels: { height: 128, width: 128 },
+            SCALE_FACTOR: 5
+        },
+        'yellow_princess': {
+            src: `${baseurl}/images/DBS2/yellow-princess.png`,
+            pixels: { height: 128, width: 128 },
+            SCALE_FACTOR: 5
+        }
+    };
+    
+    // Get the equipped character sprite or default to chillguy
+    const equippedSprite = CHARACTER_SPRITES[equippedId] || CHARACTER_SPRITES['chillguy'];
+    
+    console.log('[Player] Selected sprite data:', equippedSprite);
+    console.log('[Player] Sprite path:', equippedSprite.src);
+    
+    // Merge equipped sprite data with base data
+    const characterData = {
+        ...baseData,
+        src: equippedSprite.src,
+        pixels: equippedSprite.pixels,
+        SCALE_FACTOR: equippedSprite.SCALE_FACTOR,
+        characterId: equippedId
+    };
+    
+    console.log('[Player] FINAL character data:', characterData);
+    
+    return characterData;
+}
 
     /**
      * Change the player's character sprite
@@ -100,25 +112,31 @@ class Player extends Character {
     changeCharacter(characterId) {
         const baseurl = document.body.getAttribute('data-baseurl') || '';
         
+        // Remove 'character_' prefix if present
+        let cleanId = characterId;
+        if (cleanId && cleanId.startsWith('character_')) {
+            cleanId = cleanId.replace('character_', '');
+        }
+        
         const CHARACTER_SPRITES = {
-            chillguy: {
+            'chillguy': {
                 src: `${baseurl}/images/DBS2/chillguy.png`,
                 pixels: { height: 128, width: 128 },
                 SCALE_FACTOR: 5
             },
-            'character_pink_princess': {
+            'pink_princess': {
                 src: `${baseurl}/images/DBS2/pink-princess.png`,
                 pixels: { height: 128, width: 128 },
                 SCALE_FACTOR: 5
             },
-            'character_yellow_princess': {
+            'yellow_princess': {
                 src: `${baseurl}/images/DBS2/yellow-princess.png`,
                 pixels: { height: 128, width: 128 },
                 SCALE_FACTOR: 5
             }
         };
         
-        const newSprite = CHARACTER_SPRITES[characterId];
+        const newSprite = CHARACTER_SPRITES[cleanId];
         if (!newSprite) {
             console.error('[Player] Invalid character ID:', characterId);
             return false;
@@ -126,12 +144,12 @@ class Player extends Character {
         
         // Update sprite sheet
         this.spriteSheet.src = newSprite.src;
-        this.characterId = characterId;
+        this.characterId = cleanId;
         
         // Store in localStorage
-        localStorage.setItem('equippedCharacter', characterId);
+        localStorage.setItem('equippedCharacter', cleanId);
         
-        console.log('[Player] Character changed to:', characterId);
+        console.log('[Player] Character changed to:', cleanId);
         
         return true;
     }

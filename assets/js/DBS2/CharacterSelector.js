@@ -282,21 +282,15 @@ async function handleEquip(charId) {
     if (!char) return;
     
     try {
-        // Call backend to equip character
         const result = await equipCharacter(charId);
         
         if (result.success) {
-            // Store in localStorage
-            localStorage.setItem('equippedCharacter', charId);
-            
-            // Update player sprite in game
-            updatePlayerSprite(char);
-            
             showMessage(`${char.name} equipped!`, 'success');
             
-            // Refresh the UI
-            document.getElementById('characters-grid').innerHTML = renderCharacters();
-            attachCharacterHandlers();
+            setTimeout(() => {
+                // Just reload - no need to hide first
+                window.location.reload();
+            }, 500);
         } else {
             showMessage(result.error || 'Failed to equip character!', 'error');
         }

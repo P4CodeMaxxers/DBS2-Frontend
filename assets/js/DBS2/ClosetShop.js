@@ -80,7 +80,7 @@ const SHOP_ITEMS = {
         type: 'character',
         category: 'cosmetic',
         image: 'yellow-princess.png',
-        price: { coin: 'solana', amount: 2 },
+        price: { coin: 'solana', amount: 2.0 },
         description: 'A radiant yellow princess character sprite.',
         unlockMessage: 'Yellow Princess character unlocked!'
     },
