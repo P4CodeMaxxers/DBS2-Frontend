@@ -3,6 +3,7 @@ import GameLevelBasement from './GameLevelBasement.js';
 import Inventory from './Inventory.js';
 import Prompt from './Prompt.js';
 import Leaderboard from './Leaderboard.js';
+import DBS2MultiplayerChat from './DBS2MultiplayerChat.js';
 
 // Import StatsManager for user-specific data initialization
 let initializeStatsManager = null;
@@ -57,6 +58,8 @@ const GameControl = {
         }
         // Initialize inventory UI
         try { Inventory.init(); } catch (e) { console.error('Inventory init failed', e); }
+        // Initialize multiplayer chat (WebSocket)
+        try { DBS2MultiplayerChat.init(); } catch (e) { console.warn('Multiplayer chat init failed', e); }
         
         // Initialize win condition listeners
         this.initWinConditionListeners();
