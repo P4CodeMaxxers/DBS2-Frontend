@@ -46,8 +46,19 @@ if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
     pythonURI = "https://dbs2.opencodingsociety.com";
 }
 
+// WebSocket URI for DBS2 multiplayer chat (port 8765)
+export var websocketURI;
+if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    websocketURI = "ws://localhost:8765";
+} else {
+    // Use wss for production (secure WebSocket)
+    const host = "dbs2.opencodingsociety.com";
+    websocketURI = (location.protocol === "https:" ? "wss://" : "ws://") + host + ":8765";
+}
+
 console.log('[Config] Frontend hostname:', location.hostname);
 console.log('[Config] Backend pythonURI:', pythonURI);
+console.log('[Config] WebSocket URI:', websocketURI);
 
 export var javaURI = pythonURI;
 
