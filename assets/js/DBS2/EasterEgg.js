@@ -343,10 +343,10 @@ class EasterEgg extends Character {
                 `;
                 this.overlay.appendChild(successMsg);
 
-                // Award crypto bonus - 100,000 crypto
+                // Award crypto bonus - 5,000,000 crypto
                 const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
                 if (player && player.spriteData) {
-                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 1000000;
+                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 5000000;
                     console.log('🎁 Bonus awarded: 100,000 crypto!');
                 }
 
