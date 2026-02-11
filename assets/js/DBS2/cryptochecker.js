@@ -69,7 +69,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
             score: 0,
             correct: 0,
             total: 0,
-            timeLeft: 40,
+            timeLeft: 30,
             baseSpawnInterval: 2500,
             maxTermsOnScreen: 4,  // Start with max 4 terms
             activeTerms: [],
@@ -402,7 +402,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                 score: 0,
                 correct: 0,
                 total: 0,
-                timeLeft: 40,
+                timeLeft: 30,
                 baseSpawnInterval: 2500,
                 maxTermsOnScreen: 4,
                 activeTerms: [],
@@ -610,7 +610,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                     
                     <p style="color: #888; margin-bottom: 15px; font-size: 14px;">
                         ${won 
-                            ? `You identified ${gameState.correct} threats correctly in 40 seconds!` 
+                            ? `You identified ${gameState.correct} threats correctly in 30 seconds!` 
                             : 'Study the difference between legit tech and scams!'}
                     </p>
                     
