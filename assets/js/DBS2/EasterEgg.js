@@ -4,6 +4,7 @@
 
 import GameEnv from "./GameEnv.js";
 import Character from "./Character.js";
+import { addCrypto } from "./StatsManager.js";
 
 class EasterEgg extends Character {
     constructor(data = null) {
@@ -25,7 +26,7 @@ class EasterEgg extends Character {
         // PIN entry state
         this.isPinpadOpen = false;
         this.enteredPin = '';
-        this.correctPin = '72561'; // 5-digit secret PIN
+        this.correctPin = '72651'; // 5-digit secret PIN
     }
 
     update() {
@@ -320,35 +321,19 @@ class EasterEgg extends Character {
         const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
         
         if (player && player.spriteData) {
-            // Update local player data
+            // Update local player data immediately
             player.spriteData.crypto = (player.spriteData.crypto || 0) + CRYPTO_REWARD;
             console.log(`🎁 Local bonus awarded: ${CRYPTO_REWARD.toLocaleString()} crypto!`);
             
-            // Save to backend API
+            // Save to backend using StatsManager
             try {
-                const response = await fetch('/api/dbs2/crypto', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-                    },
-                    body: JSON.stringify({
-                        add: CRYPTO_REWARD
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Backend saved successfully:', data);
-                    // Update local player with backend response
-                    if (data.crypto !== undefined) {
-                        player.spriteData.crypto = data.crypto;
-                    }
-                } else {
-                    console.error('❌ Backend save failed:', response.status);
-                }
+                const newBalance = await addCrypto(CRYPTO_REWARD);
+                console.log('✅ Backend saved successfully! New balance:', newBalance);
+                // Update local player with backend response
+                player.spriteData.crypto = newBalance;
             } catch (error) {
                 console.error('❌ Error saving to backend:', error);
+                console.log('💾 Crypto saved locally, will sync when online');
             }
         }
 
