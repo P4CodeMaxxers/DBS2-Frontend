@@ -1,398 +1,417 @@
-# DBS2 Game — N@tM Presentation Guide
+# DBS2: Decentralized Banking Simulator 2
+## Skill C — N@tM Presentation
 
-> **Team Project**: DBS2 (Decentralized Banking Simulator 2)  
-> **Presentation Date**: 02/12/2026  
-> **Team Members**: Evan S, Maya D, Cyrus Z, West S, Aryan S.
-
----
-
-## PRIMARY TEAM OVERVIEW (1 Minute)
-
-### Opening Hook (10 seconds)
-> "What if learning about cryptocurrency wasn't just reading articles — but actually *playing* through it?"
-
-### Purpose & Scope (15 seconds)
-DBS2 is an **educational crypto-themed RPG game** where players:
-- Navigate a pixel-art basement environment
-- Complete **5 unique minigames** that teach blockchain concepts
-- Earn **real cryptocurrency tokens** (simulated multi-coin wallet)
-- Collect **code scraps** to build "The Green Machine" — the ultimate goal
-
-### The Superpower (15 seconds)
-> **"Learn by Earning"** — Every game mechanic teaches a crypto concept:
-> - Mining → Crypto Miner minigame → Earns Satoshis
-> - Transaction validation → Laundry Game → Earns Cardano (ADA)
-> - Security/scam detection → Whack-a-Rat → Earns Dogecoin
-> - Blockchain verification → Ash Trail → Earns Solana
-> - Authentication → Infinite User → Earns Ethereum
-
-### Key Features (15 seconds)
-- **Multi-coin wallet** with live price tracking (CoinGecko API)
-- **Coin conversion system** (any-to-any with 5% fee)
-- **Persistent leaderboard** tracking completions and earnings
-- **Shop system** to purchase code scraps with earned crypto
-- **JWT authentication** with cross-origin support
-
-### Demo Path (5 seconds)
-> "Let me show you the fastest path through our game..."
-
-**Suggested Demo Flow:**
-1. Login → Show wallet (0 balance)
-2. Play Crypto Miner → Earn Satoshis → Show wallet update
-3. Open Shop → Show code scrap available
-4. Show Leaderboard → Point out completion icons
+> **Team**: Evan, Maya, West, Cyrus, Aryan  
+> **Period**: _____ | **Date**: _______________
 
 ---
 
-## 📸 SCREENSHOTS & TOOLS CHECKLIST
+# 🎯 PRIMARY TEAM OVERVIEW (1 Minute)
 
-### For Live Demo
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| **Browser DevTools (Network tab)** | Show API calls in real-time | During any game action |
-| **Browser DevTools (Console)** | Show `[StatsManager]` logs | After minigame completion |
-| **Postman** | Demo raw API endpoints | Backend logic section |
-| **SQLite Viewer (VSCode)** | Show database records | Transactional data section |
-| **Docker Desktop / `docker logs`** | Show backend container output | Deployment section |
-| **Admin Panel (`/dbs2admin.html`)** | Modify player data live | CRUD demonstration |
+## Purpose & Scope
+DBS2 is an **educational crypto-themed platformer** where players learn blockchain concepts by playing minigames and earning simulated cryptocurrency.
 
-### Screenshots to Prepare
-- [ ] Game start screen (character in basement)
-- [ ] Each minigame in action (5 screenshots)
-- [ ] Wallet panel expanded (showing all coins)
-- [ ] Conversion modal (any-to-any)
-- [ ] Shop/Closet with code scraps
-- [ ] Leaderboard with completion icons glowing
-- [ ] Admin panel showing player data
-- [ ] Postman collection with key endpoints
-- [ ] Network tab showing successful API call
-- [ ] Database table in SQLite viewer
+## The Superpower: "Learn by Earning"
+Every gameplay mechanic teaches a real crypto concept:
 
----
+| Minigame | Concept Taught | Currency Earned |
+|----------|----------------|-----------------|
+| Crypto Miner | Proof-of-Work | Satoshis |
+| Infinite User | Wallet Security | Ethereum |
+| Ash Trail | AMM Routing | Solana |
+| Laundry Game | Transactions | Cardano |
+| Border Control | Scam Detection | Dogecoin |
 
-## 👤 INDIVIDUAL PRESENTATIONS (1 Minute Each)
+## Key Features & Goals
+- **Multi-coin wallet** with live price tracking
+- **Any-to-any conversion** between cryptocurrencies
+- **Shop system** requiring different coins (forces diverse gameplay)
+- **Persistent leaderboard** synced to backend
+- **Character customization** with purchasable skins
 
-> **Instructions**: Each team member fills out ONE section below. Pick your strongest area.
-
----
-
-### INDIVIDUAL 1: _______________ 
-**Focus Area**: [ ] UI/UX  [ ] API  [ ] Deployment  [ ] Data  [ ] Debugging
-
-#### What I'm Presenting
-_Describe your specific contribution in 2-3 sentences:_
+## Optimal Demo Path
 ```
-[FILL IN]
+Login → Play Crypto Miner → Earn SATS → Check Wallet → 
+Open Shop → View Code Scraps → Check Leaderboard → 
+Convert Coins → Purchase Item
 ```
 
-#### Live Demo Steps
-1. [FILL IN - What will you show?]
-2. [FILL IN - What tool will you use?]
-3. [FILL IN - What's the expected outcome?]
+---
 
-#### Code Highlight
-_Paste a key code snippet (10-15 lines max) that shows your work:_
+# 👤 INDIVIDUAL PRESENTATIONS
+
+---
+
+# 1️⃣ EVAN — Crypto Miner
+
+## User Experience
+Players interact with a mining terminal, pressing SPACE to generate hashes. Valid hashes (starting with "00") fill a progress bar. Complete 3 blocks with increasing difficulty to win.
+
+## Superpower
+**Why it matters:** Proof-of-Work is how Bitcoin secures $1+ trillion in value  
+**What it does:** Simulates the hash-guessing process miners perform  
+**How it works:** Random hash generation with prefix matching
+
+## How It Was Made
+
+### API — Backend Integration
 ```javascript
-// [FILL IN]
+// On completion, two API calls fire:
+await completeMinigame('crypto_miner');  
+// PUT /api/dbs2/minigames { crypto_miner: true }
+
+await rewardMinigame('crypto_miner', satoshiAmount);
+// POST /api/dbs2/minigame/reward { minigame: 'crypto_miner', amount: 847 }
 ```
 
-#### Screenshot/Visual
-_Describe or attach the visual you'll show:_
-```
-[FILL IN - e.g., "Network tab showing POST to /api/dbs2/minigames returning 200"]
-```
+### Transactional Data — CRUD in Action
+| Before Mining | After Mining |
+|---------------|--------------|
+| `completed_crypto_miner: false` | `completed_crypto_miner: true` |
+| `satoshis: 0` | `satoshis: 847` |
 
-#### Happy Moment 🎉
-_What was your eureka moment?_
-```
-[FILL IN]
-```
-
----
-
-### INDIVIDUAL 2: _______________
-**Focus Area**: [ ] UI/UX  [ ] API  [ ] Deployment  [ ] Data  [ ] Debugging
-
-#### What I'm Presenting
-_Describe your specific contribution in 2-3 sentences:_
-```
-[FILL IN]
-```
-
-#### Live Demo Steps
-1. [FILL IN]
-2. [FILL IN]
-3. [FILL IN]
-
-#### Code Highlight
+### Code Logic
 ```javascript
-// [FILL IN]
-```
-
-#### Screenshot/Visual
-```
-[FILL IN]
-```
-
-#### Happy Moment 🎉
-```
-[FILL IN]
-```
-
----
-
-### INDIVIDUAL 3: _______________
-**Focus Area**: [ ] UI/UX  [ ] API  [ ] Deployment  [ ] Data  [ ] Debugging
-
-#### What I'm Presenting
-_Describe your specific contribution in 2-3 sentences:_
-```
-[FILL IN]
-```
-
-#### Live Demo Steps
-1. [FILL IN]
-2. [FILL IN]
-3. [FILL IN]
-
-#### Code Highlight
-```javascript
-// [FILL IN]
-```
-
-#### Screenshot/Visual
-```
-[FILL IN]
-```
-
-#### Happy Moment 🎉
-```
-[FILL IN]
-```
-
----
-
-### INDIVIDUAL 4: _______________
-**Focus Area**: [ ] UI/UX  [ ] API  [ ] Deployment  [ ] Data  [ ] Debugging
-
-#### What I'm Presenting
-_Describe your specific contribution in 2-3 sentences:_
-```
-[FILL IN]
-```
-
-#### Live Demo Steps
-1. [FILL IN]
-2. [FILL IN]
-3. [FILL IN]
-
-#### Code Highlight
-```javascript
-// [FILL IN]
-```
-
-#### Screenshot/Visual
-```
-[FILL IN]
-```
-
-#### Happy Moment 🎉
-```
-[FILL IN]
-```
-
----
-
-### INDIVIDUAL 5: _______________
-**Focus Area**: [ ] UI/UX  [ ] API  [ ] Deployment  [ ] Data  [ ] Debugging
-
-#### What I'm Presenting
-_Describe your specific contribution in 2-3 sentences:_
-```
-[FILL IN]
-```
-
-#### Live Demo Steps
-1. [FILL IN]
-2. [FILL IN]
-3. [FILL IN]
-
-#### Code Highlight
-```javascript
-// [FILL IN]
-```
-
-#### Screenshot/Visual
-```
-[FILL IN]
-```
-
-#### Happy Moment 🎉
-```
-[FILL IN]
-```
-
----
-
-## 🔧 PRESENTATION TOPIC IDEAS BY CATEGORY
-
-### UI/UX Walkthrough
-- **Wallet Display**: Show coin icons, live prices, 24h change indicators, conversion modal
-- **Leaderboard**: Tabs (Satoshis/Games/Ash Trail), green glow on completed games
-- **Shop/Closet**: Code scrap cards, ownership status, purchase flow
-- **Minigame UI**: Any of the 5 games — controls, feedback, reward animation
-
-### API / Backend Logic
-**Postman Endpoints to Demo:**
-```
-GET  /api/dbs2/player          → Player data with wallet, scraps, completions
-PUT  /api/dbs2/minigames       → Mark minigame complete
-POST /api/dbs2/minigame/reward → Award coins to wallet
-POST /api/dbs2/wallet/convert  → Any-to-any coin conversion
-POST /api/dbs2/shop/purchase   → Buy code scrap
-GET  /api/dbs2/leaderboard     → Ranked players by crypto
-GET  /api/dbs2/prices          → Live coin prices from CoinGecko
-```
-
-**Show in DevTools:**
-- Network tab → Filter by `dbs2` → Show request/response
-- Console → Filter by `[StatsManager]` → Show completion logs
-
-### Deployment & Data Flow
-```
-┌─────────────────┐     HTTPS      ┌─────────────────┐     SQLite     ┌─────────────┐
-│  GitHub Pages   │ ──────────────▶│  AWS/Docker     │ ──────────────▶│  Database   │
-│  (Frontend)     │   + JWT Auth   │  (Flask API)    │   ORM Queries  │  (.db file) │
-└─────────────────┘                └─────────────────┘                └─────────────┘
-     p4codemaxxers.github.io         dbs2.opencodingsociety.com          dbs2_players
-```
-
-**Docker Commands to Show:**
-```bash
-docker logs <container_id> --tail 50    # Recent API requests
-docker exec -it <container> bash        # Enter container
-sqlite3 instance/volumes/user_data.db   # Query database directly
-```
-
-### Transactional Data (CRUD)
-**Scenario**: Complete a minigame and watch the data change
-
-| Step | Action | Where to Show |
-|------|--------|---------------|
-| 1 | Open Admin Panel | `dbs2admin.html` — find your player |
-| 2 | Note: `completed_crypto_miner: false` | Admin toggle is OFF |
-| 3 | Play Crypto Miner in game | Game window |
-| 4 | Refresh Admin Panel | Toggle now ON, crypto increased |
-| 5 | (Optional) Show in SQLite | `SELECT * FROM dbs2_players WHERE user_id = X` |
-
-### Bulk Data / Database Reset
-**Scripts to Show:**
-```bash
-# Destroy and rebuild database
-cd backend
-rm instance/volumes/user_data.db
-python scripts/db_init.py
-
-# What db_init.py does:
-# - Creates all tables (users, dbs2_players, ashtrail_runs)
-# - Seeds initial data if configured
-# - Runs migrations for new columns (scrap_* fields)
-```
-
-**Live Demo**: Delete DB → Run init → Show empty leaderboard → Create account → Play game → Show data populated
-
-### Debugging Session
-**Scenario**: "Why isn't my minigame completion saving?"
-
-1. **Frontend**: Add `console.log` in `completeMinigame()` — is it called?
-2. **Network Tab**: Is the PUT request sent? What's the response?
-3. **Backend Logs**: `docker logs` — is the endpoint hit? Any errors?
-4. **Database**: Is `_completed_X` field actually updated?
-
-**Code to Highlight:**
-```javascript
-// StatsManager.js - completeMinigame()
-export async function completeMinigame(minigameName) {
-    try {
-        const response = await fetch(`${pythonURI}/api/dbs2/minigames`, {
-            method: 'PUT',
-            headers: getHeaders(),  // ← Auth token here
-            credentials: 'include',
-            body: JSON.stringify({ [minigameName]: true })
-        });
-        if (response.ok) {
-            const result = await response.json();
-            console.log('[StatsManager] Minigame completed on backend:', minigameName, result);
-            return result.minigames_completed || {};
+function attemptMine() {
+    const hash = generateHash();
+    const isValid = hash.startsWith(targetPrefix); // "00", "000", "0000"
+    
+    if (isValid) {
+        validHashes++;
+        if (validHashes >= hashesPerBlock) {
+            blocksCompleted++;
+            targetPrefix += '0'; // Increase difficulty
         }
-        console.warn('[StatsManager] completeMinigame response:', response.status);
-    } catch (e) {
-        console.log('API completeMinigame failed, using local:', e);
     }
-    // ... local fallback
 }
 ```
 
-### Feature Lifecycle Example
-**Feature**: Any-to-Any Coin Conversion
-
+## Feature Lifecycle
 | Stage | Evidence |
 |-------|----------|
-| **Origin** | User feedback: "I can only convert to satoshis, not other coins" |
-| **Issue Created** | GitHub Issue #XX or team discussion |
-| **Early Implementation** | `convertToSats()` function — hardcoded target |
-| **Iteration** | Added target dropdown, renamed to `convertCoins()` |
-| **Polished** | Full modal with preview, fee display, error handling |
-| **Completion** | PR merged, tested on deployed site |
+| **Origin** | "We need a game that teaches mining" |
+| **Early** | Simple spacebar counter, no visuals |
+| **Iteration** | Added hash display, difficulty scaling |
+| **Polished** | Live prices, boost multipliers, animations |
+
+## Happy Moment 🎉
+> "When the difficulty scaling clicked — watching players understand why Bitcoin mining gets harder over time, just from playing the game."
 
 ---
 
-## ✅ PRE-PRESENTATION CHECKLIST
+# 2️⃣ MAYA — Closet Shop & Characters
 
-### Technical Setup
-- [ ] Backend running (localhost:8403 or deployed)
-- [ ] Frontend running (localhost:4600 or GitHub Pages)
-- [ ] Logged in as test user with some data
-- [ ] Admin panel open in separate tab
-- [ ] Postman collection loaded
-- [ ] DevTools open (Network + Console)
-- [ ] SQLite viewer ready (if showing database)
+## User Experience
+Players open a shop interface with tabs (Code Scraps / Characters / Cosmetics). Each item costs a different cryptocurrency. Purchased characters appear in a selector for equipping.
 
-### Backup Plans
-- [ ] Screenshots saved locally (in case live demo fails)
-- [ ] Screen recording of full demo flow
-- [ ] Offline copy of code snippets to show
+## Superpower
+**Why it matters:** Forces players to earn ALL coin types, not just grind one  
+**What it does:** Multi-currency marketplace with real pricing  
+**How it works:** Backend validates balance, deducts coins, adds to inventory
 
-### Timing Practice
-- [ ] Team overview rehearsed (under 1 minute)
-- [ ] Each individual section rehearsed (under 1 minute)
-- [ ] Transition phrases prepared between sections
+## How It Was Made
+
+### API — Purchase Flow
+```javascript
+// Frontend request
+await purchaseShopItem('scrap_crypto_miner');
+// POST /api/dbs2/shop/purchase { item_id: 'scrap_crypto_miner' }
+
+// Backend response
+{
+    success: true,
+    item: 'scrap_crypto_miner',
+    wallet: { satoshis: 347, ethereum: 0.001, ... }
+}
+```
+
+### Transactional Data — Purchase Record
+| Field | Before | After |
+|-------|--------|-------|
+| `satoshis` | 847 | 347 |
+| `scrap_crypto_miner` | false | true |
+| `inventory` | [] | ['scrap_crypto_miner'] |
+
+### Code Logic — Multi-Currency Pricing
+```javascript
+const SHOP_ITEMS = {
+    scrap_crypto_miner: { price: { coin: 'satoshis', amount: 500 } },
+    scrap_laundry:      { price: { coin: 'cardano', amount: 5 } },
+    scrap_ash_trail:    { price: { coin: 'solana', amount: 0.05 } },
+    character_pink:     { price: { coin: 'dogecoin', amount: 500 } }
+};
+```
+
+## Feature Lifecycle
+| Stage | Evidence |
+|-------|----------|
+| **Origin** | "Players need a reason to collect all coins" |
+| **Early** | Single currency shop, basic list |
+| **Iteration** | Multi-currency, tab navigation |
+| **Polished** | Character selector, sprite switching, owned badges |
+
+## Happy Moment 🎉
+> "Buying Pink Princess with Dogecoin, opening Character Selector, equipping it, and seeing my avatar actually change in the game world."
 
 ---
 
-## TEAM HAPPY MOMENTS
+# 3️⃣ WEST — Infinite User
 
-_Fill in 2-3 breakthrough moments your team experienced:_
+## User Experience
+Players see a cipher code (letters converted to numbers). They must decode and type the correct password. Success earns Ethereum; creating new passwords rotates the database.
 
-1. **[FILL IN]** — _e.g., "When the leaderboard finally updated after fixing StatsManager to call the backend directly instead of the nonexistent DBS2API methods"_
+## Superpower
+**Why it matters:** Wallet security is #1 cause of crypto loss  
+**What it does:** Teaches authentication and password concepts  
+**How it works:** Cipher encoding + backend password rotation
 
-2. **[FILL IN]** — _e.g., "Realizing our JWT auth wasn't working cross-origin and implementing the Authorization header solution"_
+## How It Was Made
 
-3. **[FILL IN]** — _e.g., "The moment all 5 minigames connected to different coins and the wallet showed real balances"_
+### API — Password Endpoints
+```javascript
+// Fetch current passwords
+GET /api/DBS2/passwords
+→ { data: ["ishowgreen", "cryptoking", "basement", ...] }
+
+// Rotate in new password
+POST /api/DBS2/passwords/rotate
+{ old: "basement", new: "mynewpass123" }
+→ { data: ["ishowgreen", "cryptoking", "mynewpass123", ...] }
+```
+
+### Transactional Data — Password Rotation
+| Before | After |
+|--------|-------|
+| `["pass1", "pass2", "pass3", "pass4", "pass5"]` | `["pass1", "pass2", "pass3", "pass4", "newpass"]` |
+
+### Code Logic — The Cipher
+```javascript
+function convertToAlphaNumeric(str) {
+    let result = "";
+    for (let i = 0; i < str.length; i++) {
+        result += str.charCodeAt(i) - 96; // a=1, b=2, c=3
+        result += "/";
+    }
+    return result;
+}
+// "hello" → "8/5/12/12/15/"
+```
+
+## Feature Lifecycle
+| Stage | Evidence |
+|-------|----------|
+| **Origin** | "Teach why strong passwords matter" |
+| **Early** | Hardcoded password list, no backend |
+| **Iteration** | Backend sync, rotation system |
+| **Polished** | Content filter, educational hints, ETH rewards |
+
+## Happy Moment 🎉
+> "When passwords players created started appearing for other players — the game felt alive and shared."
 
 ---
 
-## QUICK REFERENCE: KEY FILES
+# 4️⃣ CYRUS — Ash Trail
 
-| File | Purpose |
-|------|---------|
-| `StatsManager.js` | Central API bridge — all backend calls |
-| `dbs2_api.py` | Flask backend — all endpoints |
-| `dbs2_player.py` | SQLAlchemy model — database schema |
-| `Inventory.js` | Wallet UI + conversion |
-| `Leaderboard.js` | Leaderboard tabs + game icons |
-| `config.js` | API URL + auth token handling |
-| `WalletDisplay.js` | Floating wallet + conversion modal |
-| `ClosetShop.js` (DBS2API.js) | Shop UI for code scraps |
+## User Experience
+Players select a "book" (difficulty level), then use WASD to trace a glowing path. Accuracy determines score and Solana reward. Paths represent token swap routes.
+
+## Superpower
+**Why it matters:** AMM routing determines if you lose money to slippage  
+**What it does:** Visualizes swap paths as traceable routes  
+**How it works:** Mathematical curve generation + accuracy scoring
+
+## How It Was Made
+
+### API — Run Submission
+```javascript
+// Submit completed run with trace data
+POST /api/dbs2/ash-trail/runs
+{
+    book_id: "defi_grimoire",
+    score: 87,
+    trace: [[12.5, 8.2], [12.7, 8.4], ...] // Player's path
+}
+
+// Fetch leaderboard runs
+GET /api/dbs2/ash-trail/runs?book_id=defi_grimoire&limit=10
+```
+
+### Transactional Data — Run Storage
+| Field | Value |
+|-------|-------|
+| `book_id` | "defi_grimoire" |
+| `score` | 87 |
+| `solana_earned` | 0.043 |
+| `trace_points` | 847 |
+| `timestamp` | 2025-02-11T... |
+
+### Code Logic — Path Generation
+```javascript
+// Easy: Sine wave (Direct Swap)
+function buildWavePath() {
+    for (let i = 0; i <= 72; i++) {
+        const t = i / 72;
+        pts.push({
+            x: minX + (maxX - minX) * t,
+            y: midY + Math.sin(t * Math.PI * 2) * amplitude
+        });
+    }
+}
+
+// Hard: Heart curve (Multi-Pool)
+function buildHeartPath() {
+    const xh = 16 * Math.pow(Math.sin(t), 3);
+    const yh = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t);
+}
+```
+
+## Feature Lifecycle
+| Stage | Evidence |
+|-------|----------|
+| **Origin** | "Visualize how DEX routing works" |
+| **Early** | Static path, click-based movement |
+| **Iteration** | WASD controls, multiple difficulties |
+| **Polished** | Parametric curves, trace recording, replay system |
+
+## Happy Moment 🎉
+> "The heart-shaped path for hard mode — it's mathematically beautiful AND teaches complex routing concepts."
+
+---
+
+# 5️⃣ ARYAN — Crypto Border Control
+
+## User Experience
+Terms float on screen with a yellow-highlighted selection. Press SPACE for legitimate crypto terms, BACKSPACE for scams. One wrong answer = game over. 30-second timer.
+
+## Superpower
+**Why it matters:** Crypto scams cost billions annually; education prevents loss  
+**What it does:** Rapid-fire identification of real vs fake crypto concepts  
+**How it works:** Curated term database with educational hints
+
+## How It Was Made
+
+### API — Score Submission
+```javascript
+// On game complete
+await completeMinigame('whackarat'); // Legacy backend name
+// PUT /api/dbs2/minigames { whackarat: true }
+
+await rewardMinigame('whackarat', dogeAmount);
+// POST /api/dbs2/minigame/reward { minigame: 'whackarat', amount: 15 }
+```
+
+### Transactional Data — Completion
+| Field | Before | After |
+|-------|--------|-------|
+| `completed_whackarat` | false | true |
+| `dogecoin` | 0 | 15 |
+
+### Code Logic — Term Database
+```javascript
+const legitTerms = [
+    { term: 'Blockchain', hint: 'Distributed ledger technology' },
+    { term: 'Cold Wallet', hint: 'Offline storage for crypto' },
+    { term: 'DeFi', hint: 'Decentralized Finance applications' }
+];
+
+const scamTerms = [
+    { term: 'Guaranteed Returns', hint: 'NO investment is guaranteed!' },
+    { term: 'Rug Pull', hint: 'Devs abandon project with your money' },
+    { term: 'Crypto Doubler', hint: '"Send 1 get 2" is ALWAYS fake' }
+];
+```
+
+## Debugging Example
+**Issue:** Game marked scams as correct  
+**Debug Steps:**
+1. Console log showed `isScam` always false
+2. Found: checking wrong array index
+3. Fix: `scamTerms.some(s => s.term === selected.term)`
+
+## Feature Lifecycle
+| Stage | Evidence |
+|-------|----------|
+| **Origin** | "Teach scam detection through gameplay" |
+| **Early** | Whack-a-mole with rats (too violent) |
+| **Iteration** | Pivoted to term identification |
+| **Polished** | Hints, animations, educational intro screen |
+
+## Happy Moment 🎉
+> "When testers recognized 'Celebrity Giveaway' from real scams they'd seen — the education was actually working."
+
+---
+
+# 🔧 TECHNICAL DEEP DIVE
+
+## Deployment Architecture
+```
+┌──────────────────┐      HTTPS + JWT       ┌──────────────────┐
+│  GitHub Pages    │ ◄────────────────────► │  AWS Docker      │
+│  (Static Site)   │                        │  (Flask API)     │
+│                  │  Authorization: Bearer │                  │
+│  /index.html     │  credentials: include  │  /api/dbs2/*     │
+└──────────────────┘                        └────────┬─────────┘
+                                                     │
+                                                     ▼
+                                            ┌──────────────────┐
+                                            │  SQLite + ORM    │
+                                            │  dbs2_players    │
+                                            │  ashtrail_runs   │
+                                            └──────────────────┘
+```
+
+## Bulk Data — Database Reset
+```bash
+# Destroy and rebuild
+rm instance/volumes/user_data.db
+python scripts/db_init.py
+
+# db_init.py creates:
+# - User accounts table
+# - DBS2 player data (wallet, completions, inventory)
+# - Ash Trail runs table
+```
+
+## StatsManager.js — Central API Bridge
+Every game action flows through one file:
+```javascript
+// All API calls use consistent auth
+import { pythonURI, getHeaders } from '../api/config.js';
+
+export async function completeMinigame(name) {
+    return fetch(`${pythonURI}/api/dbs2/minigames`, {
+        method: 'PUT',
+        headers: getHeaders(), // JWT token
+        credentials: 'include',
+        body: JSON.stringify({ [name]: true })
+    });
+}
+```
+
+---
+
+# 📊 SUMMARY
+
+## What We Built
+| Component | Tech | Purpose |
+|-----------|------|---------|
+| Frontend | JavaScript + HTML5 Canvas | Game UI & minigames |
+| Backend | Flask + SQLAlchemy | API & data persistence |
+| Auth | JWT in headers | Cross-origin authentication |
+| Prices | CoinGecko API | Live crypto prices |
+| Deploy | GitHub Pages + AWS | Static site + API server |
+
+## Challenges → Solutions
+| Challenge | Solution |
+|-----------|----------|
+| Cross-origin cookies blocked | JWT in Authorization header |
+| Leaderboard not updating | Fixed StatsManager API calls |
+| Only convert to satoshis | Added target coin dropdown |
+| Characters not switching | localStorage + page reload |
+
+## Team Happy Moments
+1. **"The leaderboard finally updated"**
+2. **"All 5 coins working"**
+3. **"Admin panel Finally interacting with code scraps properly"**
 
 ---
