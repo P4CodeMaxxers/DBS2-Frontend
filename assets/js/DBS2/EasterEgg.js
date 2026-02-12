@@ -308,11 +308,48 @@ class EasterEgg extends Character {
         }
     }
 
-    showSuccess() {
+    async showSuccess() {
         if (this.pinDisplay) {
             this.pinDisplay.style.color = '#0d3d21';
             this.pinDisplay.style.borderColor = '#0d341d';
             this.pinDisplay.textContent = '✓ ✓ ✓ ✓ ✓';
+        }
+
+        // Award crypto bonus - 5,000,000 crypto
+        const CRYPTO_REWARD = 5000000;
+        const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
+        
+        if (player && player.spriteData) {
+            // Update local player data
+            player.spriteData.crypto = (player.spriteData.crypto || 0) + CRYPTO_REWARD;
+            console.log(`🎁 Local bonus awarded: ${CRYPTO_REWARD.toLocaleString()} crypto!`);
+            
+            // Save to backend API
+            try {
+                const response = await fetch('/api/dbs2/crypto', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                    },
+                    body: JSON.stringify({
+                        add: CRYPTO_REWARD
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Backend saved successfully:', data);
+                    // Update local player with backend response
+                    if (data.crypto !== undefined) {
+                        player.spriteData.crypto = data.crypto;
+                    }
+                } else {
+                    console.error('❌ Backend save failed:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error saving to backend:', error);
+            }
         }
 
         // Show success message
@@ -338,17 +375,10 @@ class EasterEgg extends Character {
                     🎉 ACCESS GRANTED 🎉<br>
                     <div style="font-size: 16px; margin-top: 15px; opacity: 0.9;">
                         Secret unlocked! The Green Machine approves.<br>
-                        <span style="color: #f1c40f; font-size: 20px; margin-top: 10px; display: block;">💰 +100,000 CRYPTO! 💰</span>
+                        <span style="color: #f1c40f; font-size: 20px; margin-top: 10px; display: block;">💰 +5,000,000 CRYPTO! 💰</span>
                     </div>
                 `;
                 this.overlay.appendChild(successMsg);
-
-                // Award crypto bonus - 5,000,000 crypto
-                const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
-                if (player && player.spriteData) {
-                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 5000000;
-                    console.log('🎁 Bonus awarded: 100,000 crypto!');
-                }
 
                 setTimeout(() => this.closePinpad(), 3000);
             }
