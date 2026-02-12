@@ -1,8 +1,11 @@
-# DBS2: Decentralized Banking Simulator 2
-## Skill C — N@tM Presentation
+---
+title: "DBS2 Skill C Review"
+layout: page
+permalink: /skill-c-review/
+---
 
 > **Team**: Evan, Maya, West, Cyrus, Aryan  
-> **Period**: _____ | **Date**: _______________
+> **Period**: 4 | **Date**: 2/12/2026
 
 ---
 

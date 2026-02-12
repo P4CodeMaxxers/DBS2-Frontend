@@ -310,8 +310,8 @@ class EasterEgg extends Character {
 
     showSuccess() {
         if (this.pinDisplay) {
-            this.pinDisplay.style.color = '#2ecc71';
-            this.pinDisplay.style.borderColor = '#2ecc71';
+            this.pinDisplay.style.color = '#0d3d21';
+            this.pinDisplay.style.borderColor = '#0d341d';
             this.pinDisplay.textContent = '✓ ✓ ✓ ✓ ✓';
         }
 
@@ -324,7 +324,7 @@ class EasterEgg extends Character {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    background: rgba(46, 204, 113, 0.95);
+                    background: rgba(15, 84, 44, 0.95);
                     color: white;
                     padding: 40px 60px;
                     border-radius: 20px;
