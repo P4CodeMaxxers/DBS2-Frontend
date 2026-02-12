@@ -879,12 +879,18 @@ const Inventory = {
                     <div style="color: #666; text-align: center; padding: 10px;">Loading wallet...</div>
                 </div>
                 <div class="wallet-convert" id="wallet-convert" style="display: none;">
-                    <div class="convert-title">Convert to Satoshis</div>
-                    <select id="convert-coin" class="convert-select">
-                        <option value="">Select coin...</option>
-                    </select>
-                    <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="0.0001" min="0">
-                    <button id="convert-btn" class="convert-btn" onclick="Inventory.convertToSats()">CONVERT (5% fee)</button>
+                    <div class="convert-title">Convert (both ways)</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        <select id="convert-from" class="convert-select" title="Source coin">
+                            <option value="">From...</option>
+                        </select>
+                        <span style="color: #888;">→</span>
+                        <select id="convert-to" class="convert-select" title="Target coin">
+                            <option value="">To...</option>
+                        </select>
+                        <input type="number" id="convert-amount" class="convert-input" placeholder="Amount" step="any" min="0">
+                        <button id="convert-btn" class="convert-btn" onclick="Inventory.doConvert()">CONVERT (5% fee)</button>
+                    </div>
                     <div id="convert-result" class="convert-result"></div>
                 </div>
             </div>
@@ -1093,7 +1099,10 @@ const Inventory = {
         
         let html = '';
         let hasConvertibleCoins = false;
-        let selectOptions = '<option value="">Select coin...</option>';
+        const fromSelect = document.getElementById('convert-from');
+        const toSelect = document.getElementById('convert-to');
+        let fromOptions = '<option value="">From...</option>';
+        let toOptions = '<option value="">To...</option>';
         
         for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
             const balance = wallet[coinId] || 0;
@@ -1116,22 +1125,24 @@ const Inventory = {
                 </div>
             `;
             
-            // Add to select if has balance and not satoshis
-            if (balance > 0 && coinId !== 'satoshis') {
+            if (balance > 0) {
                 hasConvertibleCoins = true;
-                selectOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
+                fromOptions += `<option value="${coinId}">${config.symbol} (${this.formatBalance(balance, config.decimals)})</option>`;
             }
+            toOptions += `<option value="${coinId}">${config.symbol}</option>`;
         }
         
         coinsEl.innerHTML = html;
         
-        // Show/hide convert section
         if (convertSection) {
             convertSection.style.display = hasConvertibleCoins ? 'block' : 'none';
         }
-        if (convertSelect) {
-            convertSelect.innerHTML = selectOptions;
+        if (fromSelect) {
+            fromSelect.innerHTML = fromOptions;
+            fromSelect.onchange = () => this.updateConvertToOptions();
         }
+        if (toSelect) toSelect.innerHTML = '<option value="">To...</option>' + toOptions;
+        this.updateConvertToOptions();
     },
 
     formatBalance(balance, decimals) {
@@ -1150,47 +1161,67 @@ const Inventory = {
         });
         event.currentTarget?.classList.add('selected');
         
-        // If not satoshis, populate convert fields
-        if (coinId !== 'satoshis') {
-            const select = document.getElementById('convert-coin');
-            const amountInput = document.getElementById('convert-amount');
-            
-            if (select) {
-                select.value = coinId;
-            }
-            if (amountInput && this.walletData?.raw_balances) {
-                amountInput.value = this.walletData.raw_balances[coinId] || '';
-            }
+        // Optionally pre-fill convert From when selecting a coin
+        const fromSelect = document.getElementById('convert-from');
+        const amountInput = document.getElementById('convert-amount');
+        if (fromSelect) fromSelect.value = coinId;
+        if (amountInput && this.walletData?.raw_balances) {
+            const bal = this.walletData.raw_balances[coinId];
+            amountInput.value = bal != null && bal > 0 ? bal : '';
         }
+        this.updateConvertToOptions();
     },
 
-    async convertToSats() {
-        const coinSelect = document.getElementById('convert-coin');
+    updateConvertToOptions() {
+        const fromSelect = document.getElementById('convert-from');
+        const toSelect = document.getElementById('convert-to');
+        if (!fromSelect || !toSelect) return;
+        const fromCoin = fromSelect.value;
+        let opts = '<option value="">To...</option>';
+        for (const [coinId, config] of Object.entries(this.COIN_CONFIG)) {
+            if (coinId === fromCoin) continue;
+            opts += `<option value="${coinId}">${config.symbol}</option>`;
+        }
+        toSelect.innerHTML = opts;
+    },
+
+    async doConvert() {
+        const fromSelect = document.getElementById('convert-from');
+        const toSelect = document.getElementById('convert-to');
         const amountInput = document.getElementById('convert-amount');
         const resultDiv = document.getElementById('convert-result');
         const btn = document.getElementById('convert-btn');
         
-        const coinId = coinSelect?.value;
-        const amount = parseFloat(amountInput?.value || 0);
+        const fromCoin = fromSelect?.value;
+        const toCoin = toSelect?.value;
+        const rawAmount = amountInput?.value;
+        const amount = fromCoin === 'satoshis' ? parseInt(rawAmount, 10) : parseFloat(rawAmount || 0);
         
-        if (!coinId) {
+        if (!fromCoin || !toCoin) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Select a coin to convert';
+                resultDiv.textContent = 'Select From and To coins';
             }
             return;
         }
         
-        if (amount <= 0) {
+        if (fromCoin === toCoin) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
-                resultDiv.textContent = 'Enter an amount';
+                resultDiv.textContent = 'From and To must be different';
             }
             return;
         }
         
-        // Check balance
-        const balance = this.walletData?.raw_balances?.[coinId] || 0;
+        if (!Number.isFinite(amount) || amount <= 0) {
+            if (resultDiv) {
+                resultDiv.className = 'convert-result error';
+                resultDiv.textContent = 'Enter a valid amount';
+            }
+            return;
+        }
+        
+        const balance = this.walletData?.raw_balances?.[fromCoin] ?? 0;
         if (amount > balance) {
             if (resultDiv) {
                 resultDiv.className = 'convert-result error';
@@ -1199,7 +1230,6 @@ const Inventory = {
             return;
         }
         
-        // Disable button
         if (btn) {
             btn.disabled = true;
             btn.textContent = 'Converting...';
@@ -1210,31 +1240,26 @@ const Inventory = {
         }
         
         try {
-            // Try DBS2API directly first, then fall back to StatsManager
             let result;
             if (window.DBS2API && window.DBS2API.convertCoin) {
-                result = await window.DBS2API.convertCoin(coinId, 'satoshis', amount);
+                result = await window.DBS2API.convertCoin(fromCoin, toCoin, amount);
             } else {
-                result = await convertCoin(coinId, 'satoshis', amount);
+                result = await convertCoin(fromCoin, toCoin, amount);
             }
             
             if (result && result.success) {
+                const toConfig = this.COIN_CONFIG[toCoin];
+                const toSymbol = toConfig?.symbol || toCoin;
+                const fmt = toCoin === 'satoshis' ? (n) => n.toLocaleString() : (n) => Number(n).toFixed(toConfig?.decimals ?? 4);
                 if (resultDiv) {
                     resultDiv.className = 'convert-result success';
-                    resultDiv.textContent = `✓ Converted to ${result.to_amount.toLocaleString()} sats`;
+                    resultDiv.textContent = `✓ ${result.from_amount} → ${fmt(result.to_amount)} ${toSymbol}`;
                 }
-                
-                // Refresh wallet
                 await this.loadWallet();
-                
-                // Clear inputs
                 if (amountInput) amountInput.value = '';
-                if (coinSelect) coinSelect.value = '';
-                
             } else {
                 throw new Error(result?.error || 'Conversion failed');
             }
-            
         } catch (e) {
             console.error('[Inventory] Convert error:', e);
             if (resultDiv) {
@@ -1248,9 +1273,6 @@ const Inventory = {
             }
         }
     },
-    async convertToSats() {
-        // ... existing code ...
-    },  // ← Add comma here!
     
     openCharacterSelector() {
         if (window.CharacterSelector && window.CharacterSelector.show) {

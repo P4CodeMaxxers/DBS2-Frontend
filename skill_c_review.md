@@ -213,7 +213,7 @@ function convertToAlphaNumeric(str) {
 # 4️⃣ CYRUS — Ash Trail
 
 ## User Experience
-Players select a "book" (difficulty level), then use WASD to trace a glowing path. Accuracy determines score and Solana reward. Paths represent token swap routes.
+Players select a "book" (difficulty level), then use WASD to trace a glowing path. Accuhttps://docs.google.com/spreadsheets/d/15-OIwv8sMN0Z4AgJpp52Bmh-VYrS4Wsa08EDBOlVTWg/edit?gid=1295338508#gid=1295338508racy determines score and Solana reward. Paths represent token swap routes.
 
 ## Superpower
 **Why it matters:** AMM routing determines if you lose money to slippage  
