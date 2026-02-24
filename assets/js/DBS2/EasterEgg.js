@@ -4,6 +4,7 @@
 
 import GameEnv from "./GameEnv.js";
 import Character from "./Character.js";
+import { addCrypto } from "./StatsManager.js";
 
 class EasterEgg extends Character {
     constructor(data = null) {
@@ -25,7 +26,7 @@ class EasterEgg extends Character {
         // PIN entry state
         this.isPinpadOpen = false;
         this.enteredPin = '';
-        this.correctPin = '72561'; // 5-digit secret PIN
+        this.correctPin = '72651'; // 5-digit secret PIN
     }
 
     update() {
@@ -308,11 +309,32 @@ class EasterEgg extends Character {
         }
     }
 
-    showSuccess() {
+    async showSuccess() {
         if (this.pinDisplay) {
-            this.pinDisplay.style.color = '#2ecc71';
-            this.pinDisplay.style.borderColor = '#2ecc71';
+            this.pinDisplay.style.color = '#0d3d21';
+            this.pinDisplay.style.borderColor = '#0d341d';
             this.pinDisplay.textContent = '✓ ✓ ✓ ✓ ✓';
+        }
+
+        // Award crypto bonus - 5,000,000 crypto
+        const CRYPTO_REWARD = 5000000;
+        const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
+        
+        if (player && player.spriteData) {
+            // Update local player data immediately
+            player.spriteData.crypto = (player.spriteData.crypto || 0) + CRYPTO_REWARD;
+            console.log(`🎁 Local bonus awarded: ${CRYPTO_REWARD.toLocaleString()} crypto!`);
+            
+            // Save to backend using StatsManager
+            try {
+                const newBalance = await addCrypto(CRYPTO_REWARD);
+                console.log('✅ Backend saved successfully! New balance:', newBalance);
+                // Update local player with backend response
+                player.spriteData.crypto = newBalance;
+            } catch (error) {
+                console.error('❌ Error saving to backend:', error);
+                console.log('💾 Crypto saved locally, will sync when online');
+            }
         }
 
         // Show success message
@@ -324,7 +346,7 @@ class EasterEgg extends Character {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    background: rgba(46, 204, 113, 0.95);
+                    background: rgba(15, 84, 44, 0.95);
                     color: white;
                     padding: 40px 60px;
                     border-radius: 20px;
@@ -338,17 +360,10 @@ class EasterEgg extends Character {
                     🎉 ACCESS GRANTED 🎉<br>
                     <div style="font-size: 16px; margin-top: 15px; opacity: 0.9;">
                         Secret unlocked! The Green Machine approves.<br>
-                        <span style="color: #f1c40f; font-size: 20px; margin-top: 10px; display: block;">💰 +100,000 CRYPTO! 💰</span>
+                        <span style="color: #f1c40f; font-size: 20px; margin-top: 10px; display: block;">💰 +5,000,000 CRYPTO! 💰</span>
                     </div>
                 `;
                 this.overlay.appendChild(successMsg);
-
-                // Award crypto bonus - 5,000,000 crypto
-                const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
-                if (player && player.spriteData) {
-                    player.spriteData.crypto = (player.spriteData.crypto || 0) + 5000000;
-                    console.log('🎁 Bonus awarded: 100,000 crypto!');
-                }
 
                 setTimeout(() => this.closePinpad(), 3000);
             }

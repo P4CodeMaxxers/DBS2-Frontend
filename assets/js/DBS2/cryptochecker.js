@@ -70,9 +70,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
             correct: 0,
             total: 0,
             timeLeft: 30,
-            baseSpawnInterval: 2500,
-            maxTermsOnScreen: 4,  // Start with max 4 terms
-            activeTerms: [],
+            currentTerm: null,
             timerInterval: null,
             spawnTimeout: null
         };
@@ -112,7 +110,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                     <div style="display: flex; gap: 20px; font-size: 14px;">
                         <div style="text-align: center;">
                             <div style="font-size: 10px; color: #888;">TIME</div>
-                            <div style="font-size: 18px; font-weight: bold; color: #fff;" id="ccTimer">40</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #fff;" id="ccTimer">30</div>
                         </div>
                         <div style="text-align: center;">
                             <div style="font-size: 10px; color: #888;">SCORE</div>
@@ -136,20 +134,37 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                 </div>
                 
                 <!-- Game Area -->
-                <div id="ccGameArea" style="flex: 1; position: relative; overflow: hidden;"></div>
-                
-                <!-- Hint Bar -->
-                <div id="ccHintBar" style="
-                    background: rgba(0,0,0,0.6);
-                    padding: 10px 15px;
-                    border-top: 1px solid #333;
-                    min-height: 24px;
-                    font-size: 14px;
-                    color: #888;
-                    text-align: center;
-                    flex-shrink: 0;
+                <div id="ccGameArea" style="
+                    flex: 1; 
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                    position: relative;
                 ">
-                    <span id="ccHintText">Hover over terms or use arrow keys to select</span>
+                    <!-- Term Display Card -->
+                    <div id="ccTermCard" style="
+                        background: rgba(0,0,0,0.5);
+                        border: 3px solid #7b1fa2;
+                        border-radius: 12px;
+                        padding: 30px 40px;
+                        text-align: center;
+                        min-width: 400px;
+                        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+                    ">
+                        <div id="ccTermText" style="
+                            font-size: 32px;
+                            font-weight: bold;
+                            color: #e1bee7;
+                            margin-bottom: 20px;
+                        ">Ready...</div>
+                        <div id="ccHintText" style="
+                            font-size: 16px;
+                            color: #888;
+                            font-style: italic;
+                        ">Press START to begin</div>
+                    </div>
                 </div>
                 
                 <!-- Controls -->
@@ -227,7 +242,7 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                     <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px; max-width: 550px;">
                         <h3 style="color: #c2a633; margin: 0 0 8px 0; font-size: 14px;">How To Play</h3>
                         <p style="margin: 0; line-height: 1.6; color: #ccc; font-size: 13px;">
-                            Terms appear on screen. The <span style="color: #ff0; font-weight: bold;">SELECTED term</span> has a glowing yellow border.<br>
+                            A term appears in the center with its description.<br>
                             Press <span style="color: #0f0; font-weight: bold;">SPACE</span> if it's legitimate crypto tech.<br>
                             Press <span style="color: #f66; font-weight: bold;">BACKSPACE</span> if it's a scam.<br>
                             One wrong answer = game over!
@@ -264,78 +279,55 @@ export default function startCryptoChecker(containerElement, basePath = '/images
         const timerEl = document.getElementById('ccTimer');
         const scoreEl = document.getElementById('ccScore');
         const accuracyEl = document.getElementById('ccAccuracy');
+        const termCard = document.getElementById('ccTermCard');
+        const termText = document.getElementById('ccTermText');
         const hintText = document.getElementById('ccHintText');
 
         // Add CSS for animations
         styleEl = document.createElement('style');
         styleEl.textContent = `
-            .cc-term {
-                position: absolute;
-                padding: 10px 18px;
-                border-radius: 8px;
-                font-size: 15px;
-                font-weight: bold;
-                border: 3px solid #7b1fa2;
-                cursor: pointer;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-                animation: ccSlideIn 0.3s ease-out;
-                background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%);
-                color: #e1bee7;
-                user-select: none;
-                transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            #ccTermCard {
+                transition: all 0.3s ease;
             }
-            .cc-term:hover {
-                transform: scale(1.05);
-            }
-            .cc-term.selected {
-                border-color: #ff0 !important;
-                box-shadow: 0 0 20px #ff0, 0 0 40px rgba(255,255,0,0.5) !important;
-                transform: scale(1.08);
-                z-index: 10;
-            }
-            @keyframes ccSlideIn {
-                from { transform: translateY(-20px); opacity: 0; }
-                to { transform: translateY(0); opacity: 1; }
-            }
-            .cc-term.approved {
-                animation: ccApproveAnim 0.4s ease-out forwards;
+            #ccTermCard.approved {
+                animation: cardApprove 0.5s ease-out;
                 border-color: #0f0 !important;
-                background: #0a5 !important;
+                background: rgba(0,100,0,0.3) !important;
             }
-            .cc-term.rejected {
-                animation: ccRejectAnim 0.4s ease-out forwards;
+            #ccTermCard.rejected {
+                animation: cardReject 0.5s ease-out;
                 border-color: #f00 !important;
-                background: #a00 !important;
+                background: rgba(100,0,0,0.3) !important;
             }
-            .cc-term.wrong {
-                animation: ccWrongAnim 0.5s ease-out;
+            #ccTermCard.wrong {
+                animation: cardWrong 0.6s ease-out;
                 border-color: #f00 !important;
-                background: #600 !important;
+                background: rgba(100,0,0,0.4) !important;
             }
-            @keyframes ccApproveAnim {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.2); box-shadow: 0 0 30px #0f0; }
-                100% { transform: scale(0); opacity: 0; }
+            @keyframes cardApprove {
+                0% { transform: scale(1); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+                50% { transform: scale(1.1); box-shadow: 0 0 40px #0f0; }
+                100% { transform: scale(1); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
             }
-            @keyframes ccRejectAnim {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.2); box-shadow: 0 0 30px #f00; }
-                100% { transform: scale(0); opacity: 0; }
+            @keyframes cardReject {
+                0% { transform: scale(1); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+                50% { transform: scale(1.1); box-shadow: 0 0 40px #f00; }
+                100% { transform: scale(1); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
             }
-            @keyframes ccWrongAnim {
+            @keyframes cardWrong {
                 0%, 100% { transform: translateX(0); }
-                20%, 60% { transform: translateX(-10px); }
-                40%, 80% { transform: translateX(10px); }
-            }
-            @keyframes ccPulse {
-                0%, 100% { box-shadow: 0 0 20px #ff0, 0 0 40px rgba(255,255,0,0.5); }
-                50% { box-shadow: 0 0 30px #ff0, 0 0 60px rgba(255,255,0,0.7); }
-            }
-            .cc-term.selected {
-                animation: ccPulse 1s infinite;
+                20%, 60% { transform: translateX(-15px); }
+                40%, 80% { transform: translateX(15px); }
             }
             #ccExitBtn:hover {
                 background: #800;
+            }
+            #ccTermText {
+                animation: termPulse 2s infinite;
+            }
+            @keyframes termPulse {
+                0%, 100% { color: #e1bee7; }
+                50% { color: #ff0; }
             }
         `;
         document.head.appendChild(styleEl);
@@ -376,25 +368,6 @@ export default function startCryptoChecker(containerElement, basePath = '/images
             resolve({ won: false, score: 0, cryptoEarned: 0 });
         }
 
-        function updateSelectedTerm() {
-            // Remove selected class from all terms
-            gameState.activeTerms.forEach(t => t.el.classList.remove('selected'));
-            
-            // Add selected class to first term
-            if (gameState.activeTerms.length > 0) {
-                const selected = gameState.activeTerms[0];
-                selected.el.classList.add('selected');
-                
-                // Update hint text
-                const typeLabel = selected.isLegit ? 
-                    '<span style="color:#0f0">LEGITIMATE</span>' : 
-                    '<span style="color:#f66">SCAM</span>';
-                hintText.innerHTML = `<strong style="color:#ff0">${selected.term}</strong>: ${selected.hint}`;
-            } else {
-                hintText.innerHTML = 'Waiting for next term...';
-            }
-        }
-
         function startGame() {
             overlay.style.display = 'none';
             gameState = {
@@ -403,140 +376,80 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                 correct: 0,
                 total: 0,
                 timeLeft: 30,
-                baseSpawnInterval: 2500,
-                maxTermsOnScreen: 4,
-                activeTerms: [],
+                currentTerm: null,
                 timerInterval: null,
                 spawnTimeout: null
             };
 
-            gameArea.innerHTML = '';
             updateUI();
-            hintText.innerHTML = 'Get ready...';
 
             gameState.timerInterval = setInterval(() => {
                 gameState.timeLeft--;
                 updateUI();
-
-                // Gradually increase difficulty but keep it manageable
-                if (gameState.timeLeft === 30) {
-                    gameState.maxTermsOnScreen = 5;
-                    gameState.baseSpawnInterval = 2200;
-                } else if (gameState.timeLeft === 20) {
-                    gameState.maxTermsOnScreen = 6;
-                    gameState.baseSpawnInterval = 2000;
-                } else if (gameState.timeLeft === 10) {
-                    gameState.maxTermsOnScreen = 7;
-                    gameState.baseSpawnInterval = 1800;
-                }
 
                 if (gameState.timeLeft <= 0) {
                     endGame(true);
                 }
             }, 1000);
 
-            // Initial spawn after short delay
-            setTimeout(() => spawnTerm(), 500);
+            // Show first term immediately
+            showNextTerm();
         }
 
-        function spawnTerm() {
+        function showNextTerm() {
             if (!gameState.active) return;
 
-            // Only spawn if we're under the max terms limit
-            if (gameState.activeTerms.length >= gameState.maxTermsOnScreen) {
-                // Try again soon
-                gameState.spawnTimeout = setTimeout(() => spawnTerm(), 500);
-                return;
-            }
+            // Reset card styling
+            termCard.className = '';
+            termCard.style.borderColor = '#7b1fa2';
+            termCard.style.background = 'rgba(0,0,0,0.5)';
 
+            // Pick random term
             const isLegit = Math.random() > 0.5;
             const termList = isLegit ? legitTerms : scamTerms;
             const termData = termList[Math.floor(Math.random() * termList.length)];
 
-            const termEl = document.createElement('div');
-            termEl.className = 'cc-term';
-            termEl.textContent = termData.term;
-
-            // Find a position that doesn't overlap too much
-            const maxAttempts = 10;
-            let x, y;
-            const termWidth = 180;
-            const termHeight = 50;
-            
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                x = 20 + Math.random() * (gameArea.clientWidth - termWidth - 40);
-                y = 20 + Math.random() * (gameArea.clientHeight - termHeight - 40);
-                
-                // Check overlap with existing terms
-                let overlaps = false;
-                for (const existing of gameState.activeTerms) {
-                    const ex = parseFloat(existing.el.style.left);
-                    const ey = parseFloat(existing.el.style.top);
-                    if (Math.abs(x - ex) < termWidth && Math.abs(y - ey) < termHeight) {
-                        overlaps = true;
-                        break;
-                    }
-                }
-                
-                if (!overlaps) break;
-            }
-
-            termEl.style.left = x + 'px';
-            termEl.style.top = y + 'px';
-
-            // Add hover event to show hint
-            termEl.addEventListener('mouseenter', () => {
-                hintText.innerHTML = `<strong style="color:#ff0">${termData.term}</strong>: ${termData.hint}`;
-            });
-
-            gameArea.appendChild(termEl);
-            
-            const termObj = {
-                el: termEl,
+            gameState.currentTerm = {
                 term: termData.term,
                 hint: termData.hint,
                 isLegit: isLegit
             };
-            
-            gameState.activeTerms.push(termObj);
-            updateSelectedTerm();
 
-            // Schedule next spawn
-            const nextSpawn = gameState.baseSpawnInterval * (0.9 + Math.random() * 0.2);
-            gameState.spawnTimeout = setTimeout(() => spawnTerm(), nextSpawn);
+            // Display the term
+            termText.textContent = termData.term;
+            hintText.textContent = termData.hint;
         }
 
         function handleAction(action) {
-            if (!gameState.active || gameState.activeTerms.length === 0) return;
+            if (!gameState.active || !gameState.currentTerm) return;
 
-            const termObj = gameState.activeTerms[0];
-            const isCorrect = (action === 'approve' && termObj.isLegit) || (action === 'reject' && !termObj.isLegit);
+            const isCorrect = (action === 'approve' && gameState.currentTerm.isLegit) || 
+                            (action === 'reject' && !gameState.currentTerm.isLegit);
 
             gameState.total++;
             
             if (isCorrect) {
                 gameState.correct++;
                 gameState.score += 10;
-                termObj.el.classList.remove('selected');
-                termObj.el.classList.add(action === 'approve' ? 'approved' : 'rejected');
+                
+                // Show correct feedback
+                termCard.classList.add(action === 'approve' ? 'approved' : 'rejected');
                 
                 setTimeout(() => {
-                    if (termObj.el.parentNode) termObj.el.remove();
-                }, 400);
-                
-                gameState.activeTerms.shift();
-                updateSelectedTerm();
+                    showNextTerm();
+                }, 500);
             } else {
-                // Wrong answer - show what it actually was
-                termObj.el.classList.remove('selected');
-                termObj.el.classList.add('wrong');
+                // Wrong answer
+                termCard.classList.add('wrong');
                 
-                const correctAction = termObj.isLegit ? 'LEGITIMATE (should APPROVE)' : 'SCAM (should REJECT)';
-                hintText.innerHTML = `<span style="color:#f00">WRONG!</span> "${termObj.term}" was ${correctAction}`;
+                const correctAction = gameState.currentTerm.isLegit ? 
+                    'LEGITIMATE (should APPROVE)' : 
+                    'SCAM (should REJECT)';
+                hintText.innerHTML = `<span style="color:#f00">WRONG!</span> This was ${correctAction}`;
                 
                 setTimeout(() => {
                     endGame(false);
-                }, 1000);
+                }, 1200);
                 return;
             }
 
@@ -579,12 +492,6 @@ export default function startCryptoChecker(containerElement, basePath = '/images
                 }
             }
 
-            // Clear remaining terms
-            gameState.activeTerms.forEach(t => {
-                if (t.el.parentNode) t.el.remove();
-            });
-            gameState.activeTerms = [];
-
             // Show results
             showResults(won, dogeEarned, accuracy);
         }
@@ -592,17 +499,12 @@ export default function startCryptoChecker(containerElement, basePath = '/images
         function showResults(won, dogeEarned, accuracy) {
             const resultHTML = `
                 <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
                     background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 100%);
                     border: 2px solid ${won ? '#c2a633' : '#800'};
                     border-radius: 12px;
                     padding: 25px;
                     text-align: center;
                     max-width: 450px;
-                    z-index: 200;
                 ">
                     <h2 style="color: ${won ? '#c2a633' : '#f66'}; margin: 0 0 15px 0;">
                         ${won ? '🛡️ SECURITY TRAINING COMPLETE!' : '❌ SECURITY BREACH!'}
@@ -688,7 +590,29 @@ export default function startCryptoChecker(containerElement, basePath = '/images
             gameArea.innerHTML = resultHTML;
             
             document.getElementById('ccPlayAgain').onclick = () => {
-                gameArea.innerHTML = '';
+                gameArea.innerHTML = `
+                    <div id="ccTermCard" style="
+                        background: rgba(0,0,0,0.5);
+                        border: 3px solid #7b1fa2;
+                        border-radius: 12px;
+                        padding: 30px 40px;
+                        text-align: center;
+                        min-width: 400px;
+                        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+                    ">
+                        <div id="ccTermText" style="
+                            font-size: 32px;
+                            font-weight: bold;
+                            color: #e1bee7;
+                            margin-bottom: 20px;
+                        ">Ready...</div>
+                        <div id="ccHintText" style="
+                            font-size: 16px;
+                            color: #888;
+                            font-style: italic;
+                        ">Get ready...</div>
+                    </div>
+                `;
                 startGame();
             };
             
