@@ -9,7 +9,7 @@ permalink: /skill-c-review/
 
 ---
 
-# 🎯 PRIMARY TEAM OVERVIEW (1 Minute)
+# PRIMARY TEAM OVERVIEW (1 Minute)
 
 ## Purpose & Scope
 DBS2 is an **educational crypto-themed platformer** where players learn blockchain concepts by playing minigames and earning simulated cryptocurrency.
@@ -41,11 +41,11 @@ Convert Coins → Purchase Item
 
 ---
 
-# 👤 INDIVIDUAL PRESENTATIONS
+# INDIVIDUAL PRESENTATIONS
 
 ---
 
-# 1️⃣ EVAN — Crypto Miner
+# EVAN — Crypto Miner
 
 ## User Experience
 Players interact with a mining terminal, pressing SPACE to generate hashes. Valid hashes (starting with "00") fill a progress bar. Complete 3 blocks with increasing difficulty to win.
@@ -97,12 +97,9 @@ function attemptMine() {
 | **Iteration** | Added hash display, difficulty scaling |
 | **Polished** | Live prices, boost multipliers, animations |
 
-## Happy Moment 🎉
-> "When the difficulty scaling clicked — watching players understand why Bitcoin mining gets harder over time, just from playing the game."
-
 ---
 
-# 2️⃣ MAYA — Closet Shop & Characters
+# MAYA — Closet Shop & Characters
 
 ## User Experience
 Players open a shop interface with tabs (Code Scraps / Characters / Cosmetics). Each item costs a different cryptocurrency. Purchased characters appear in a selector for equipping.
@@ -153,12 +150,9 @@ const SHOP_ITEMS = {
 | **Iteration** | Multi-currency, tab navigation |
 | **Polished** | Character selector, sprite switching, owned badges |
 
-## Happy Moment 🎉
-> "Buying Pink Princess with Dogecoin, opening Character Selector, equipping it, and seeing my avatar actually change in the game world."
-
 ---
 
-# 3️⃣ WEST — Infinite User
+# WEST — Infinite User
 
 ## User Experience
 Players see a cipher code (letters converted to numbers). They must decode and type the correct password. Success earns Ethereum; creating new passwords rotates the database.
@@ -208,12 +202,9 @@ function convertToAlphaNumeric(str) {
 | **Iteration** | Backend sync, rotation system |
 | **Polished** | Content filter, educational hints, ETH rewards |
 
-## Happy Moment 🎉
-> "When passwords players created started appearing for other players — the game felt alive and shared."
-
 ---
 
-# 4️⃣ CYRUS — Ash Trail
+# CYRUS — Ash Trail
 
 ## User Experience
 Players select a "book" (difficulty level), then use WASD to trace a glowing path. Accuracy determines score and Solana reward. Paths represent token swap routes.
@@ -276,12 +267,9 @@ function buildHeartPath() {
 | **Iteration** | WASD controls, multiple difficulties |
 | **Polished** | Parametric curves, trace recording, replay system |
 
-## Happy Moment 🎉
-> "The heart-shaped path for hard mode — it's mathematically beautiful AND teaches complex routing concepts."
-
 ---
 
-# 5️⃣ ARYAN — Crypto Border Control
+# ARYAN — Crypto Border Control
 
 ## User Experience
 Terms float on screen with a yellow-highlighted selection. Press SPACE for legitimate crypto terms, BACKSPACE for scams. One wrong answer = game over. 30-second timer.
@@ -339,8 +327,6 @@ const scamTerms = [
 | **Iteration** | Pivoted to term identification |
 | **Polished** | Hints, animations, educational intro screen |
 
-## Happy Moment 🎉
-> "When testers recognized 'Celebrity Giveaway' from real scams they'd seen — the education was actually working."
 
 ---
 
@@ -393,7 +379,7 @@ export async function completeMinigame(name) {
 
 ---
 
-# 📊 SUMMARY
+# SUMMARY
 
 ## What We Built
 | Component | Tech | Purpose |
@@ -414,7 +400,7 @@ export async function completeMinigame(name) {
 
 ## Team Happy Moments
 1. **"The leaderboard finally updated"**
-2. **"All 5 coins working"**
-3. **"Admin panel Finally interacting with code scraps properly"**
+2. **"All 5 code scraps working"**
+3. **"Admin panel finally interacting with code scraps properly"**
 
 ---
