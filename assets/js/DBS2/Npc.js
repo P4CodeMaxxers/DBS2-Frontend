@@ -48,83 +48,65 @@ class Npc extends Character {
         Prompt.isOpen = false;
     }
     
+    // ── SRP helpers for handleKeyDown ─────────────────────────────
+
+    findCollidingPlayers() {
+        return GameEnv.gameObjects.filter(
+            obj => obj.state?.collisionEvents?.includes(this.spriteData.id)
+        );
+    }
+
+    isPlayerInProximity(maxDist = 200) {
+        const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
+        if (!player) return false;
+        const dist = Math.sqrt(
+            Math.pow(player.position.x - this.position.x, 2) +
+            Math.pow(player.position.y - this.position.y, 2)
+        );
+        console.log(`Distance to ${this.spriteData.id}: ${dist}`);
+        return dist < maxDist;
+    }
+
+    dispatchNpcInteraction(npcId) {
+        const minigameMap = {
+            'Bookshelf':  () => showAshTrailMinigame(),
+            'Computer1':  () => infiniteUserMinigame(),
+            'Computer2':  () => cryptoMinerMinigame(),
+            'laundry':    () => showLaundryMinigame(),
+            'Cards':      () => { console.log('✅ Cards interaction detected!'); this.launchCryptoChecker(); },
+            'Closet':     () => { console.log('✅ Closet interaction detected!'); showClosetShop(); },
+        };
+
+        const action = minigameMap[npcId];
+        if (action) {
+            action();
+        } else {
+            Prompt.currentNpc = this;
+            Prompt.openPromptPanel(this);
+        }
+    }
+
+    // ── Orchestrator ────────────────────────────────────────────
+
     handleKeyDown({ key }) {
-        switch (key) {
-            case 'e': // Player 1 interaction
-                try {
-                    console.log('E key pressed. Checking collisions...');
-                    
-                    const players = GameEnv.gameObjects.filter(
-                        obj => obj.state?.collisionEvents?.includes(this.spriteData.id)
-                    );
-                    
-                    console.log(`NPC ID: ${this.spriteData.id}, Players colliding: ${players.length}`);
-                    
-                    if (players.length === 0) {
-                        // Check if player is close to this NPC (fallback for Cards)
-                        const player = GameEnv.gameObjects.find(obj => obj.spriteData?.id === 'player');
-                        if (player && this.spriteData.id === 'Cards') {
-                            const dist = Math.sqrt(
-                                Math.pow(player.position.x - this.position.x, 2) + 
-                                Math.pow(player.position.y - this.position.y, 2)
-                            );
-                            console.log(`Distance to Cards: ${dist}`);
-                            
-                            if (dist < 200) {
-                                console.log('Player close enough to Cards, launching game...');
-                                this.launchCryptoChecker();
-                                return;
-                            }
-                        }
-                        return;
-                    }
+        if (key !== 'e') return;
+        try {
+            console.log('E key pressed. Checking collisions...');
+            const players = this.findCollidingPlayers();
+            console.log(`NPC ID: ${this.spriteData.id}, Players colliding: ${players.length}`);
 
-                    this.closeAllDialogues();
-
-                    const npcId = this.spriteData.id;
-                    console.log(`Interacting with: ${npcId}`);
-
-                    switch (npcId) {
-                        case 'Bookshelf':
-                            showAshTrailMinigame();
-                            return;
-
-                        case 'Computer1':
-                            infiniteUserMinigame();
-                            return;
-
-                        case 'Computer2':
-                            cryptoMinerMinigame();
-                            return;
-
-                        case 'laundry':
-                            showLaundryMinigame();
-                            return;
-
-                        case 'Cards':
-                            console.log('✅ Cards interaction detected!');
-                            this.launchCryptoChecker();
-                            return;
-
-                        case 'IShowGreen':
-                            Prompt.currentNpc = this;
-                            Prompt.openPromptPanel(this);
-                            return;
-
-                        case 'Closet':
-                            console.log('✅ Closet interaction detected!');
-                            showClosetShop();
-                            return;
-
-                        default:
-                            Prompt.currentNpc = this;
-                            Prompt.openPromptPanel(this);
-                            return;
-                    }
-                } catch (err) {
-                    console.error('Error handling NPC interaction', err);
+            if (players.length === 0) {
+                if (this.spriteData.id === 'Cards' && this.isPlayerInProximity()) {
+                    this.launchCryptoChecker();
                 }
-                break;
+                return;
+            }
+
+            this.closeAllDialogues();
+            console.log(`Interacting with: ${this.spriteData.id}`);
+            this.dispatchNpcInteraction(this.spriteData.id);
+        } catch (err) {
+            console.error('Error handling NPC interaction', err);
         }
     }
 

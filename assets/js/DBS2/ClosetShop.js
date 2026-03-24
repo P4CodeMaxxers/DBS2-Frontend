@@ -295,94 +295,74 @@ function createShopUI() {
 }
 
 /**
- * Render shop items for a category
+ * Filter shop items by category
+ */
+function filterItemsByCategory(category) {
+    const items = Object.values(SHOP_ITEMS);
+    return category === 'all' ? items : items.filter(item => item.category === category);
+}
+
+/**
+ * Build the HTML for a single shop item card
+ */
+function buildItemCardHTML(item, baseurl) {
+    const price = item.price;
+    const coinInfo = getCoinInfo(price.coin);
+    const balance = currentWallet[price.coin] || 0;
+    const canAfford = balance >= price.amount;
+    const imageHTML = item.image
+        ? `<img src="${baseurl}/images/DBS2/${item.image}"
+               style="max-width: 100px; max-height: 100px; border: 1px solid ${coinInfo.color}; border-radius: 5px;"
+               onerror="this.style.display='none';">`
+        : `<div style="width: 100px; height: 100px; background: #333; border: 1px solid ${coinInfo.color}; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48px;">
+               ${item.type === 'character' ? '👤' : item.type === 'code_scrap' ? '📄' : '✨'}
+           </div>`;
+
+    return `
+        <div class="shop-item-card" data-item-id="${item.id}" style="
+            background: rgba(0,0,0,0.4); border: 2px solid ${canAfford ? coinInfo.color : '#666'};
+            border-radius: 10px; padding: 15px;
+            cursor: ${canAfford ? 'pointer' : 'not-allowed'};
+            opacity: ${canAfford ? '1' : '0.6'}; transition: all 0.2s;
+        ">
+            <div style="text-align: center; margin-bottom: 10px;">${imageHTML}</div>
+            <h3 style="color: #f7931a; margin: 10px 0 5px 0; font-size: 16px; text-align: center;">${item.name}</h3>
+            <p style="font-size: 11px; color: #888; margin: 0 0 10px 0; text-align: center; line-height: 1.4;">${item.description}</p>
+            <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                <div style="font-size: 10px; color: #666; margin-bottom: 3px;">Price:</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+                    <span style="color: ${coinInfo.color}; font-size: 14px; font-weight: bold;">
+                        ${formatPrice(price.amount, coinInfo.decimals)} ${coinInfo.symbol}
+                    </span>
+                </div>
+                <div style="font-size: 9px; color: ${canAfford ? '#0f0' : '#f00'}; margin-top: 3px;">
+                    Your balance: ${formatPrice(balance, coinInfo.decimals)} ${coinInfo.symbol}
+                </div>
+            </div>
+            <button class="shop-purchase-btn" data-item-id="${item.id}" style="
+                width: 100%; padding: 10px;
+                background: ${canAfford ? coinInfo.color : '#666'};
+                color: ${canAfford ? '#000' : '#999'};
+                border: none; border-radius: 5px;
+                cursor: ${canAfford ? 'pointer' : 'not-allowed'};
+                font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; transition: all 0.2s;
+            " ${!canAfford ? 'disabled' : ''}>
+                ${canAfford ? 'PURCHASE' : 'INSUFFICIENT FUNDS'}
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * Render shop items for a category (orchestrator)
  */
 function renderShopItems(category = 'all') {
     const baseurl = document.body.getAttribute('data-baseurl') || '';
-    let html = '';
-    
-    const items = Object.values(SHOP_ITEMS);
-    const filteredItems = category === 'all' ? items : items.filter(item => item.category === category);
-    
+    const filteredItems = filterItemsByCategory(category);
     if (filteredItems.length === 0) {
         return '<div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 40px;">No items in this category</div>';
     }
-    
-    for (const item of filteredItems) {
-        const price = item.price;
-        const coinInfo = getCoinInfo(price.coin);
-        const balance = currentWallet[price.coin] || 0;
-        const canAfford = balance >= price.amount;
-        
-        html += `
-            <div class="shop-item-card" data-item-id="${item.id}" style="
-                background: rgba(0,0,0,0.4);
-                border: 2px solid ${canAfford ? coinInfo.color : '#666'};
-                border-radius: 10px;
-                padding: 15px;
-                cursor: ${canAfford ? 'pointer' : 'not-allowed'};
-                opacity: ${canAfford ? '1' : '0.6'};
-                transition: all 0.2s;
-            ">
-                <div style="text-align: center; margin-bottom: 10px;">
-                    ${item.image ? `
-                        <img src="${baseurl}/images/DBS2/${item.image}" 
-                             style="max-width: 100px; max-height: 100px; border: 1px solid ${coinInfo.color}; border-radius: 5px;"
-                             onerror="this.style.display='none';">
-                    ` : `
-                        <div style="width: 100px; height: 100px; background: #333; border: 1px solid ${coinInfo.color}; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48px;">
-                            ${item.type === 'character' ? '👤' : item.type === 'code_scrap' ? '📄' : '✨'}
-                        </div>
-                    `}
-                </div>
-                
-                <h3 style="color: #f7931a; margin: 10px 0 5px 0; font-size: 16px; text-align: center;">
-                    ${item.name}
-                </h3>
-                
-                <p style="font-size: 11px; color: #888; margin: 0 0 10px 0; text-align: center; line-height: 1.4;">
-                    ${item.description}
-                </p>
-                
-                <div style="
-                    background: rgba(0,0,0,0.5);
-                    padding: 10px;
-                    border-radius: 5px;
-                    margin-bottom: 10px;
-                ">
-                    <div style="font-size: 10px; color: #666; margin-bottom: 3px;">Price:</div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-                        <span style="color: ${coinInfo.color}; font-size: 14px; font-weight: bold;">
-                            ${formatPrice(price.amount, coinInfo.decimals)} ${coinInfo.symbol}
-                        </span>
-                    </div>
-                    <div style="font-size: 9px; color: ${canAfford ? '#0f0' : '#f00'}; margin-top: 3px;">
-                        Your balance: ${formatPrice(balance, coinInfo.decimals)} ${coinInfo.symbol}
-                    </div>
-                </div>
-                
-                <button class="shop-purchase-btn" 
-                        data-item-id="${item.id}"
-                        style="
-                    width: 100%;
-                    padding: 10px;
-                    background: ${canAfford ? coinInfo.color : '#666'};
-                    color: ${canAfford ? '#000' : '#999'};
-                    border: none;
-                    border-radius: 5px;
-                    cursor: ${canAfford ? 'pointer' : 'not-allowed'};
-                    font-family: 'Courier New', monospace;
-                    font-size: 12px;
-                    font-weight: bold;
-                    transition: all 0.2s;
-                " ${!canAfford ? 'disabled' : ''}>
-                    ${canAfford ? 'PURCHASE' : 'INSUFFICIENT FUNDS'}
-                </button>
-            </div>
-        `;
-    }
-    
-    return html;
+    return filteredItems.map(item => buildItemCardHTML(item, baseurl)).join('');
 }
 
 /**
@@ -419,69 +399,74 @@ function attachItemHandlers() {
 }
 
 /**
- * Handle item purchase
+ * Validate that the player can afford the item
+ */
+function validatePurchase(item) {
+    const balance = currentWallet[item.price.coin] || 0;
+    return balance >= item.price.amount;
+}
+
+/**
+ * Set the purchase button to a loading/disabled state
+ */
+function disablePurchaseButton(btn) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'PURCHASING...';
+    btn.style.background = '#666';
+}
+
+/**
+ * Restore the purchase button after a failed attempt
+ */
+function resetPurchaseButton(btn, coinType) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = 'PURCHASE';
+    btn.style.background = getCoinInfo(coinType).color;
+}
+
+/**
+ * Refresh all shop UI after a successful purchase
+ */
+async function refreshShopAfterPurchase() {
+    const walletData = await getWallet();
+    currentWallet = walletData.raw_balances || walletData.wallet || {};
+    const category = document.querySelector('.shop-tab.active')?.dataset.category || 'all';
+    document.getElementById('shop-items-grid').innerHTML = renderShopItems(category);
+    attachItemHandlers();
+    if (window.WalletDisplay && window.WalletDisplay.refresh) window.WalletDisplay.refresh();
+    if (window.Inventory && window.Inventory.loadFromBackend) window.Inventory.loadFromBackend();
+}
+
+/**
+ * Handle item purchase (orchestrator)
  */
 async function handlePurchase(itemId) {
     const item = SHOP_ITEMS[itemId];
     if (!item) return;
-    
-    const price = item.price;
-    const balance = currentWallet[price.coin] || 0;
-    
-    if (balance < price.amount) {
+
+    if (!validatePurchase(item)) {
         showMessage('Insufficient funds!', 'error');
         return;
     }
-    
-    // Disable button during purchase
+
     const btn = document.querySelector(`.shop-purchase-btn[data-item-id="${itemId}"]`);
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'PURCHASING...';
-        btn.style.background = '#666';
-    }
-    
+    disablePurchaseButton(btn);
+
     try {
-        // Attempt purchase (will call backend when available)
         const result = await purchaseShopItem(itemId, item);
-        
         if (result.success) {
             showMessage(item.unlockMessage, 'success');
-            
-            // Refresh wallet
-            const walletData = await getWallet();
-            currentWallet = walletData.raw_balances || walletData.wallet || {};
-            
-            // Update UI
-            const category = document.querySelector('.shop-tab.active')?.dataset.category || 'all';
-            document.getElementById('shop-items-grid').innerHTML = renderShopItems(category);
-            attachItemHandlers();
-            
-            // Refresh wallet display if available
-            if (window.WalletDisplay && window.WalletDisplay.refresh) {
-                window.WalletDisplay.refresh();
-            }
-            
-            // Refresh inventory if available
-            if (window.Inventory && window.Inventory.loadFromBackend) {
-                window.Inventory.loadFromBackend();
-            }
+            await refreshShopAfterPurchase();
         } else {
             showMessage(result.error || 'Purchase failed!', 'error');
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'PURCHASE';
-                btn.style.background = getCoinInfo(price.coin).color;
-            }
+            resetPurchaseButton(btn, item.price.coin);
         }
     } catch (e) {
         console.error('[ClosetShop] Purchase error:', e);
         showMessage('Purchase failed!', 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'PURCHASE';
-            btn.style.background = getCoinInfo(price.coin).color;
-        }
+        resetPurchaseButton(btn, item.price.coin);
     }
 }
 
